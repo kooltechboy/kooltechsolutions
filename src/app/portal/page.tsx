@@ -1,0 +1,127 @@
+import type { Metadata } from "next";
+import { Ticket, DollarSign, Server, Activity, ArrowRight, CheckCircle, AlertTriangle, Clock } from "lucide-react";
+import Link from "next/link";
+
+export const metadata: Metadata = { title: "Client Portal — Dashboard" };
+
+const kpis = [
+  { icon: Ticket, label: "Open Tickets", value: "3", color: "#FFB300", sub: "1 urgent" },
+  { icon: Server, label: "Active Services", value: "5", color: "#00D4FF", sub: "All operational" },
+  { icon: DollarSign, label: "Outstanding", value: "$0", color: "#00E676", sub: "No overdue invoices" },
+  { icon: Activity, label: "System Uptime", value: "99.98%", color: "#A855F7", sub: "Last 30 days" },
+];
+
+const tickets = [
+  { id: "TKT-1041", subject: "VPN connection dropping intermittently", status: "In Progress", priority: "High", updated: "2h ago" },
+  { id: "TKT-1039", subject: "New employee workstation setup", status: "Open", priority: "Medium", updated: "1d ago" },
+  { id: "TKT-1035", subject: "Email sync issue on mobile device", status: "Resolved", priority: "Low", updated: "3d ago" },
+];
+
+const statusMap: Record<string, { color: string; icon: typeof CheckCircle }> = {
+  "In Progress": { color: "#FFB300", icon: Clock },
+  "Open": { color: "#00D4FF", icon: AlertTriangle },
+  "Resolved": { color: "#00E676", icon: CheckCircle },
+};
+
+export default function PortalDashboard() {
+  return (
+    <div>
+      {/* Greeting */}
+      <div style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.25rem" }}>
+          Welcome back, <span className="gradient-text">Acme Corp</span> 👋
+        </h1>
+        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Here&apos;s a snapshot of your IT environment today.</p>
+      </div>
+
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
+        {kpis.map(kpi => (
+          <div key={kpi.label} className="kpi-card">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <kpi.icon size={20} color={kpi.color} />
+              </div>
+            </div>
+            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "2rem", fontWeight: 800, color: "white", lineHeight: 1 }}>{kpi.value}</div>
+            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginTop: "0.25rem" }}>{kpi.label}</div>
+            <div style={{ color: kpi.color, fontSize: "0.75rem", marginTop: "0.25rem" }}>{kpi.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1.5rem" }}>
+        {/* Recent Tickets */}
+        <div className="kpi-card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1rem" }}>Recent Tickets</h2>
+            <Link href="/portal/tickets" style={{ color: "var(--color-accent-500)", fontSize: "0.8125rem", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+              View All <ArrowRight size={13} />
+            </Link>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+            {tickets.map(t => {
+              const st = statusMap[t.status];
+              return (
+                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "0.875rem", background: "rgba(255,255,255,0.03)", borderRadius: "10px", border: "1px solid rgba(75,132,200,0.1)" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem", marginBottom: "0.2rem" }}>{t.id}</div>
+                    <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.subject}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexShrink: 0 }}>
+                    <st.icon size={13} color={st.color} />
+                    <span style={{ color: st.color, fontSize: "0.75rem", fontWeight: 600 }}>{t.status}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <Link href="/portal/tickets" className="btn-ghost" style={{ display: "flex", justifyContent: "center", marginTop: "1.25rem", padding: "0.625rem" }}>
+            Submit New Ticket
+          </Link>
+        </div>
+
+        {/* Quick Actions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div className="kpi-card">
+            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1rem", marginBottom: "1rem" }}>Quick Actions</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+              {[
+                { label: "Submit a Ticket", href: "/portal/tickets", color: "#00D4FF" },
+                { label: "Pay Invoice", href: "/portal/invoices", color: "#00E676" },
+                { label: "Chat with AI Support", href: "/portal/ai-assistant", color: "#A855F7" },
+                { label: "View My Assets", href: "/portal/assets", color: "#FFB300" },
+              ].map(a => (
+                <Link key={a.label} href={a.href} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "0.75rem 1rem", background: "rgba(255,255,255,0.03)",
+                  border: `1px solid ${a.color}20`, borderRadius: "10px",
+                  textDecoration: "none", color: "white", fontSize: "0.875rem", fontWeight: 500,
+                  transition: "background 0.2s ease",
+                }}>
+                  {a.label}
+                  <ArrowRight size={14} color={a.color} />
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="kpi-card">
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-success)" }} className="pulse-online" />
+              <span style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>System Health</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {["Email Services", "Cloud Backup", "VPN Gateway", "Monitoring"].map(s => (
+                <div key={s} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>{s}</span>
+                  <span className="badge badge-success" style={{ fontSize: "0.65rem", padding: "0.15rem 0.5rem" }}>Operational</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
