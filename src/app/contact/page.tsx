@@ -42,9 +42,9 @@ export default function ContactPage() {
                 <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "white", marginBottom: "1.5rem" }}>Contact Details</h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
                   {[
-                    { icon: Phone, label: "Phone", val: "+1 (809) 555-0100" },
-                    { icon: Mail, label: "Email", val: "hello@kooltech.solutions" },
-                    { icon: MapPin, label: "HQ", val: "Santo Domingo, Dominican Republic" },
+                    { icon: Phone, label: "Phone", val: "+1 (829) 720-1611" },
+                    { icon: Mail, label: "Email", val: "danieljwilliams@kooltechsolutions.com" },
+                    { icon: MapPin, label: "HQ", val: "Santiago, Dominican Republic" },
                     { icon: Clock, label: "Hours", val: "Mon–Fri 8AM–6PM AST · Emergency 24/7" },
                   ].map(item => (
                     <div key={item.label} className="glass-card" style={{ borderRadius: "12px", padding: "1rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem" }}>
@@ -73,7 +73,7 @@ export default function ContactPage() {
                 </div>
 
                 <div className="badge badge-success" style={{ marginTop: "1.5rem", display: "flex", gap: "0.5rem", padding: "0.75rem 1rem", borderRadius: "12px", fontSize: "0.8125rem" }}>
-                  🚨 Emergency IT support available 24/7 at +1 (809) 555-0911
+                  🚨 Emergency IT support available 24/7 at +1 (829) 720-1611
                 </div>
               </div>
 

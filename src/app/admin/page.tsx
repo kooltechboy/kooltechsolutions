@@ -137,10 +137,7 @@ export default function AdminDashboard() {
             </thead>
             <tbody>
               {recentTickets.map(t => (
-                <tr key={t.id} style={{ borderBottom: "1px solid rgba(75,132,200,0.07)", transition: "background 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.04)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                >
+                <tr key={t.id} style={{ borderBottom: "1px solid rgba(75,132,200,0.07)", transition: "background 0.15s" }}>
                   <td style={{ padding: "0.875rem 0.75rem", color: "var(--color-accent-500)", fontWeight: 600, fontSize: "0.8125rem" }}>{t.id}</td>
                   <td style={{ padding: "0.875rem 0.75rem", color: "white", fontSize: "0.8125rem" }}>{t.client}</td>
                   <td style={{ padding: "0.875rem 0.75rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>{t.subject}</td>

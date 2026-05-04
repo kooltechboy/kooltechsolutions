@@ -33,12 +33,14 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protect portal routes
-  if (request.nextUrl.pathname.startsWith('/portal') && !user) {
+  const isAdminAuth = request.cookies.get('admin_auth')?.value === 'true';
+
+  if (request.nextUrl.pathname.startsWith('/portal') && !user && !isAdminAuth) {
     return NextResponse.redirect(new URL('/login?redirect=/portal', request.url))
   }
   
   // Protect admin routes
-  if (request.nextUrl.pathname.startsWith('/admin') && !user) {
+  if (request.nextUrl.pathname.startsWith('/admin') && !user && !isAdminAuth) {
     return NextResponse.redirect(new URL('/login?redirect=/admin', request.url))
   }
 

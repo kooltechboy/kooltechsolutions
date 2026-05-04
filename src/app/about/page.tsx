@@ -24,7 +24,7 @@ const values = [
 ];
 
 const milestones = [
-  { year: "2014", event: "Founded in Santo Domingo, DR" },
+  { year: "2014", event: "Founded in Santiago, Dominican Republic" },
   { year: "2016", event: "Expanded to 50+ clients" },
   { year: "2018", event: "Launched Cybersecurity practice" },
   { year: "2020", event: "Opened USA operations" },

@@ -23,7 +23,7 @@ export default function AdminTicketsPage() {
     <div style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <div>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--color-primary-900)", fontFamily: "Syne, sans-serif" }}>HelpDesk Command Center</h1>
+          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "white", fontFamily: "Syne, sans-serif" }}>HelpDesk Command Center</h1>
           <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>Manage, assign, and resolve active client support requests.</p>
         </div>
         <button className="btn-primary">Create Ticket</button>
@@ -39,7 +39,7 @@ export default function AdminTicketsPage() {
         ].map((metric, i) => (
           <div key={i} className="glass-card" style={{ padding: "1.5rem", borderLeft: metric.alert ? "4px solid #ef4444" : "4px solid var(--color-accent-500)" }}>
             <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{metric.label}</div>
-            <div style={{ fontSize: "2rem", fontWeight: 700, color: "var(--color-primary-900)", margin: "0.5rem 0" }}>{metric.value}</div>
+            <div style={{ fontSize: "2rem", fontWeight: 700, color: "white", margin: "0.5rem 0" }}>{metric.value}</div>
             <div style={{ color: metric.alert ? "#ef4444" : "var(--color-neutral-400)", fontSize: "0.8125rem", fontWeight: 500 }}>{metric.trend}</div>
           </div>
         ))}
@@ -47,7 +47,7 @@ export default function AdminTicketsPage() {
 
       {/* Tickets Table Area */}
       <div className="glass-card" style={{ overflow: "hidden" }}>
-        <div style={{ padding: "1.5rem", display: "flex", gap: "1rem", borderBottom: "1px solid var(--color-neutral-200)", background: "#fafafa" }}>
+        <div style={{ padding: "1.5rem", display: "flex", gap: "1rem", borderBottom: "1px solid rgba(0,212,255,0.1)", background: "#fafafa" }}>
           <div style={{ position: "relative", flex: 1, maxWidth: "400px" }}>
             <Search size={18} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-neutral-400)" }} />
             <input 
@@ -56,13 +56,13 @@ export default function AdminTicketsPage() {
               style={{ width: "100%", padding: "0.625rem 1rem 0.625rem 2.75rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", outline: "none", fontSize: "0.875rem" }}
             />
           </div>
-          <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.625rem 1rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", background: "white", color: "var(--color-primary-900)", fontSize: "0.875rem", fontWeight: 500, cursor: "pointer" }}>
+          <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.625rem 1rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", background: "rgba(10,22,40,0.8)", color: "white", fontSize: "0.875rem", fontWeight: 500, cursor: "pointer" }}>
             <Filter size={16} /> Filter
           </button>
         </div>
         
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead style={{ background: "rgba(240, 244, 248, 0.5)", borderBottom: "1px solid var(--color-neutral-200)" }}>
+          <thead style={{ background: "rgba(240, 244, 248, 0.5)", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
             <tr>
               <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Ticket ID / Subject</th>
               <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Client</th>
@@ -76,10 +76,10 @@ export default function AdminTicketsPage() {
             {MOCK_TICKETS.map(ticket => {
               const statusStyle = getStatusColor(ticket.status);
               return (
-                <tr key={ticket.id} style={{ borderBottom: "1px solid var(--color-neutral-100)", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "#fafafa"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <tr key={ticket.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.05)", transition: "background 0.2s" }}>
                   <td style={{ padding: "1rem 1.5rem" }}>
                     <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", fontWeight: 600 }}>{ticket.id}</div>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--color-primary-900)" }}>{ticket.subject}</div>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "white" }}>{ticket.subject}</div>
                   </td>
                   <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "var(--color-primary-800)", fontWeight: 500 }}>{ticket.client}</td>
                   <td style={{ padding: "1rem 1.5rem" }}>

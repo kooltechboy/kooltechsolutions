@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Mail, Phone, MapPin, Twitter, Linkedin, Github, Globe } from "@/components/shared/SocialIcons";
 
@@ -61,9 +63,9 @@ export default function Footer() {
               Enterprise-grade IT Managed Services for the Dominican Republic, USA, Canada, and the Caribbean. Technology that works as hard as you do.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <ContactItem icon={Phone} text="+1 (809) 555-0100" />
-              <ContactItem icon={Mail} text="hello@kooltech.solutions" />
-              <ContactItem icon={MapPin} text="Santo Domingo, Dominican Republic" />
+              <ContactItem icon={Phone} text="+1 (829) 720-1611" />
+              <ContactItem icon={Mail} text="danieljwilliams@kooltechsolutions.com" />
+              <ContactItem icon={MapPin} text="Santiago, Dominican Republic" />
             </div>
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
               {[Twitter, Linkedin, Github, Globe].map((Icon, i) => (

@@ -25,10 +25,10 @@ export default function AILogsPage() {
     <div style={{ display: "flex", height: "calc(100vh - 64px)", background: "#f8fafc" }}>
       
       {/* Left Sidebar: Sessions List */}
-      <div style={{ width: "380px", background: "white", borderRight: "1px solid var(--color-neutral-200)", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--color-neutral-200)" }}>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--color-primary-900)", fontFamily: "Syne, sans-serif" }}>AI Agent Logs</h1>
-          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem", marginTop: "0.25rem", marginBottom: "1.25rem" }}>Monitor Kira's conversations with leads.</p>
+      <div style={{ width: "380px", background: "rgba(10,22,40,0.8)", borderRight: "1px solid var(--color-neutral-200)", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "white", fontFamily: "Syne, sans-serif" }}>AI Agent Logs</h1>
+          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem", marginTop: "0.25rem", marginBottom: "1.25rem" }}>Monitor Kira&apos;s conversations with leads.</p>
           
           <div style={{ position: "relative" }}>
             <Search size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-neutral-400)" }} />
@@ -47,7 +47,7 @@ export default function AILogsPage() {
               onClick={() => setActiveSession(session)}
               style={{ 
                 padding: "1.25rem", 
-                borderBottom: "1px solid var(--color-neutral-100)", 
+                borderBottom: "1px solid rgba(0,212,255,0.05)", 
                 cursor: "pointer",
                 background: activeSession.id === session.id ? "rgba(0,212,255,0.05)" : "transparent",
                 borderLeft: activeSession.id === session.id ? "3px solid var(--color-accent-500)" : "3px solid transparent",
@@ -55,14 +55,14 @@ export default function AILogsPage() {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-                <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--color-primary-900)" }}>Session {session.id}</span>
+                <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "white" }}>Session {session.id}</span>
                 <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", display: "flex", alignItems: "center", gap: "0.25rem" }}><Clock size={12}/> {session.date}</span>
               </div>
-              <div style={{ fontSize: "0.8125rem", color: "var(--color-neutral-600)", lineHeight: 1.4, marginBottom: "0.75rem" }}>
+              <div style={{ fontSize: "0.8125rem", color: "var(--color-neutral-400)", lineHeight: 1.4, marginBottom: "0.75rem" }}>
                 {session.summary}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "0.7rem", color: "var(--color-neutral-500)", background: "var(--color-neutral-100)", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
+                <span style={{ fontSize: "0.7rem", color: "var(--color-neutral-500)", background: "rgba(0,212,255,0.1)", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
                   {session.messageCount} messages
                 </span>
                 {session.status === 'resolved' && <span style={{ color: "#10b981", display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", fontWeight: 600 }}><CheckCircle2 size={12} /> Resolved</span>}
@@ -75,13 +75,13 @@ export default function AILogsPage() {
 
       {/* Right Content: Conversation Viewer */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--color-neutral-200)", background: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(0,212,255,0.1)", background: "rgba(10,22,40,0.8)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--color-primary-900)" }}>Transcript: {activeSession.id}</h2>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "white" }}>Transcript: {activeSession.id}</h2>
             <div style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>Recorded {activeSession.date}</div>
           </div>
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", background: "white", color: "var(--color-primary-900)", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}>Export Log</button>
+            <button style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", background: "rgba(10,22,40,0.8)", color: "white", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}>Export Log</button>
             <button className="btn-primary" style={{ padding: "0.5rem 1rem", fontSize: "0.875rem" }}>Takeover Chat</button>
           </div>
         </div>

@@ -19,7 +19,7 @@ export default function CRMPage() {
     <div style={{ padding: "2rem", maxWidth: "1600px", margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <div>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--color-primary-900)", fontFamily: "Syne, sans-serif" }}>CRM Pipeline</h1>
+          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "white", fontFamily: "Syne, sans-serif" }}>CRM Pipeline</h1>
           <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>Track leads, deals, and revenue velocity.</p>
         </div>
         <button className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -41,7 +41,7 @@ export default function CRMPage() {
             </div>
             <div>
               <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{m.label}</div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--color-primary-900)" }}>{m.value}</div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "white" }}>{m.value}</div>
             </div>
           </div>
         ))}
@@ -54,7 +54,7 @@ export default function CRMPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 0.5rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--color-primary-800)" }}>{stage}</span>
-                <span style={{ background: "var(--color-neutral-200)", color: "var(--color-neutral-600)", padding: "0.125rem 0.5rem", borderRadius: "999px", fontSize: "0.7rem", fontWeight: 600 }}>
+                <span style={{ background: "var(--color-neutral-200)", color: "var(--color-neutral-400)", padding: "0.125rem 0.5rem", borderRadius: "999px", fontSize: "0.7rem", fontWeight: 600 }}>
                   {MOCK_DEALS.filter(d => d.stage === stage).length}
                 </span>
               </div>
@@ -64,7 +64,7 @@ export default function CRMPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               {MOCK_DEALS.filter(d => d.stage === stage).map(deal => (
                 <div key={deal.id} className="glass-card" style={{ padding: "1.25rem", cursor: "grab", borderLeft: "3px solid var(--color-accent-500)" }}>
-                  <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--color-primary-900)", marginBottom: "0.25rem" }}>{deal.title}</div>
+                  <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "white", marginBottom: "0.25rem" }}>{deal.title}</div>
                   <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)", marginBottom: "1rem" }}>{deal.company}</div>
                   
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--color-neutral-100)", paddingTop: "0.75rem" }}>
@@ -77,7 +77,7 @@ export default function CRMPage() {
               ))}
               
               {/* Empty Drop Zone */}
-              <button style={{ width: "100%", padding: "1rem", border: "2px dashed var(--color-neutral-200)", borderRadius: "12px", background: "transparent", color: "var(--color-neutral-400)", cursor: "pointer", display: "flex", justifyContent: "center", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.borderColor = "var(--color-accent-400)"} onMouseLeave={e => e.currentTarget.style.borderColor = "var(--color-neutral-200)"}>
+              <button style={{ width: "100%", padding: "1rem", border: "2px dashed var(--color-neutral-200)", borderRadius: "12px", background: "transparent", color: "var(--color-neutral-400)", cursor: "pointer", display: "flex", justifyContent: "center", transition: "all 0.2s" }}>
                 <Plus size={16} />
               </button>
             </div>
