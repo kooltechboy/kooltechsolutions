@@ -1,137 +1,134 @@
-import type { Metadata } from "next";
-import { Bot, MessageCircle, TrendingUp, Users, CheckCircle, BarChart3 } from "lucide-react";
-
-export const metadata: Metadata = { title: "Admin — AI Workforce" };
+"use client";
+import React, { useState, useEffect } from "react";
+import { Bot, Activity, MessageSquare, Zap, Shield, Loader2, Brain, CheckCircle, Clock } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 const agents = [
-  { name: "Kira", role: "Customer Service", emoji: "👋", color: "#00D4FF", chats: 847, resolved: 791, leads: 23, satisfaction: 4.8 },
-  { name: "Max", role: "Sales & Qualification", emoji: "💼", color: "#00E676", chats: 312, resolved: 285, leads: 67, satisfaction: 4.9 },
-  { name: "Nova", role: "Technical Support", emoji: "🔧", color: "#4B84C8", chats: 524, resolved: 498, leads: 5, satisfaction: 4.7 },
-  { name: "Dexter", role: "Help Desk", emoji: "🖥️", color: "#A855F7", chats: 933, resolved: 901, leads: 2, satisfaction: 4.6 },
-  { name: "Aria", role: "Appointment Setter", emoji: "📅", color: "#FFB300", chats: 187, resolved: 175, leads: 41, satisfaction: 4.9 },
-  { name: "Cipher", role: "Cybersecurity", emoji: "🔐", color: "#FF4444", chats: 142, resolved: 138, leads: 8, satisfaction: 4.8 },
+  { id: 'kira', name: 'Kira', role: 'Support Agent', icon: MessageSquare, color: '#00D4FF', desc: 'Handles level 1 technical support and ticket triaging.' },
+  { id: 'max', name: 'Max', role: 'System Optimizer', icon: Zap, color: '#FFB300', desc: 'Monitors infrastructure health and automates patches.' },
+  { id: 'nova', name: 'Nova', role: 'Security Analyst', icon: Shield, color: '#A855F7', desc: 'Detects threats and manages compliance drift.' },
 ];
 
-const recentConversations = [
-  { agent: "Kira", visitor: "Anonymous Visitor", summary: "Inquired about cybersecurity services, expressed interest in Gold plan", sentiment: "positive", time: "3 min ago", captured: true },
-  { agent: "Max", visitor: "Carlos R. — TechStart", summary: "Qualified lead — 40 employees, budget $3K/mo, timeline 30 days", sentiment: "positive", time: "12 min ago", captured: true },
-  { agent: "Nova", visitor: "John S. — Acme Corp", summary: "VPN troubleshooting — ticket created TKT-1041", sentiment: "neutral", time: "28 min ago", captured: false },
-  { agent: "Dexter", visitor: "Maria G. — FinGroup", summary: "Password reset request completed successfully", sentiment: "positive", time: "45 min ago", captured: false },
-];
+export default function AIWorkforceDashboard() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-const sentimentColor = { positive: "#00E676", neutral: "#FFB300", negative: "#FF4444" };
+  useEffect(() => {
+    fetchLogs();
+  }, []);
 
-export default function AIWorkforcePage() {
-  const totalChats = agents.reduce((s, a) => s + a.chats, 0);
-  const totalLeads = agents.reduce((s, a) => s + a.leads, 0);
-  const avgSatisfaction = (agents.reduce((s, a) => s + a.satisfaction, 0) / agents.length).toFixed(1);
+  async function fetchLogs() {
+    const { data, error } = await supabase
+      .from('agent_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (!error && data) setLogs(data);
+    setLoading(false);
+  }
+
+  if (loading) {
+    return (
+      <div style={{ height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
       <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>
-          AI <span className="gradient-text">Workforce</span>
-        </h1>
-        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>Monitor and configure your 6 AI agents.</p>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "white", fontFamily: "Syne, sans-serif" }}>AI Workforce Console</h1>
+        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Manage and monitor your autonomous digital employees.</p>
       </div>
 
-      {/* Summary KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        {[
-          { icon: MessageCircle, label: "Total Conversations", value: totalChats.toLocaleString(), color: "#00D4FF" },
-          { icon: Users, label: "Leads Captured", value: totalLeads.toString(), color: "#00E676" },
-          { icon: CheckCircle, label: "Avg Satisfaction", value: `${avgSatisfaction}/5`, color: "#FFB300" },
-          { icon: TrendingUp, label: "Conversion Rate", value: "18.4%", color: "#A855F7" },
-        ].map(kpi => (
-          <div key={kpi.label} className="kpi-card">
-            <div style={{ width: 38, height: 38, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.75rem" }}>
-              <kpi.icon size={18} color={kpi.color} />
-            </div>
-            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "1.625rem", fontWeight: 800, color: "white" }}>{kpi.value}</div>
-            <div style={{ color: "var(--color-neutral-500)", fontSize: "0.78rem" }}>{kpi.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Agent Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
+      {/* Agent Status Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem", marginBottom: "2.5rem" }}>
         {agents.map(agent => (
-          <div key={agent.name} className="glass-card" style={{ borderRadius: "14px", padding: "1.25rem", borderLeft: `3px solid ${agent.color}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.875rem", marginBottom: "1rem" }}>
-              <div style={{ width: 44, height: 44, borderRadius: "50%", background: `${agent.color}15`, border: `2px solid ${agent.color}35`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>
-                {agent.emoji}
+          <div key={agent.id} className="glass-card" style={{ padding: "1.5rem", borderTop: `4px solid ${agent.color}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+              <div style={{ width: 48, height: 48, borderRadius: "12px", background: `${agent.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <agent.icon size={24} color={agent.color} />
+              </div>
+              <span className="badge badge-success" style={{ fontSize: "0.7rem", padding: "0.2rem 0.6rem" }}>Online</span>
+            </div>
+            <h2 style={{ color: "white", fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.25rem" }}>{agent.name}</h2>
+            <div style={{ color: agent.color, fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem" }}>{agent.role}</div>
+            <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.5, marginBottom: "1.25rem" }}>{agent.desc}</p>
+            
+            <div style={{ display: "flex", gap: "1rem", paddingTop: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+              <div>
+                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Tasks (24h)</div>
+                <div style={{ color: "white", fontWeight: 700 }}>{Math.floor(Math.random() * 50 + 10)}</div>
               </div>
               <div>
-                <div style={{ color: "white", fontWeight: 700 }}>{agent.name}</div>
-                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{agent.role}</div>
-              </div>
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                <span className="status-dot status-online" style={{ width: 7, height: 7 }} />
-                <span style={{ color: "var(--color-success)", fontSize: "0.7rem" }}>Online</span>
+                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Efficiency</div>
+                <div style={{ color: "white", fontWeight: 700 }}>98.2%</div>
               </div>
             </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.625rem" }}>
-              {[
-                { label: "Chats", val: agent.chats.toLocaleString() },
-                { label: "Leads", val: agent.leads },
-                { label: "Rating", val: `${agent.satisfaction}★` },
-              ].map(stat => (
-                <div key={stat.label} style={{ textAlign: "center", padding: "0.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px" }}>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: agent.color, fontSize: "1rem" }}>{stat.val}</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>{stat.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Resolution bar */}
-            <div style={{ marginTop: "0.875rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                <span style={{ color: "var(--color-neutral-500)", fontSize: "0.72rem" }}>Resolution Rate</span>
-                <span style={{ color: agent.color, fontSize: "0.72rem", fontWeight: 600 }}>
-                  {Math.round((agent.resolved / agent.chats) * 100)}%
-                </span>
-              </div>
-              <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: "3px", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${(agent.resolved / agent.chats) * 100}%`, background: agent.color, borderRadius: "3px" }} />
-              </div>
-            </div>
-
-            <button style={{
-              width: "100%", marginTop: "1rem", padding: "0.5rem",
-              background: `${agent.color}12`, border: `1px solid ${agent.color}25`,
-              borderRadius: "8px", color: agent.color, fontSize: "0.8rem",
-              cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontWeight: 600,
-            }}>
-              Configure Agent
-            </button>
           </div>
         ))}
       </div>
 
-      {/* Recent Conversations */}
-      <div className="kpi-card">
-        <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1rem", marginBottom: "1.25rem" }}>Recent Conversations</h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {recentConversations.map((conv, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "1rem", padding: "1rem", background: "rgba(255,255,255,0.03)", borderRadius: "10px", border: "1px solid rgba(75,132,200,0.08)" }}>
-              <div style={{ flexShrink: 0 }}>
-                <Bot size={18} color="var(--color-accent-500)" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.3rem" }}>
-                  <span style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>{conv.agent}</span>
-                  <span style={{ color: "var(--color-neutral-500)", fontSize: "0.78rem" }}>→ {conv.visitor}</span>
-                  {conv.captured && <span className="badge badge-success" style={{ fontSize: "0.62rem", padding: "0.1rem 0.4rem" }}>Lead Captured</span>}
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "2rem" }}>
+        {/* Live Activity Stream */}
+        <div className="glass-card">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+            <Activity size={20} color="var(--color-accent-500)" />
+            <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700 }}>Autonomous Activity Stream</h3>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {logs.length === 0 ? (
+              <p style={{ color: "var(--color-neutral-500)", textAlign: "center", padding: "2rem" }}>Waiting for agent telemetry...</p>
+            ) : logs.map(log => {
+              const agentName = log.agent_name || "Kira";
+              const agent = agents.find(a => a.name === agentName) || agents[0];
+              const roleLabel = log.role === "user" ? "User Query" : "Agent Response";
+              return (
+                <div key={log.id} style={{ display: "flex", gap: "1rem", padding: "1rem", background: "rgba(255,255,255,0.02)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "8px", background: `${agent.color}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <agent.icon size={16} color={agent.color} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                      <span style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>{agentName} <span style={{ color: "var(--color-neutral-500)", fontWeight: 400 }}>· {roleLabel}</span></span>
+                      <span style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>{new Date(log.created_at).toLocaleTimeString()}</span>
+                    </div>
+                    <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", margin: 0, whiteSpace: "pre-wrap" }}>{log.content?.slice(0, 200)}{log.content?.length > 200 ? "..." : ""}</p>
+                  </div>
                 </div>
-                <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.5 }}>{conv.summary}</p>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Intelligence Settings */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div className="glass-card">
+            <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700, marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Brain size={18} color="var(--color-accent-500)" />
+              Collective Intelligence
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.1)" }}>
+                <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.25rem" }}>GPT-4o Integration</div>
+                <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>Powering complex reasoning and triage.</div>
               </div>
-              <div style={{ flexShrink: 0, textAlign: "right" }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: sentimentColor[conv.sentiment as keyof typeof sentimentColor], margin: "0 auto 0.35rem" }} />
-                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.72rem" }}>{conv.time}</div>
+              <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.25rem" }}>Knowledge Base Sync</div>
+                <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>Last synced 2h ago (842 documents).</div>
               </div>
             </div>
-          ))}
+            <button className="btn-primary" style={{ width: "100%", marginTop: "1.5rem" }}>Update Knowledge Base</button>
+          </div>
+
+          <div className="glass-card" style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.1), rgba(168,85,247,0.1))" }}>
+            <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700, marginBottom: "0.5rem" }}>AI Uptime</h3>
+            <div style={{ fontSize: "2rem", fontWeight: 800, color: "white" }}>100%</div>
+            <p style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>No service interruptions in the last 90 days.</p>
+          </div>
         </div>
       </div>
     </div>

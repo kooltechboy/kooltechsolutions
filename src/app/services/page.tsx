@@ -58,8 +58,8 @@ export default function ServicesPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/contact" style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: svc.color, textDecoration: "none", fontSize: "0.875rem", fontWeight: 600 }}>
-                    Get This Service <ArrowRight size={14} />
+                  <Link href={`/services/${svc.slug}`} style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: svc.color, textDecoration: "none", fontSize: "0.875rem", fontWeight: 600 }}>
+                    Learn More <ArrowRight size={14} />
                   </Link>
                 </div>
               ))}

@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     }
 
     // Call Google Gemini using Vercel AI SDK
-    const result = streamText({
-      model: google('gemini-1.5-flash'),
+    const result = await streamText({
+      model: google('gemini-1.5-flash') as any,
       messages,
       system: "You are Kira, a professional AI Assistant for Kool Tech Solutions (an MSP serving the Caribbean, USA, and Canada). Provide concise, helpful IT and MSP related responses. Mention our services: Cybersecurity, Cloud, Network Management, 24/7 Monitoring, Help Desk, and Compliance.",
       async onFinish({ text }) {

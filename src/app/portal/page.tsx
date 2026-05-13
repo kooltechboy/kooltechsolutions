@@ -1,35 +1,74 @@
-import type { Metadata } from "next";
-import { Ticket, DollarSign, Server, Activity, ArrowRight, CheckCircle, AlertTriangle, Clock } from "lucide-react";
+"use client";
+import React, { useEffect, useState } from "react";
+import { Ticket, DollarSign, Server, Activity, ArrowRight, CheckCircle, AlertTriangle, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
-
-export const metadata: Metadata = { title: "Client Portal — Dashboard" };
-
-const kpis = [
-  { icon: Ticket, label: "Open Tickets", value: "3", color: "#FFB300", sub: "1 urgent" },
-  { icon: Server, label: "Active Services", value: "5", color: "#00D4FF", sub: "All operational" },
-  { icon: DollarSign, label: "Outstanding", value: "$0", color: "#00E676", sub: "No overdue invoices" },
-  { icon: Activity, label: "System Uptime", value: "99.98%", color: "#A855F7", sub: "Last 30 days" },
-];
-
-const tickets = [
-  { id: "TKT-1041", subject: "VPN connection dropping intermittently", status: "In Progress", priority: "High", updated: "2h ago" },
-  { id: "TKT-1039", subject: "New employee workstation setup", status: "Open", priority: "Medium", updated: "1d ago" },
-  { id: "TKT-1035", subject: "Email sync issue on mobile device", status: "Resolved", priority: "Low", updated: "3d ago" },
-];
+import { createClient } from "@/utils/supabase/client";
 
 const statusMap: Record<string, { color: string; icon: typeof CheckCircle }> = {
-  "In Progress": { color: "#FFB300", icon: Clock },
-  "Open": { color: "#00D4FF", icon: AlertTriangle },
-  "Resolved": { color: "#00E676", icon: CheckCircle },
+  "in_progress": { color: "#FFB300", icon: Clock },
+  "open": { color: "#00D4FF", icon: AlertTriangle },
+  "resolved": { color: "#00E676", icon: CheckCircle },
+  "closed": { color: "var(--color-neutral-500)", icon: CheckCircle },
 };
 
 export default function PortalDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const [stats, setStats] = useState({ openTickets: 0, activeServices: 0, outstanding: 0, uptime: "99.99%" });
+  const [recentTickets, setRecentTickets] = useState<any[]>([]);
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  async function fetchDashboardData() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. Fetch Profile
+    const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    setProfile(profileData);
+
+    // 2. Fetch Tickets
+    const { data: ticketsData } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (ticketsData) {
+      setRecentTickets(ticketsData.slice(0, 3));
+      setStats(prev => ({
+        ...prev,
+        openTickets: ticketsData.filter(t => t.status !== 'closed' && t.status !== 'resolved').length
+      }));
+    }
+
+    setLoading(false);
+  }
+
+  if (loading) {
+    return (
+      <div style={{ height: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
+      </div>
+    );
+  }
+
+  const kpis = [
+    { icon: Ticket, label: "Open Tickets", value: stats.openTickets.toString(), color: "#FFB300", sub: "Needs attention" },
+    { icon: Server, label: "Active Services", value: "Managed IT", color: "#00D4FF", sub: "Service: Pro" },
+    { icon: DollarSign, label: "Outstanding", value: `$${stats.outstanding}`, color: "#00E676", sub: "Current balance" },
+    { icon: Activity, label: "System Uptime", value: stats.uptime, color: "#A855F7", sub: "Last 30 days" },
+  ];
+
   return (
     <div>
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.25rem" }}>
-          Welcome back, <span className="gradient-text">Acme Corp</span> 👋
+          Welcome back, <span className="gradient-text">{profile?.company_name || profile?.first_name || 'Valued Client'}</span> 👋
         </h1>
         <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Here&apos;s a snapshot of your IT environment today.</p>
       </div>
@@ -60,19 +99,21 @@ export default function PortalDashboard() {
             </Link>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-            {tickets.map(t => {
-              const st = statusMap[t.status];
+            {recentTickets.length === 0 ? (
+              <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", textAlign: "center", padding: "1rem" }}>No recent tickets found.</p>
+            ) : recentTickets.map(t => {
+              const st = statusMap[t.status] || statusMap['open'];
               return (
-                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "0.875rem", background: "rgba(255,255,255,0.03)", borderRadius: "10px", border: "1px solid rgba(75,132,200,0.1)" }}>
+                <Link key={t.id} href={`/portal/tickets/${t.id}`} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "1rem", padding: "0.875rem", background: "rgba(255,255,255,0.03)", borderRadius: "10px", border: "1px solid rgba(75,132,200,0.1)", transition: "border-color 0.2s" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem", marginBottom: "0.2rem" }}>{t.id}</div>
+                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem", marginBottom: "0.2rem" }}>{t.id.slice(0,8)}</div>
                     <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.subject}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexShrink: 0 }}>
                     <st.icon size={13} color={st.color} />
-                    <span style={{ color: st.color, fontSize: "0.75rem", fontWeight: 600 }}>{t.status}</span>
+                    <span style={{ color: st.color, fontSize: "0.75rem", fontWeight: 600, textTransform: "capitalize" }}>{t.status.replace('_', ' ')}</span>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -125,3 +166,4 @@ export default function PortalDashboard() {
     </div>
   );
 }
+

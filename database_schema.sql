@@ -68,7 +68,43 @@ CREATE TABLE public.agent_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 6. Client Services (Active Subscriptions)
+CREATE TABLE public.client_services (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  service_name TEXT NOT NULL,
+  service_sku TEXT,
+  billing_cycle TEXT CHECK (billing_cycle IN ('monthly', 'yearly')),
+  price DECIMAL(10, 2),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'pending', 'suspended', 'cancelled')),
+  next_billing_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Basic RLS for services
+ALTER TABLE public.client_services ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Clients view own services" ON public.client_services FOR SELECT USING (auth.uid() = client_id);
+
 -- Basic RLS for tickets (Clients can see their own, Admins see all)
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Clients view own tickets" ON public.tickets FOR SELECT USING (auth.uid() = client_id);
 -- Note: Admin policies would require a helper function to check if the user's role in profiles is 'admin'.
+
+-- 7. Invoices
+CREATE TABLE public.invoices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  invoice_number TEXT NOT NULL,
+  amount DECIMAL(10, 2) NOT NULL,
+  status TEXT DEFAULT 'outstanding' CHECK (status IN ('draft', 'outstanding', 'paid', 'overdue', 'void')),
+  issued_date DATE DEFAULT CURRENT_DATE,
+  due_date DATE,
+  paid_date DATE,
+  line_items JSONB, -- Array of {description, quantity, unit_price, total}
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Clients view own invoices" ON public.invoices FOR SELECT USING (auth.uid() = client_id);
+

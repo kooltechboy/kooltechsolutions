@@ -1,12 +1,7 @@
-import React from 'react';
-import { Search, Filter, MoreVertical, CheckCircle2, Clock, AlertCircle, MessageSquare } from 'lucide-react';
-
-const MOCK_TICKETS = [
-  { id: 'TKT-1042', subject: 'Exchange Server Migration Issue', client: 'Oceania Imports', status: 'critical', updated: '10 mins ago', assignee: 'Kira' },
-  { id: 'TKT-1041', subject: 'New Employee Onboarding Setup', client: 'Nova Therapeutics', status: 'open', updated: '2 hours ago', assignee: 'Unassigned' },
-  { id: 'TKT-1040', subject: 'Firewall Rule Adjustment', client: 'Apex Financial', status: 'in_progress', updated: '4 hours ago', assignee: 'Max' },
-  { id: 'TKT-1039', subject: 'VPN Access Denied', client: 'Stellar Logistics', status: 'resolved', updated: '1 day ago', assignee: 'Kira' },
-];
+"use client";
+import React, { useEffect, useState } from 'react';
+import { Search, Filter, CheckCircle2, Clock, AlertCircle, MessageSquare, Loader2 } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 const getStatusColor = (status: string) => {
   switch(status) {
@@ -14,11 +9,40 @@ const getStatusColor = (status: string) => {
     case 'open': return { bg: 'rgba(59,130,246,0.1)', text: '#3b82f6', icon: <MessageSquare size={14} /> };
     case 'in_progress': return { bg: 'rgba(245,158,11,0.1)', text: '#f59e0b', icon: <Clock size={14} /> };
     case 'resolved': return { bg: 'rgba(16,185,129,0.1)', text: '#10b981', icon: <CheckCircle2 size={14} /> };
+    case 'closed': return { bg: 'rgba(107,114,128,0.1)', text: '#6b7280', icon: <CheckCircle2 size={14} /> };
     default: return { bg: 'rgba(107,114,128,0.1)', text: '#6b7280', icon: <MessageSquare size={14} /> };
   }
 };
 
 export default function AdminTicketsPage() {
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  async function fetchTickets() {
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*, client:client_id(first_name, last_name, company_name), assignee:assigned_to(first_name, last_name)')
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setTickets(data);
+    }
+    setLoading(false);
+  }
+
+  if (loading) {
+    return (
+      <div style={{ height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
@@ -32,10 +56,10 @@ export default function AdminTicketsPage() {
       {/* Metrics Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
         {[
-          { label: "Open Tickets", value: "24", trend: "+3 today" },
-          { label: "Avg Resolution Time", value: "1.4 hrs", trend: "-12% this week" },
-          { label: "Critical Issues", value: "1", trend: "Needs immediate action", alert: true },
-          { label: "SLA Compliance", value: "99.2%", trend: "Target: 99.0%" }
+          { label: "Open Tickets", value: tickets.filter(t => t.status === 'open').length.toString(), trend: "Real-time" },
+          { label: "Critical Issues", value: tickets.filter(t => t.priority === 'critical' && t.status !== 'closed').length.toString(), trend: "Needs immediate action", alert: tickets.some(t => t.priority === 'critical' && t.status !== 'closed') },
+          { label: "Assigned to Kira", value: tickets.filter(t => t.assignee?.first_name === 'Kira').length.toString(), trend: "Agent workload" },
+          { label: "Total Tickets", value: tickets.length.toString(), trend: "Lifetime count" }
         ].map((metric, i) => (
           <div key={i} className="glass-card" style={{ padding: "1.5rem", borderLeft: metric.alert ? "4px solid #ef4444" : "4px solid var(--color-accent-500)" }}>
             <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{metric.label}</div>
@@ -47,59 +71,83 @@ export default function AdminTicketsPage() {
 
       {/* Tickets Table Area */}
       <div className="glass-card" style={{ overflow: "hidden" }}>
-        <div style={{ padding: "1.5rem", display: "flex", gap: "1rem", borderBottom: "1px solid rgba(0,212,255,0.1)", background: "#fafafa" }}>
+        <div style={{ padding: "1.5rem", display: "flex", gap: "1rem", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
           <div style={{ position: "relative", flex: 1, maxWidth: "400px" }}>
             <Search size={18} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-neutral-400)" }} />
             <input 
               type="text" 
-              placeholder="Search tickets by ID, subject, or client..." 
-              style={{ width: "100%", padding: "0.625rem 1rem 0.625rem 2.75rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", outline: "none", fontSize: "0.875rem" }}
+              placeholder="Search tickets..." 
+              style={{ width: "100%", padding: "0.625rem 1rem 0.625rem 2.75rem", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "white", outline: "none", fontSize: "0.875rem" }}
             />
           </div>
-          <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.625rem 1rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", background: "rgba(10,22,40,0.8)", color: "white", fontSize: "0.875rem", fontWeight: 500, cursor: "pointer" }}>
-            <Filter size={16} /> Filter
-          </button>
         </div>
         
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead style={{ background: "rgba(240, 244, 248, 0.5)", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
+          <thead style={{ background: "rgba(0, 212, 255, 0.05)", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
             <tr>
-              <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Ticket ID / Subject</th>
+              <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Subject / ID</th>
               <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Client</th>
               <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Status</th>
+              <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Priority</th>
               <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Assignee</th>
-              <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Last Updated</th>
+              <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-neutral-500)", textTransform: "uppercase" }}>Created</th>
               <th style={{ padding: "1rem 1.5rem" }}></th>
             </tr>
           </thead>
           <tbody>
-            {MOCK_TICKETS.map(ticket => {
+            {tickets.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ padding: "4rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
+                  No support tickets found.
+                </td>
+              </tr>
+            ) : tickets.map(ticket => {
               const statusStyle = getStatusColor(ticket.status);
               return (
-                <tr key={ticket.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.05)", transition: "background 0.2s" }}>
+                <tr key={ticket.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", transition: "background 0.2s", cursor: "pointer" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.03)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
                   <td style={{ padding: "1rem 1.5rem" }}>
-                    <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", fontWeight: 600 }}>{ticket.id}</div>
                     <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "white" }}>{ticket.subject}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", fontWeight: 500, fontFamily: "JetBrains Mono, monospace" }}>{ticket.id.slice(0, 8)}...</div>
                   </td>
-                  <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "var(--color-primary-800)", fontWeight: 500 }}>{ticket.client}</td>
+                  <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "var(--color-neutral-300)", fontWeight: 500 }}>
+                    {ticket.client?.company_name || `${ticket.client?.first_name} ${ticket.client?.last_name}` || 'Unknown'}
+                  </td>
                   <td style={{ padding: "1rem 1.5rem" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.35rem 0.75rem", borderRadius: "999px", background: statusStyle.bg, color: statusStyle.text, fontSize: "0.75rem", fontWeight: 600, textTransform: "capitalize" }}>
                       {statusStyle.icon} {ticket.status.replace('_', ' ')}
                     </span>
                   </td>
+                  <td style={{ padding: "1rem 1.5rem" }}>
+                    <span style={{ 
+                      fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase",
+                      color: ticket.priority === 'critical' ? '#ef4444' : ticket.priority === 'high' ? '#f59e0b' : 'var(--color-neutral-400)'
+                    }}>
+                      {ticket.priority}
+                    </span>
+                  </td>
                   <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "var(--color-neutral-500)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      {ticket.assignee !== 'Unassigned' && (
-                        <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--color-accent-500)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: "bold" }}>
-                          {ticket.assignee.charAt(0)}
-                        </div>
-                      )}
-                      {ticket.assignee}
+                      {ticket.assignee ? (
+                        <>
+                          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--color-accent-500)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: "bold" }}>
+                            {ticket.assignee.first_name?.charAt(0)}
+                          </div>
+                          {ticket.assignee.first_name}
+                        </>
+                      ) : 'Unassigned'}
                     </div>
                   </td>
-                  <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "var(--color-neutral-400)" }}>{ticket.updated}</td>
+                  <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "var(--color-neutral-400)" }}>{new Date(ticket.created_at).toLocaleDateString()}</td>
                   <td style={{ padding: "1rem 1.5rem", textAlign: "right" }}>
-                    <button style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer" }}><MoreVertical size={16} /></button>
+                    <a
+                      href={`/admin/tickets/${ticket.id}`}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.375rem 0.75rem", borderRadius: "6px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", color: "var(--color-accent-500)", fontSize: "0.75rem", fontWeight: 600, textDecoration: "none" }}
+                    >
+                      View
+                    </a>
                   </td>
                 </tr>
               )
@@ -110,3 +158,4 @@ export default function AdminTicketsPage() {
     </div>
   );
 }
+

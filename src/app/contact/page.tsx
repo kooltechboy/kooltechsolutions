@@ -5,15 +5,51 @@ import Footer from "@/components/layout/Footer";
 import AIChatWidget from "@/components/ai/AIChatWidget";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Calendar } from "lucide-react";
 
-const services = ["Cybersecurity", "Cloud Services", "Network Management", "24/7 Monitoring", "Help Desk", "Compliance", "Other"];
+const services = [
+  "Managed IT (Essential)",
+  "Managed IT (Advanced MDR)",
+  "Managed IT (AI SOC)",
+  "Help Desk as a Service",
+  "NOC as a Service",
+  "SOC as a Service",
+  "Cybersecurity",
+  "Managed Email Security",
+  "Endpoint Detection & Response",
+  "Cloud Services",
+  "Business Continuity & DR",
+  "Network Management",
+  "Compliance as a Service",
+  "Dark Web Monitoring",
+  "AI as a Service (Kira/Max/Nova)",
+  "Microsoft 365 / Google Workspace",
+  "Enterprise VoIP / UCaaS",
+  "Custom Web & Mobile Development",
+  "Other / General Inquiry",
+];
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", service: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -121,8 +157,8 @@ export default function ContactPage() {
                       <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Message *</label>
                       <textarea required className="input-field" placeholder="Tell us about your IT challenges and goals..." rows={5} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} style={{ resize: "vertical" }} />
                     </div>
-                    <button type="submit" className="btn-primary" style={{ justifyContent: "center", padding: "1rem" }}>
-                      <Send size={17} /> Send Message
+                    <button type="submit" disabled={loading} className="btn-primary" style={{ justifyContent: "center", padding: "1rem", opacity: loading ? 0.7 : 1 }}>
+                      <Send size={17} /> {loading ? "Sending..." : "Send Message"}
                     </button>
                     <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", textAlign: "center" }}>
                       By submitting, you agree to our Privacy Policy. We never share your data.
