@@ -228,9 +228,12 @@ export default function Navbar() {
       </nav>
 
       <style>{`
-        @media (max-width: 900px) {
-          .desktop-nav { display: none !important; }
-          .mobile-menu-btn { display: flex !important; }
+        .desktop-nav { display: none !important; }
+        .mobile-menu-btn { display: flex !important; }
+
+        @media (min-width: 900px) {
+          .desktop-nav { display: flex !important; }
+          .mobile-menu-btn { display: none !important; }
         }
       `}</style>
     </>

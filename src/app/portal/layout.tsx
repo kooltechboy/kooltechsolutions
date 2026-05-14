@@ -151,15 +151,15 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </div>
 
       <style>{`
-        @media (max-width: 900px) {
-          .portal-sidebar { transform: translateX(-100%); }
-          .portal-sidebar.sidebar-open { transform: translateX(0); }
-          .portal-main { margin-left: 0 !important; }
-          .mobile-hamburger { display: flex !important; }
-          .mobile-menu-close { display: block !important; }
-        }
-        @media (min-width: 901px) {
+        .portal-sidebar { transform: translateX(-100%); }
+        .portal-sidebar.sidebar-open { transform: translateX(0); }
+        .portal-main { margin-left: 0 !important; }
+        .mobile-hamburger { display: flex !important; }
+        .mobile-menu-close { display: block !important; }
+
+        @media (min-width: 900px) {
           .portal-sidebar { transform: translateX(0); }
+          .portal-main { margin-left: 240px !important; }
           .mobile-hamburger { display: none !important; }
           .mobile-menu-close { display: none !important; }
         }

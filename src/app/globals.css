@@ -160,12 +160,21 @@ body {
 
 /* Section base */
 .section {
-  padding: 6rem 0;
+  padding: 4rem 0;
 }
 .container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 6rem 0;
+  }
+  .container {
+    padding: 0 1.5rem;
+  }
 }
 
 /* Dot grid background */
@@ -336,7 +345,3 @@ body {
 }
 
 /* Responsive utilities */
-@media (max-width: 768px) {
-  .section { padding: 4rem 0; }
-  .container { padding: 0 1rem; }
-}

@@ -163,17 +163,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       <style>{`
-        .admin-sidebar { transform: translateX(0); }
-        .admin-main { margin-left: 248px; }
-        .mobile-only { display: none !important; }
-        .desktop-only { display: flex !important; }
+        .admin-sidebar { transform: translateX(-100%); }
+        .admin-sidebar.open { transform: translateX(0); }
+        .admin-main { margin-left: 0 !important; }
+        .mobile-only { display: flex !important; }
+        .desktop-only { display: none !important; }
 
-        @media (max-width: 900px) {
-          .admin-sidebar { transform: translateX(-100%); }
-          .admin-sidebar.open { transform: translateX(0); }
-          .admin-main { margin-left: 0 !important; }
-          .mobile-only { display: flex !important; }
-          .desktop-only { display: none !important; }
+        @media (min-width: 900px) {
+          .admin-sidebar { transform: translateX(0); }
+          .admin-main { margin-left: 248px !important; }
+          .mobile-only { display: none !important; }
+          .desktop-only { display: flex !important; }
         }
         
         .nav-item {
