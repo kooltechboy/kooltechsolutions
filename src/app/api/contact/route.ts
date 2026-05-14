@@ -2,7 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Provide a fallback placeholder to prevent Vercel build crashes if the key isn't added yet
+const resend = new Resend(process.env.RESEND_API_KEY || "placeholder_key_to_bypass_build_error");
 const ADMIN_EMAIL = "danieljwilliams@kooltechsolutions.com";
 
 export async function POST(request: Request) {
