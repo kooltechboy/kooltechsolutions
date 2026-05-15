@@ -76,6 +76,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   const color = getCategoryColor(post.category);
 
+  // Extract headers for Table of Contents
+  const headers = post.content
+    .split('\n')
+    .filter(line => line.startsWith('## '))
+    .map(line => line.replace('## ', '').trim());
+
   // JSON-LD Structured Data for Google Search
   const jsonLd = {
     "@context": "https://schema.org",
@@ -107,129 +113,122 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Navbar />
-      <main style={{ paddingTop: "72px", minHeight: "100vh" }}>
-        
-        {/* Post Header */}
-        <section style={{ padding: "4rem 0", background: "linear-gradient(180deg, rgba(15,32,68,0.5) 0%, transparent 100%)", borderBottom: "1px solid rgba(0,212,255,0.05)" }}>
-          <div className="container" style={{ maxWidth: "800px" }}>
-            <Link href="/blog" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-400)", textDecoration: "none", fontSize: "0.875rem", marginBottom: "2rem" }}>
-              <ArrowLeft size={16} /> Back to Blog
-            </Link>
-            
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-              <span className="badge" style={{ background: `${color}15`, color: color, border: `1px solid ${color}30` }}>
-                {post.category}
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
-                <Clock size={14} /> {post.read_time} read
-              </span>
-            </div>
-
-            <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 4vw, 3rem)", color: "white", lineHeight: 1.2, marginBottom: "1.5rem" }}>
-              {post.title}
-            </h1>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.5rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--color-primary-800)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <User size={20} color="var(--color-neutral-400)" />
-                </div>
-                <div>
-                  <p style={{ color: "white", fontWeight: 600, fontSize: "0.875rem", margin: 0 }}>{post.author_name}</p>
-                  <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", margin: 0 }}>Kool Tech Solutions</p>
-                </div>
-              </div>
-              
-              <div style={{ width: "1px", height: "30px", background: "rgba(255,255,255,0.1)" }} />
-              
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-                <Calendar size={16} /> 
-                {new Date(post.created_at).toLocaleDateString("en-US", { month: 'long', day: 'numeric', year: 'numeric' })}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Post Content */}
-        <section className="container" style={{ maxWidth: "800px", padding: "3rem 0 6rem" }}>
-          {post.image_url && (
-            <div style={{ width: "100%", height: "400px", borderRadius: "16px", marginBottom: "3rem", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={post.image_url} alt={post.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
-          )}
+      <main style={{ paddingTop: "72px", minHeight: "100vh", background: "var(--color-neutral-950)" }}>
+        <section className="container" style={{ maxWidth: "1200px", margin: "4rem auto", padding: "0 2rem" }}>
           
-          <div className="prose prose-invert modern-blog-content" style={{ 
-            maxWidth: "100%", 
-            color: "var(--color-neutral-300)", 
-            lineHeight: "1.8", 
-            fontSize: "1.125rem",
-            fontFamily: "Inter, sans-serif"
-          }}>
-            <style dangerouslySetInnerHTML={{ __html: `
-              .modern-blog-content h2 { color: white; font-family: Syne, sans-serif; font-weight: 800; font-size: 2rem; margin-top: 3.5rem; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
-              .modern-blog-content h3 { color: var(--color-accent-400); font-family: Syne, sans-serif; font-weight: 700; font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; }
-              .modern-blog-content p { margin-bottom: 1.5rem; }
-              .modern-blog-content ul, .modern-blog-content ol { margin-bottom: 2rem; padding-left: 1.5rem; }
-              .modern-blog-content li { margin-bottom: 0.75rem; }
-              .modern-blog-content strong { color: white; font-weight: 700; }
-              .modern-blog-content hr { border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 3rem 0; }
-              .modern-blog-content blockquote { border-left: 4px solid var(--color-accent-400); padding-left: 1.5rem; font-style: italic; color: var(--color-neutral-400); margin: 2.5rem 0; }
-              .ad-slot { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justifyContent: center; color: var(--color-neutral-600); font-size: 0.75rem; margin: 3rem 0; min-height: 250px; }
-            `}} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "4rem" }} className="blog-layout-grid">
             
-            {/* Top Ad Slot */}
-            <div className="ad-slot" id="blog-top-ad">
-              Google AdSense - Top Placement
-            </div>
+            {/* Main Article Column */}
+            <article>
+              <Link href="/blog" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-400)", textDecoration: "none", fontSize: "0.875rem", marginBottom: "2rem" }}>
+                <ArrowLeft size={16} /> Back to Insights
+              </Link>
 
-            <ReactMarkdown>{post.content}</ReactMarkdown>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+                <span className="badge" style={{ background: `${color}15`, color: color, border: `1px solid ${color}30` }}>
+                  {post.category}
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
+                  <Clock size={14} /> {post.read_time} read
+                </span>
+              </div>
 
-            {/* Bottom Ad Slot */}
-            <div className="ad-slot" id="blog-bottom-ad">
-              Google AdSense - Bottom Placement
-            </div>
+              <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2.5rem, 5vw, 3.5rem)", color: "white", lineHeight: 1.1, marginBottom: "2rem", letterSpacing: "-0.02em" }}>
+                {post.title}
+              </h1>
 
-            {/* Social Sharing */}
-            <div style={{ marginTop: "4rem", padding: "2rem", background: "rgba(255,255,255,0.02)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.5rem" }}>
-                <div>
-                  <h4 style={{ color: "white", margin: 0, fontSize: "1rem" }}>Share this article</h4>
-                  <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", margin: "0.25rem 0 0" }}>Help us spread the word across the Caribbean.</p>
-                </div>
-                <div style={{ display: "flex", gap: "0.75rem" }}>
-                  {[
-                    { icon: <Share2 size={18} />, label: "Twitter", color: "#1DA1F2" },
-                    { icon: <Share2 size={18} />, label: "LinkedIn", color: "#0A66C2" },
-                    { icon: <Share2 size={18} />, label: "Facebook", color: "#1877F2" },
-                    { icon: <Mail size={18} />, label: "Email", color: "#EA4335" }
-                  ].map((s, idx) => (
-                    <button key={idx} style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", transition: "0.2s", cursor: "pointer" }}>
-                      {s.icon}
-                    </button>
-                  ))}
+              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", marginBottom: "3rem", paddingBottom: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--color-primary-800)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <User size={22} color="var(--color-neutral-400)" />
+                  </div>
+                  <div>
+                    <p style={{ color: "white", fontWeight: 600, fontSize: "0.9375rem", margin: 0 }}>{post.author_name}</p>
+                    <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", margin: 0 }}>Kool Tech Solutions • {new Date(post.created_at).toLocaleDateString()}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Author Section */}
-            <div style={{ marginTop: "3rem", display: "flex", gap: "1.5rem", padding: "2rem 0", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--color-primary-800)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <User size={32} color="var(--color-neutral-400)" />
+              {post.image_url && (
+                <img src={post.image_url} alt={post.title} style={{ width: "100%", borderRadius: "24px", marginBottom: "4rem", border: "1px solid rgba(255,255,255,0.1)" }} />
+              )}
+
+              <div className="prose prose-invert modern-blog-content" style={{ 
+                maxWidth: "100%", 
+                color: "var(--color-neutral-300)", 
+                lineHeight: "1.8", 
+                fontSize: "1.125rem",
+                fontFamily: "Inter, sans-serif"
+              }}>
+                <style dangerouslySetInnerHTML={{ __html: `
+                  .modern-blog-content h2 { color: white; font-family: Syne, sans-serif; font-weight: 800; font-size: 2rem; margin-top: 3.5rem; margin-bottom: 1.5rem; letter-spacing: -0.02em; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2.5rem; }
+                  .modern-blog-content h3 { color: var(--color-accent-400); font-family: Syne, sans-serif; font-weight: 700; font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; }
+                  .modern-blog-content p { margin-bottom: 1.5rem; }
+                  .modern-blog-content ul, .modern-blog-content ol { margin-bottom: 2rem; padding-left: 1.5rem; }
+                  .modern-blog-content li { margin-bottom: 0.75rem; }
+                  .modern-blog-content strong { color: white; font-weight: 700; }
+                  .modern-blog-content blockquote { border-left: 4px solid var(--color-accent-400); padding: 1.5rem 2rem; background: rgba(0,212,255,0.03); border-radius: 0 12px 12px 0; font-style: italic; color: var(--color-neutral-300); margin: 2.5rem 0; }
+                  .ad-slot { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justifyContent: center; color: var(--color-neutral-600); font-size: 0.75rem; margin: 3rem 0; min-height: 250px; }
+                  @media (max-width: 992px) { .blog-layout-grid { grid-template-columns: 1fr !important; } .blog-sidebar { display: none; } }
+                `}} />
+                
+                <div className="ad-slot" id="blog-top-ad">Google AdSense Slot</div>
+
+                <ReactMarkdown>{post.content}</ReactMarkdown>
+
+                <div className="ad-slot" id="blog-bottom-ad">Google AdSense Slot</div>
+
+                {/* Social Sharing & Author Footer */}
+                <div style={{ marginTop: "5rem", padding: "3rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ display: "flex", gap: "2rem", alignItems: "flex-start" }}>
+                    <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--color-primary-800)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <User size={40} color="var(--color-neutral-400)" />
+                    </div>
+                    <div>
+                      <h4 style={{ color: "white", margin: 0, fontSize: "1.25rem" }}>{post.author_name}</h4>
+                      <p style={{ color: "var(--color-neutral-400)", fontSize: "1rem", lineHeight: 1.6, margin: "0.75rem 0 1.5rem" }}>
+                        Expert in Caribbean technology strategy and enterprise security. Leading digital transformation at Kool Tech Solutions.
+                      </p>
+                      <div style={{ display: "flex", gap: "0.75rem" }}>
+                        {['Twitter', 'LinkedIn', 'Facebook'].map(s => (
+                          <button key={s} style={{ padding: "0.5rem 1rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "white", fontSize: "0.8125rem", cursor: "pointer" }}>
+                            <Share2 size={14} style={{ marginRight: "0.5rem", verticalAlign: "middle" }} /> {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h4 style={{ color: "white", margin: 0, fontSize: "1.125rem" }}>About {post.author_name}</h4>
-                <p style={{ color: "var(--color-neutral-400)", fontSize: "0.9375rem", lineHeight: 1.6, margin: "0.5rem 0 1rem" }}>
-                  Founder & CEO of Kool Tech Solutions. Expert in Caribbean cybersecurity architecture and digital transformation. Helping regional businesses build resilient, compliant, and future-ready infrastructure.
-                </p>
-                <Link href="/contact" style={{ color: "var(--color-accent-400)", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
-                  Work with {post.author_name.split(' ')[0]} →
-                </Link>
+            </article>
+
+            {/* Sticky Sidebar */}
+            <aside className="blog-sidebar">
+              <div style={{ position: "sticky", top: "100px", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
+                
+                {headers.length > 0 && (
+                  <div style={{ padding: "1.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <h4 style={{ color: "white", fontSize: "0.75rem", fontWeight: 700, marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Table of Contents</h4>
+                    <nav style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
+                      {headers.map((h, i) => (
+                        <a key={i} href={`#${h.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", textDecoration: "none", transition: "0.2s", lineHeight: 1.4 }}>
+                          {h}
+                        </a>
+                      ))}
+                    </nav>
+                  </div>
+                )}
+
+                <div style={{ minHeight: "500px", background: "rgba(255,255,255,0.01)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-neutral-700)", fontSize: "0.75rem", textAlign: "center", padding: "2rem" }}>
+                  Google AdSense Vertical Slot
+                </div>
+
               </div>
-            </div>
+            </aside>
           </div>
         </section>
       </main>
+
       <Footer />
       <AIChatWidget />
     </>

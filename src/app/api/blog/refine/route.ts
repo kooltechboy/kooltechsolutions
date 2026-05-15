@@ -18,36 +18,35 @@ export async function POST(req: Request) {
 
     if (mode === 'generate') {
       prompt = `
-        Act as a Senior Research-Based Tech Copywriter for Kool Tech Solutions (a Caribbean MSP). 
-        Your task is to write a high-authority, deep-dive technical article based on this title: "${title}".
+        Act as a Lead Content Strategist and Executive Editor for Kool Tech Solutions. 
+        Your task is to write a high-authority, research-backed technical article based on this title: "${title}".
         
-        CRITICAL REQUIREMENTS:
-        - DO NOT be generic. Use actual industry concepts (Zero Trust, SASE, NIST Framework, SOC2, HIPAA).
-        - Ground the article in Caribbean business realities (regional financial hubs, tourism vulnerability, hurricane resilience, remote island workforces, regional compliance like GDPR/DPA).
-        - Use data-driven language and an authoritative professional tone.
-        - Structure it with: Engaging H1 Title, executive intro, multiple H2/H3 sections with bullet points, and a powerful conclusion.
-        - Include a 'Key Takeaway' summary box at the end.
-        - Output the content in clean Markdown.
+        EDITORIAL STANDARDS & FRAMEWORKS:
+        1. THE INVERTED PYRAMID: Start with the most critical value/finding. The first two paragraphs must summarize the 'Why' and the 'Value' for a C-suite executive.
+        2. AIDA FRAMEWORK: Ensure the article flows through Attention (Hook), Interest (Data/Facts), Desire (Solution Benefits), and Action (Clear CTA).
+        3. HIERARCHICAL STRUCTURE: Use a strict H1 > H2 > H3 hierarchy. No skipped levels.
+        4. READABILITY: Keep sentences concise. Use bolding for key industry terms and metrics.
+        5. CARIBBEAN CONTEXT: Integrate regional relevance (e.g., CARICOM digital initiatives, regional data residency, island-specific infrastructure challenges).
         
-        User context/instruction: ${instruction || 'Make it a comprehensive, research-backed professional guide.'}
+        TECHNICAL REQUIREMENTS:
+        - Reference actual standards (e.g., ISO 27001, NIST 800-53, SOC2 Type II, CIS Controls).
+        - Include a "Key Takeaways" box at the top (Executive Summary).
+        - Include a "Recommended Action Plan" section at the end.
+        
+        User instruction: ${instruction || 'Make it an authoritative industry report.'}
         
         Return ONLY the Markdown content.
       `;
     } else {
       prompt = `
-        You are a World-Class Professional Copywriter and SEO Editor.
-        Task: Refine the provided blog content to follow professional copywriting standards.
+        You are an Elite Editorial Director. 
+        Refine the provided content to meet "High-Authority Publication" standards.
         
-        Requirements:
-        1. Use a professional, authoritative, yet engaging tone.
-        2. Ensure proper hierarchical formatting using Markdown (H2, H3, etc.).
-        3. Use clear, punchy bullet points where information can be structured.
-        4. Improve the "Hook" at the beginning to grab attention.
-        5. Ensure smooth transitions between sections.
-        6. Optimize for readability (short paragraphs, bold key terms).
-        7. Follow this specific instruction if provided: "${instruction || 'General professional refinement'}"
-        
-        Format Output: Return ONLY the refined Markdown content.
+        Tasks:
+        - Apply the Inverted Pyramid structure.
+        - Enhance "Proof Points" (ensure claims are backed by technical reasoning).
+        - Optimize for SEO while maintaining a natural, expert voice.
+        - Add a "Pro-Tip" or "Expert Insight" callout box where relevant.
         
         Original Content:
         ${content}
