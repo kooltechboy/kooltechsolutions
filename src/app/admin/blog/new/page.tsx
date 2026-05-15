@@ -287,10 +287,27 @@ export default function NewBlogPostPage() {
               className="btn-primary" 
               style={{ padding: "0.5rem 1.5rem", fontSize: "0.8125rem", background: "linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)", border: "none" }}
             >
-              {aiRefining ? "Refining..." : "✨ Refine Post"}
+              {aiRefining ? "Refining..." : "✨ Refine Content"}
             </button>
           </div>
         </div>
+
+        {/* Post-Import Recommendation */}
+        {formData.content && !aiRefining && (
+          <div style={{ padding: "1rem", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <Zap size={18} color="#A855F7" />
+              <span style={{ fontSize: "0.875rem", color: "white" }}>Content loaded. Ready to transform this into an Elite Professional Article?</span>
+            </div>
+            <button 
+              type="button" 
+              onClick={handleAIRefine}
+              style={{ padding: "0.4rem 1rem", background: "#A855F7", color: "white", border: "none", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
+            >
+              🚀 AI Professionalize
+            </button>
+          </div>
+        )}
 
         <div>
           <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.8rem" }}>Blog Content (Rich Text / Markdown)</label>
