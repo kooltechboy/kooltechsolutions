@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Sparkles, Upload, Zap } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
@@ -55,6 +55,62 @@ export default function NewBlogPostPage() {
     }
   };
 
+  const handleGenerateFromTitle = async () => {
+    if (!formData.title) {
+      setError("Please enter a title first.");
+      return;
+    }
+    setAiRefining(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/blog/refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          mode: 'generate',
+          title: formData.title,
+          instruction: aiInstruction 
+        }),
+      });
+
+      const data = await response.json();
+      if (data.refinedContent) {
+        setFormData({ ...formData, content: data.refinedContent });
+      } else {
+        throw new Error(data.error || "Failed to generate article");
+      }
+    } catch (err: any) {
+      setError("Generation Error: " + err.message);
+    } finally {
+      setAiRefining(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target?.result as string;
+      setFormData({ ...formData, content });
+      
+      // Auto-extract title if possible (first H1)
+      const titleMatch = content.match(/^#\s+(.+)$/m);
+      if (titleMatch) {
+        const title = titleMatch[1];
+        setFormData(prev => ({
+          ...prev,
+          content,
+          title,
+          slug: generateSlug(title)
+        }));
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const generateSlug = (title: string) => {
     return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
   };
@@ -99,6 +155,31 @@ export default function NewBlogPostPage() {
             Create a new blog post for the Kool Tech public blog.
           </p>
         </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
+        <input 
+          type="file" 
+          id="file-upload" 
+          accept=".md,.txt" 
+          style={{ display: "none" }} 
+          onChange={handleFileUpload} 
+        />
+        <button 
+          onClick={() => document.getElementById('file-upload')?.click()}
+          className="btn-secondary" 
+          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "0.75rem", borderRadius: "8px" }}
+        >
+          <Upload size={18} /> Import .md / .txt
+        </button>
+        <button 
+          onClick={handleGenerateFromTitle}
+          disabled={aiRefining}
+          className="btn-primary" 
+          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", background: "linear-gradient(135deg, #00D4FF 0%, #0072FF 100%)", border: "none" }}
+        >
+          {aiRefining ? "Generating..." : <><Zap size={18} /> Generate from Title</>}
+        </button>
       </div>
 
       {error && (
