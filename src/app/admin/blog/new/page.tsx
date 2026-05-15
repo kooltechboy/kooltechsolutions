@@ -276,6 +276,34 @@ export default function NewBlogPostPage() {
           </div>
         </div>
 
+        <div>
+          <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>SEO Excerpt (Summary)</label>
+          <textarea 
+            className="input-field" 
+            style={{ minHeight: "80px", resize: "vertical", padding: "1rem" }}
+            value={formData.excerpt} 
+            onChange={e => setFormData({ ...formData, excerpt: e.target.value })} 
+            placeholder="A compelling summary for search results..."
+          />
+        </div>
+
+        <div>
+          <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Cover Image URL</label>
+          <div style={{ display: "flex", gap: "1rem" }}>
+            <input 
+              className="input-field" 
+              value={formData.image_url} 
+              onChange={e => setFormData({ ...formData, image_url: e.target.value })} 
+              placeholder="https://images.unsplash.com/..."
+            />
+            {formData.image_url && (
+              <div style={{ width: "50px", height: "45px", borderRadius: "8px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <img src={formData.image_url} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+            )}
+          </div>
+        </div>
+
         <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
           <div style={{ flex: "1 1 200px" }}>
             <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Category</label>
