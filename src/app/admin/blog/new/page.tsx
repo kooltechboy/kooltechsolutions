@@ -70,7 +70,7 @@ export default function NewBlogPostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     setError(null);
 
     const { error: insertError } = await supabase.from("posts").insert([formData]);
@@ -78,7 +78,7 @@ export default function NewBlogPostPage() {
     if (insertError) {
       console.error(insertError);
       setError(insertError.message);
-      setLoading(false);
+      setSaving(false);
     } else {
       router.push("/admin/blog");
       router.refresh();
@@ -253,8 +253,8 @@ export default function NewBlogPostPage() {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button type="submit" className="btn-primary" disabled={loading} style={{ padding: "0.75rem 2rem", borderRadius: "8px" }}>
-            {loading ? "Saving..." : <><Save size={18} /> Save Article</>}
+          <button type="submit" className="btn-primary" disabled={saving} style={{ padding: "0.75rem 2rem", borderRadius: "8px" }}>
+            {saving ? "Saving..." : <><Save size={18} /> Save Article</>}
           </button>
         </div>
 

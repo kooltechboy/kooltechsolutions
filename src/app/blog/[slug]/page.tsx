@@ -3,7 +3,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import AIChatWidget from "@/components/ai/AIChatWidget";
 import { notFound } from "next/navigation";
-import { Calendar, Clock, ArrowLeft, User, Share2, Facebook, Twitter, Linkedin, Mail } from "lucide-react";
+import { Calendar, Clock, ArrowLeft, User, Share2, Mail } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
@@ -199,9 +199,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 </div>
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                   {[
-                    { icon: <Twitter size={18} />, label: "Twitter", color: "#1DA1F2" },
-                    { icon: <Linkedin size={18} />, label: "LinkedIn", color: "#0A66C2" },
-                    { icon: <Facebook size={18} />, label: "Facebook", color: "#1877F2" },
+                    { icon: <Share2 size={18} />, label: "Twitter", color: "#1DA1F2" },
+                    { icon: <Share2 size={18} />, label: "LinkedIn", color: "#0A66C2" },
+                    { icon: <Share2 size={18} />, label: "Facebook", color: "#1877F2" },
                     { icon: <Mail size={18} />, label: "Email", color: "#EA4335" }
                   ].map((s, idx) => (
                     <button key={idx} style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", transition: "0.2s", cursor: "pointer" }}>
