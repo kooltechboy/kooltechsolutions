@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
@@ -10,8 +10,10 @@ import 'md-editor-rt/lib/style.css';
 export default function NewBlogPostPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiRefining, setAiRefining] = useState(false);
+  const [aiInstruction, setAiInstruction] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -24,6 +26,34 @@ export default function NewBlogPostPage() {
     content: "",
     image_url: "",
   });
+
+  const handleAIRefine = async () => {
+    if (!formData.content) return;
+    setAiRefining(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/blog/refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          content: formData.content,
+          instruction: aiInstruction 
+        }),
+      });
+
+      const data = await response.json();
+      if (data.refinedContent) {
+        setFormData({ ...formData, content: data.refinedContent });
+      } else {
+        throw new Error(data.error || "Failed to refine content");
+      }
+    } catch (err: any) {
+      setError("AI Refine Error: " + err.message);
+    } finally {
+      setAiRefining(false);
+    }
+  };
 
   const generateSlug = (title: string) => {
     return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
@@ -154,6 +184,31 @@ export default function NewBlogPostPage() {
             onChange={e => setFormData({ ...formData, image_url: e.target.value })} 
             placeholder="https://..."
           />
+        </div>
+
+        <div style={{ background: "rgba(0,212,255,0.03)", padding: "1.5rem", borderRadius: "12px", border: "1px dashed rgba(0,212,255,0.2)", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+            <Sparkles size={18} color="var(--color-accent-400)" />
+            <h3 style={{ fontSize: "0.875rem", color: "white", margin: 0 }}>AI Copywriter & Editor</h3>
+          </div>
+          <div style={{ display: "flex", gap: "1rem" }}>
+            <input 
+              className="input-field" 
+              style={{ flex: 1, fontSize: "0.8125rem" }}
+              placeholder="E.g. 'Turn this into a professional Caribbean tech article', 'Add an engaging hook'..."
+              value={aiInstruction}
+              onChange={(e) => setAiInstruction(e.target.value)}
+            />
+            <button 
+              type="button"
+              onClick={handleAIRefine}
+              disabled={aiRefining}
+              className="btn-primary" 
+              style={{ padding: "0.5rem 1.5rem", fontSize: "0.8125rem", background: "linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)", border: "none" }}
+            >
+              {aiRefining ? "Refining..." : "✨ Refine Post"}
+            </button>
+          </div>
         </div>
 
         <div>

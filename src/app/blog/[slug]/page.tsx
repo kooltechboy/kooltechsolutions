@@ -3,7 +3,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import AIChatWidget from "@/components/ai/AIChatWidget";
 import { notFound } from "next/navigation";
-import { Calendar, Clock, ArrowLeft, User } from "lucide-react";
+import { Calendar, Clock, ArrowLeft, User, Share2, Facebook, Twitter, Linkedin, Mail } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
@@ -112,40 +112,66 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             fontFamily: "Inter, sans-serif"
           }}>
             <style dangerouslySetInnerHTML={{ __html: `
-              .modern-blog-content h2 { 
-                color: white; 
-                font-family: Syne, sans-serif; 
-                font-weight: 800; 
-                font-size: 2rem; 
-                margin-top: 3.5rem; 
-                margin-bottom: 1.5rem;
-                letter-spacing: -0.02em;
-              }
-              .modern-blog-content h3 { 
-                color: var(--color-accent-400); 
-                font-family: Syne, sans-serif; 
-                font-weight: 700; 
-                font-size: 1.5rem; 
-                margin-top: 2.5rem; 
-                margin-bottom: 1rem;
-              }
+              .modern-blog-content h2 { color: white; font-family: Syne, sans-serif; font-weight: 800; font-size: 2rem; margin-top: 3.5rem; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
+              .modern-blog-content h3 { color: var(--color-accent-400); font-family: Syne, sans-serif; font-weight: 700; font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; }
               .modern-blog-content p { margin-bottom: 1.5rem; }
-              .modern-blog-content ul, .modern-blog-content ol { 
-                margin-bottom: 2rem; 
-                padding-left: 1.5rem; 
-              }
+              .modern-blog-content ul, .modern-blog-content ol { margin-bottom: 2rem; padding-left: 1.5rem; }
               .modern-blog-content li { margin-bottom: 0.75rem; }
               .modern-blog-content strong { color: white; font-weight: 700; }
               .modern-blog-content hr { border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 3rem 0; }
-              .modern-blog-content blockquote {
-                border-left: 4px solid var(--color-accent-400);
-                padding-left: 1.5rem;
-                font-style: italic;
-                color: var(--color-neutral-400);
-                margin: 2.5rem 0;
-              }
+              .modern-blog-content blockquote { border-left: 4px solid var(--color-accent-400); padding-left: 1.5rem; font-style: italic; color: var(--color-neutral-400); margin: 2.5rem 0; }
+              .ad-slot { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justifyContent: center; color: var(--color-neutral-600); font-size: 0.75rem; margin: 3rem 0; min-height: 250px; }
             `}} />
+            
+            {/* Top Ad Slot */}
+            <div className="ad-slot" id="blog-top-ad">
+              Google AdSense - Top Placement
+            </div>
+
             <ReactMarkdown>{post.content}</ReactMarkdown>
+
+            {/* Bottom Ad Slot */}
+            <div className="ad-slot" id="blog-bottom-ad">
+              Google AdSense - Bottom Placement
+            </div>
+
+            {/* Social Sharing */}
+            <div style={{ marginTop: "4rem", padding: "2rem", background: "rgba(255,255,255,0.02)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.5rem" }}>
+                <div>
+                  <h4 style={{ color: "white", margin: 0, fontSize: "1rem" }}>Share this article</h4>
+                  <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", margin: "0.25rem 0 0" }}>Help us spread the word across the Caribbean.</p>
+                </div>
+                <div style={{ display: "flex", gap: "0.75rem" }}>
+                  {[
+                    { icon: <Twitter size={18} />, label: "Twitter", color: "#1DA1F2" },
+                    { icon: <Linkedin size={18} />, label: "LinkedIn", color: "#0A66C2" },
+                    { icon: <Facebook size={18} />, label: "Facebook", color: "#1877F2" },
+                    { icon: <Mail size={18} />, label: "Email", color: "#EA4335" }
+                  ].map((s, idx) => (
+                    <button key={idx} style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", transition: "0.2s", cursor: "pointer" }}>
+                      {s.icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Author Section */}
+            <div style={{ marginTop: "3rem", display: "flex", gap: "1.5rem", padding: "2rem 0", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--color-primary-800)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <User size={32} color="var(--color-neutral-400)" />
+              </div>
+              <div>
+                <h4 style={{ color: "white", margin: 0, fontSize: "1.125rem" }}>About {post.author_name}</h4>
+                <p style={{ color: "var(--color-neutral-400)", fontSize: "0.9375rem", lineHeight: 1.6, margin: "0.5rem 0 1rem" }}>
+                  Founder & CEO of Kool Tech Solutions. Expert in Caribbean cybersecurity architecture and digital transformation. Helping regional businesses build resilient, compliant, and future-ready infrastructure.
+                </p>
+                <Link href="/contact" style={{ color: "var(--color-accent-400)", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
+                  Work with {post.author_name.split(' ')[0]} →
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       </main>
