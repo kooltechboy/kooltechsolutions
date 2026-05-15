@@ -104,7 +104,47 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             </div>
           )}
           
-          <div className="prose prose-invert" style={{ maxWidth: "100%", color: "var(--color-neutral-300)", lineHeight: 1.8, fontSize: "1.0625rem" }}>
+          <div className="prose prose-invert modern-blog-content" style={{ 
+            maxWidth: "100%", 
+            color: "var(--color-neutral-300)", 
+            lineHeight: "1.8", 
+            fontSize: "1.125rem",
+            fontFamily: "Inter, sans-serif"
+          }}>
+            <style dangerouslySetInnerHTML={{ __html: `
+              .modern-blog-content h2 { 
+                color: white; 
+                font-family: Syne, sans-serif; 
+                font-weight: 800; 
+                font-size: 2rem; 
+                margin-top: 3.5rem; 
+                margin-bottom: 1.5rem;
+                letter-spacing: -0.02em;
+              }
+              .modern-blog-content h3 { 
+                color: var(--color-accent-400); 
+                font-family: Syne, sans-serif; 
+                font-weight: 700; 
+                font-size: 1.5rem; 
+                margin-top: 2.5rem; 
+                margin-bottom: 1rem;
+              }
+              .modern-blog-content p { margin-bottom: 1.5rem; }
+              .modern-blog-content ul, .modern-blog-content ol { 
+                margin-bottom: 2rem; 
+                padding-left: 1.5rem; 
+              }
+              .modern-blog-content li { margin-bottom: 0.75rem; }
+              .modern-blog-content strong { color: white; font-weight: 700; }
+              .modern-blog-content hr { border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 3rem 0; }
+              .modern-blog-content blockquote {
+                border-left: 4px solid var(--color-accent-400);
+                padding-left: 1.5rem;
+                font-style: italic;
+                color: var(--color-neutral-400);
+                margin: 2.5rem 0;
+              }
+            `}} />
             <ReactMarkdown>{post.content}</ReactMarkdown>
           </div>
         </section>
