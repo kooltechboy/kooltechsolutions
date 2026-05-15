@@ -126,10 +126,44 @@ export default function NewBlogPostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.content || !formData.title) {
+      setError("Title and Content are required to publish.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
-    const { error: insertError } = await supabase.from("posts").insert([formData]);
+    let finalData = { ...formData };
+
+    // Autonomous Completion: Fill missing fields using AI
+    if (!formData.excerpt || formData.category === "Cybersecurity" || !formData.slug) {
+      try {
+        const response = await fetch("/api/blog/refine", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            mode: 'complete',
+            content: `Title: ${formData.title}\n\nContent: ${formData.content}`
+          }),
+        });
+        const data = await response.json();
+        if (data.metadata) {
+          finalData = {
+            ...finalData,
+            excerpt: formData.excerpt || data.metadata.excerpt,
+            category: formData.category === "Cybersecurity" ? data.metadata.category : formData.category,
+            slug: formData.slug || data.metadata.slug,
+            read_time: formData.read_time === "5 min" ? data.metadata.read_time : formData.read_time
+          };
+          setFormData(finalData); // Update UI just in case
+        }
+      } catch (err) {
+        console.warn("AI metadata completion failed, proceeding with default values.", err);
+      }
+    }
+
+    const { error: insertError } = await supabase.from("posts").insert([finalData]);
 
     if (insertError) {
       console.error(insertError);

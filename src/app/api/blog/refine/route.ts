@@ -16,6 +16,25 @@ export async function POST(req: Request) {
 
     let prompt = "";
 
+    if (mode === 'complete') {
+      prompt = `
+        Analyze this blog content and generate professional metadata for a CMS.
+        Content: ${content}
+
+        Return ONLY a JSON object with the following fields:
+        {
+          "excerpt": "A high-impact 1-2 sentence summary for SEO",
+          "category": "The best category (e.g. Cybersecurity, Cloud Computing, AI & Automation, Managed IT, Digital Strategy)",
+          "read_time": "Estimated read time in minutes (e.g. '5 min')",
+          "slug": "An SEO-friendly URL slug based on the content/title"
+        }
+      `;
+      const result = await model.generateContent(prompt);
+      const res = await result.response;
+      const jsonText = res.text().replace(/```json|```/g, "").trim();
+      return NextResponse.json({ metadata: JSON.parse(jsonText) });
+    }
+
     if (mode === 'generate') {
       prompt = `
         Act as a Lead Content Strategist and Executive Editor for Kool Tech Solutions. 
