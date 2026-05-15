@@ -79,8 +79,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   // Extract headers for Table of Contents
   const headers = post.content
     .split('\n')
-    .filter(line => line.startsWith('## '))
-    .map(line => line.replace('## ', '').trim());
+    .filter((line: string) => line.startsWith('## '))
+    .map((line: string) => line.replace('## ', '').trim());
 
   // JSON-LD Structured Data for Google Search
   const jsonLd = {
@@ -210,7 +210,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   <div style={{ padding: "1.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
                     <h4 style={{ color: "white", fontSize: "0.75rem", fontWeight: 700, marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Table of Contents</h4>
                     <nav style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
-                      {headers.map((h, i) => (
+                      {headers.map((h: string, i: number) => (
                         <a key={i} href={`#${h.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", textDecoration: "none", transition: "0.2s", lineHeight: 1.4 }}>
                           {h}
                         </a>
