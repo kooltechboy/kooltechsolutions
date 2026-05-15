@@ -20,9 +20,9 @@ export default function NewBlogPostPage() {
     slug: "",
     excerpt: "",
     category: "Cybersecurity",
-    read_time: "5 min",
+    read_time: "1 min",
     status: "Draft",
-    author_name: "Daniel W.",
+    author_name: "Daniel Joseph Williams",
     content: "",
     image_url: "",
   });
@@ -102,6 +102,13 @@ export default function NewBlogPostPage() {
       setAiRefining(false);
     }
   };
+
+  // Calculate dynamic read time
+  useEffect(() => {
+    const words = formData.content.split(/\s+/).filter(w => w.length > 0).length;
+    const minutes = Math.max(1, Math.ceil(words / 200));
+    setFormData(prev => ({ ...prev, read_time: `${minutes} min` }));
+  }, [formData.content]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -227,26 +234,18 @@ export default function NewBlogPostPage() {
 
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
         <input 
+          id="file-upload"
           type="file" 
-          id="file-upload" 
-          accept=".md,.txt" 
-          style={{ display: "none" }} 
-          onChange={handleFileUpload} 
+          accept=".md,.txt"
+          style={{ display: "none" }}
+          onChange={handleFileUpload}
         />
-        <button 
+        <button
           onClick={() => document.getElementById('file-upload')?.click()}
-          className="btn-secondary" 
+          className="btn-secondary"
           style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", padding: "0.75rem", borderRadius: "8px" }}
         >
           <Upload size={18} /> Import .md / .txt
-        </button>
-        <button 
-          onClick={handleGenerateFromTitle}
-          disabled={aiRefining}
-          className="btn-primary" 
-          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", background: "linear-gradient(135deg, #00D4FF 0%, #0072FF 100%)", border: "none" }}
-        >
-          {aiRefining ? "Generating..." : <><Zap size={18} /> Generate from Title</>}
         </button>
       </div>
 
@@ -323,12 +322,9 @@ export default function NewBlogPostPage() {
           </div>
           <div style={{ flex: "1 1 100px" }}>
             <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Read Time</label>
-            <input 
-              className="input-field" 
-              value={formData.read_time} 
-              onChange={e => setFormData({ ...formData, read_time: e.target.value })} 
-              placeholder="e.g. 5 min"
-            />
+            <div className="input-field" style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.2)", cursor: "default" }}>
+              <Clock size={14} style={{ marginRight: "0.5rem", color: "var(--color-accent-400)" }} /> {formData.read_time}
+            </div>
           </div>
           <div style={{ flex: "1 1 150px" }}>
             <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Status</label>

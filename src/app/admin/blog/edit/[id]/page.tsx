@@ -45,11 +45,15 @@ export default function EditBlogPostPage() {
     }
   };
 
+  // Calculate dynamic read time
   useEffect(() => {
-    fetchPost();
-  }, [params.id]);
+    const words = formData.content.split(/\s+/).filter(w => w.length > 0).length;
+    const minutes = Math.max(1, Math.ceil(words / 200));
+    setFormData(prev => ({ ...prev, read_time: `${minutes} min` }));
+  }, [formData.content]);
 
-  const fetchPost = async () => {
+  useEffect(() => {
+    const fetchPost = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("posts")
@@ -116,7 +120,10 @@ export default function EditBlogPostPage() {
     setSaving(true);
     setError(null);
 
-    let finalData = { ...formData };
+    let finalData = { 
+      ...formData,
+      author_name: "Daniel Joseph Williams" // Enforce Standard Author
+    };
 
     // Autonomous Completion (Enforcing Excerpt, Category, and Cover Image)
     if (!formData.excerpt || formData.category === "Cybersecurity" || !formData.image_url) {
@@ -231,12 +238,9 @@ export default function EditBlogPostPage() {
           </div>
           <div style={{ flex: "1 1 100px" }}>
             <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Read Time</label>
-            <input 
-              className="input-field" 
-              value={formData.read_time} 
-              onChange={e => setFormData({ ...formData, read_time: e.target.value })} 
-              placeholder="e.g. 5 min"
-            />
+            <div className="input-field" style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.2)", cursor: "default" }}>
+              <Clock size={14} style={{ marginRight: "0.5rem", color: "var(--color-accent-400)" }} /> {formData.read_time}
+            </div>
           </div>
           <div style={{ flex: "1 1 150px" }}>
             <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Status</label>

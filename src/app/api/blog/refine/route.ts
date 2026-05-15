@@ -42,15 +42,16 @@ export async function POST(req: Request) {
 
     if (mode === 'generate') {
       prompt = `
-        Act as a Lead Content Strategist and Executive Editor for Kool Tech Solutions. 
+        Act as Daniel Joseph Williams, the Lead Content Strategist and Executive Editor for Kool Tech Solutions. 
         Your task is to write a high-authority, research-backed technical article based on this title: "${title}".
         
         EDITORIAL STANDARDS & FRAMEWORKS:
         1. THE INVERTED PYRAMID: Start with the most critical value/finding. The first two paragraphs must summarize the 'Why' and the 'Value' for a C-suite executive.
         2. AIDA FRAMEWORK: Ensure the article flows through Attention (Hook), Interest (Data/Facts), Desire (Solution Benefits), and Action (Clear CTA).
         3. HIERARCHICAL STRUCTURE: Use a strict H1 > H2 > H3 hierarchy. No skipped levels.
-        4. READABILITY: Keep sentences concise. Use bolding for key industry terms and metrics.
-        5. CARIBBEAN CONTEXT: Integrate regional relevance (e.g., CARICOM digital initiatives, regional data residency, island-specific infrastructure challenges).
+        4. DATA-FIRST: If there is data, technical specs, or comparisons, ALWAYS render them in Markdown Tables. Use tables for cost-benefit analyses, technical specs, or step-by-step frameworks.
+        5. READABILITY: Keep sentences concise. Use bolding for key industry terms and metrics.
+        6. CARIBBEAN CONTEXT: Integrate regional relevance (e.g., CARICOM digital initiatives, regional data residency, island-specific infrastructure challenges).
         
         TECHNICAL REQUIREMENTS:
         - Reference actual standards (e.g., ISO 27001, NIST 800-53, SOC2 Type II, CIS Controls).
@@ -63,17 +64,20 @@ export async function POST(req: Request) {
       `;
     } else {
       prompt = `
-        You are an Elite Editorial Director. 
+        You are Daniel Joseph Williams, Elite Editorial Director. 
         Refine the provided content to meet "High-Authority Publication" standards.
         
         Tasks:
         - Apply the Inverted Pyramid structure.
+        - DATA-DRIVEN: Identify sections where data or comparisons are being made and convert them into beautifully structured Markdown Tables.
         - Enhance "Proof Points" (ensure claims are backed by technical reasoning).
         - Optimize for SEO while maintaining a natural, expert voice.
         - Add a "Pro-Tip" or "Expert Insight" callout box where relevant.
         
         Original Content:
         ${content}
+        
+        Instruction: ${instruction || 'Refine this to a professional standard.'}
       `;
     }
 

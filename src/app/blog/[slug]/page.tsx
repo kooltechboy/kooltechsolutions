@@ -7,6 +7,7 @@ import { Calendar, Clock, ArrowLeft, User, Share2, Mail } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import ReadingProgress from "@/components/blog/ReadingProgress";
+import remarkGfm from "remark-gfm";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -171,6 +172,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   .modern-blog-content li { margin-bottom: 0.75rem; }
                   .modern-blog-content strong { color: white; font-weight: 700; }
                   .modern-blog-content blockquote { border-left: 4px solid var(--color-accent-400); padding: 1.5rem 2rem; background: rgba(0,212,255,0.03); border-radius: 0 12px 12px 0; font-style: italic; color: var(--color-neutral-300); margin: 2.5rem 0; }
+                  .modern-blog-content table { width: 100%; border-collapse: collapse; margin: 2.5rem 0; font-size: 0.9375rem; background: rgba(255,255,255,0.02); border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+                  .modern-blog-content th { background: rgba(255,255,255,0.05); color: white; text-align: left; padding: 1rem; font-weight: 700; border-bottom: 2px solid rgba(255,255,255,0.1); }
+                  .modern-blog-content td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--color-neutral-400); }
+                  .modern-blog-content tr:last-child td { border-bottom: none; }
+                  .modern-blog-content tr:hover td { background: rgba(255,255,255,0.02); color: white; }
                   .ad-slot { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justifyContent: center; color: var(--color-neutral-600); font-size: 0.75rem; margin: 3rem 0; min-height: 250px; }
                   @media (max-width: 992px) { .blog-layout-grid { grid-template-columns: 1fr !important; } .blog-sidebar { display: none; } }
                 `}} />
@@ -178,6 +184,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 <div className="ad-slot" id="blog-top-ad">Google AdSense Slot</div>
 
                 <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     h2: ({node, ...props}) => {
                       const id = String(props.children).toLowerCase().replace(/[^a-z0-9]+/g, '-');
