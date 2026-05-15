@@ -1,29 +1,40 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Calendar } from "lucide-react";
-
-const posts = [
-  {
-    category: "Cybersecurity", readTime: "5 min read",
-    title: "Zero-Trust Security: Why Every Caribbean Business Needs It Now",
-    excerpt: "The traditional perimeter-based security model is dead. Learn why zero-trust architecture is the only way to protect your modern, distributed workforce.",
-    date: "May 1, 2026", color: "#FF4444",
-  },
-  {
-    category: "Cloud", readTime: "7 min read",
-    title: "Hybrid Cloud Migration: A Step-by-Step Guide for DR Businesses",
-    excerpt: "Moving to the cloud doesn't have to be risky. Our proven 5-phase migration methodology ensures zero downtime and full data integrity.",
-    date: "Apr 28, 2026", color: "#00D4FF",
-  },
-  {
-    category: "AI & Automation", readTime: "4 min read",
-    title: "How AI is Transforming IT Help Desks: The 2026 Playbook",
-    excerpt: "AI-powered help desks are resolving 70% of tickets without human intervention. Here's how we implement this for our clients.",
-    date: "Apr 22, 2026", color: "#A855F7",
-  },
-];
+import { ArrowRight, Calendar, Clock } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 export default function BlogSection() {
+  const [posts, setPosts] = useState<any[]>([]);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchLatestPosts = async () => {
+      const { data } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("status", "Published")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      
+      if (data) setPosts(data);
+    };
+    fetchLatestPosts();
+  }, []);
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case "Cybersecurity": return "#FF4444";
+      case "Cloud": return "#00D4FF";
+      case "AI & Automation": return "#A855F7";
+      case "Network": return "#4B84C8";
+      case "Compliance": return "#FFB300";
+      default: return "#00D4FF";
+    }
+  };
+
+  if (posts.length === 0) return null;
+
   return (
     <section className="section" style={{ background: "rgba(10,22,40,0.3)" }}>
       <div className="container">
@@ -39,34 +50,44 @@ export default function BlogSection() {
           </Link>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
-          {posts.map(post => (
-            <Link key={post.title} href="/blog" style={{ textDecoration: "none" }}>
-              <div className="glass-card" style={{ borderRadius: "16px", overflow: "hidden", height: "100%" }}>
-                <div style={{
-                  height: "8px",
-                  background: `linear-gradient(90deg, ${post.color}, transparent)`,
-                }} />
-                <div style={{ padding: "1.5rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                    <span className="badge" style={{ background: `${post.color}15`, color: post.color, border: `1px solid ${post.color}30`, fontSize: "0.7rem" }}>
-                      {post.category}
-                    </span>
-                    <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{post.readTime}</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
+          {posts.map(post => {
+            const color = getCategoryColor(post.category);
+            return (
+              <Link key={post.id} href={`/blog/${post.slug}`} style={{ textDecoration: "none" }}>
+                <div className="glass-card" style={{ borderRadius: "16px", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
+                  <div style={{ height: "160px", width: "100%", position: "relative", overflow: "hidden" }}>
+                    <img 
+                      src={post.image_url || `https://source.unsplash.com/featured/800x600?technology,${post.category}`} 
+                      alt={post.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, var(--color-primary-950), transparent)" }} />
                   </div>
-                  <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1rem", color: "white", lineHeight: 1.4, marginBottom: "0.75rem" }}>
-                    {post.title}
-                  </h3>
-                  <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6, marginBottom: "1.25rem" }}>
-                    {post.excerpt}
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
-                    <Calendar size={12} /> {post.date}
+                  
+                  <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                      <span className="badge" style={{ background: `${color}15`, color: color, border: `1px solid ${color}30`, fontSize: "0.68rem" }}>
+                        {post.category}
+                      </span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
+                        <Clock size={11} /> {post.read_time}
+                      </span>
+                    </div>
+                    <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1rem", color: "white", lineHeight: 1.4, marginBottom: "0.75rem" }}>
+                      {post.title}
+                    </h3>
+                    <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6, marginBottom: "1.25rem", flex: 1 }}>
+                      {post.excerpt}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-500)", fontSize: "0.75rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                      <Calendar size={12} /> {new Date(post.created_at).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

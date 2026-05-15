@@ -80,23 +80,33 @@ export default async function BlogPage() {
               const color = getCategoryColor(post.category);
               return (
                 <Link key={post.id} href={`/blog/${post.slug}`} style={{ textDecoration: "none" }}>
-                  <div className="glass-card" style={{ borderRadius: "16px", overflow: "hidden", height: "100%" }}>
-                    <div style={{ height: "6px", background: `linear-gradient(90deg, ${color}, transparent)` }} />
-                    <div style={{ padding: "1.5rem" }}>
+                  <div className="glass-card" style={{ borderRadius: "16px", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
+                    {/* Card Cover Image */}
+                    <div style={{ height: "180px", width: "100%", position: "relative", overflow: "hidden" }}>
+                      <img 
+                        src={post.image_url || `https://source.unsplash.com/featured/800x600?technology,${post.category}`} 
+                        alt={post.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease" }}
+                        className="card-image-hover"
+                      />
+                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, var(--color-primary-950), transparent)" }} />
+                    </div>
+
+                    <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
                         <span className="badge" style={{ background: `${color}15`, color: color, border: `1px solid ${color}30`, fontSize: "0.68rem" }}>{post.category}</span>
                         <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
                           <Clock size={11} /> {post.read_time} read
                         </span>
                       </div>
-                      <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1rem", color: "white", lineHeight: 1.4, marginBottom: "0.75rem" }}>{post.title}</h2>
-                      <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6, marginBottom: "1.25rem" }}>{post.excerpt}</p>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "white", lineHeight: 1.3, marginBottom: "0.75rem" }}>{post.title}</h2>
+                      <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", lineHeight: 1.6, marginBottom: "1.25rem", flex: 1 }}>{post.excerpt}</p>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                         <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
                           <Calendar size={12} /> {new Date(post.created_at).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
-                        <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--color-accent-500)", fontSize: "0.8125rem", fontWeight: 600 }}>
-                          Read <ArrowRight size={13} />
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--color-accent-500)", fontSize: "0.875rem", fontWeight: 600 }}>
+                          Read <ArrowRight size={14} />
                         </span>
                       </div>
                     </div>

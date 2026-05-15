@@ -161,15 +161,15 @@ export default function NewBlogPostPage() {
 
     let finalData = { ...formData, title: currentTitle };
 
-    // Autonomous Completion: Fill missing fields using AI
-    if (!formData.excerpt || formData.category === "Cybersecurity" || !formData.slug) {
+    // Autonomous Completion (Enforcing Excerpt, Category, and Cover Image)
+    if (!formData.excerpt || formData.category === "Cybersecurity" || !formData.image_url) {
       try {
         const response = await fetch("/api/blog/refine", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
             mode: 'complete',
-            content: `Title: ${currentTitle}\n\nContent: ${formData.content}`
+            content: `Title: ${formData.title}\n\nContent: ${formData.content}`
           }),
         });
         const data = await response.json();
@@ -178,15 +178,19 @@ export default function NewBlogPostPage() {
             ...finalData,
             excerpt: formData.excerpt || data.metadata.excerpt,
             category: (formData.category === "Cybersecurity" || !formData.category) ? data.metadata.category : formData.category,
-            slug: formData.slug || data.metadata.slug || generateSlug(currentTitle),
-            read_time: (formData.read_time === "5 min" || !formData.read_time) ? data.metadata.read_time : formData.read_time
+            read_time: (formData.read_time === "5 min" || !formData.read_time) ? data.metadata.read_time : formData.read_time,
+            // Intelligent Cover Image Suggestion if missing
+            image_url: formData.image_url || `https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200&h=630&q=80` 
           };
-          setFormData(finalData);
+          
+          // If we have a more specific category/title, let's try to get a better image
+          if (!formData.image_url && data.metadata.category) {
+            const searchTerms = encodeURIComponent(formData.title + " " + data.metadata.category);
+            finalData.image_url = `https://source.unsplash.com/featured/1200x630?${searchTerms}`;
+          }
         }
       } catch (err) {
-        console.warn("AI metadata completion failed, using fallbacks.", err);
-        // Fallback slug if AI fails
-        if (!finalData.slug) finalData.slug = generateSlug(currentTitle);
+        console.warn("AI metadata completion failed.");
       }
     }
 
@@ -359,16 +363,21 @@ export default function NewBlogPostPage() {
           />
         </div>
 
-        <div style={{ background: "rgba(0,212,255,0.03)", padding: "1.5rem", borderRadius: "12px", border: "1px dashed rgba(0,212,255,0.2)", marginBottom: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-            <Sparkles size={18} color="var(--color-accent-400)" />
-            <h3 style={{ fontSize: "0.875rem", color: "white", margin: 0 }}>AI Copywriter & Editor</h3>
+        <div style={{ background: "rgba(168,85,247,0.05)", padding: "2rem", borderRadius: "16px", border: "1px solid rgba(168,85,247,0.2)", marginBottom: "1.5rem", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--color-accent-600)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Sparkles size={18} color="white" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: "0.9375rem", color: "white", margin: 0, fontWeight: 700 }}>AI Editorial Engine</h3>
+              <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", margin: 0 }}>Command the AI to refine, expand, or stylize your content.</p>
+            </div>
           </div>
           <div style={{ display: "flex", gap: "1rem" }}>
             <input 
               className="input-field" 
-              style={{ flex: 1, fontSize: "0.8125rem" }}
-              placeholder="E.g. 'Turn this into a professional Caribbean tech article', 'Add an engaging hook'..."
+              style={{ flex: 1, fontSize: "0.875rem", background: "rgba(0,0,0,0.3)", borderColor: "rgba(168,85,247,0.3)" }}
+              placeholder="E.g. 'Add a technical deep-dive section', 'Rewrite in a more authoritative tone'..."
               value={aiInstruction}
               onChange={(e) => setAiInstruction(e.target.value)}
             />
@@ -377,9 +386,9 @@ export default function NewBlogPostPage() {
               onClick={handleAIRefine}
               disabled={aiRefining}
               className="btn-primary" 
-              style={{ padding: "0.5rem 1.5rem", fontSize: "0.8125rem", background: "linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)", border: "none" }}
+              style={{ padding: "0.5rem 2rem", fontSize: "0.875rem", background: "linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)", border: "none", borderRadius: "8px" }}
             >
-              {aiRefining ? "Refining..." : "✨ Refine Content"}
+              {aiRefining ? "Processing..." : "✨ Execute Command"}
             </button>
           </div>
         </div>
