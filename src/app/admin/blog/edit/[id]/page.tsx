@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Sparkles, Zap, Upload } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
@@ -25,10 +25,25 @@ export default function EditBlogPostPage() {
     category: "Cybersecurity",
     read_time: "5 min",
     status: "Draft",
-    author_name: "Daniel W.",
+    author_name: "Daniel J Williams.",
     content: "",
     image_url: "",
   });
+
+  // Proactive Title Extraction
+  const extractAndSetTitle = (content: string) => {
+    if (!formData.title && content) {
+      const lines = content.split('\n').filter(l => l.trim().length > 0);
+      if (lines.length > 0) {
+        const title = lines[0].replace(/^#+\s+/, '').trim();
+        setFormData(prev => ({
+          ...prev,
+          title: prev.title || title,
+          slug: prev.slug || generateSlug(title)
+        }));
+      }
+    }
+  };
 
   useEffect(() => {
     fetchPost();
@@ -93,12 +108,45 @@ export default function EditBlogPostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.content || !formData.title) {
+      setError("Title and Content are required.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
+    let finalData = { ...formData };
+
+    // Autonomous Completion for Edits
+    if (!formData.excerpt || formData.category === "Cybersecurity" || !formData.slug) {
+      try {
+        const response = await fetch("/api/blog/refine", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            mode: 'complete',
+            content: `Title: ${formData.title}\n\nContent: ${formData.content}`
+          }),
+        });
+        const data = await response.json();
+        if (data.metadata) {
+          finalData = {
+            ...finalData,
+            excerpt: formData.excerpt || data.metadata.excerpt,
+            category: (formData.category === "Cybersecurity" || !formData.category) ? data.metadata.category : formData.category,
+            slug: formData.slug || data.metadata.slug,
+            read_time: (formData.read_time === "5 min" || !formData.read_time) ? data.metadata.read_time : formData.read_time
+          };
+        }
+      } catch (err) {
+        console.warn("AI metadata completion failed during update.");
+      }
+    }
+
     const { error: updateError } = await supabase
       .from("posts")
-      .update(formData)
+      .update(finalData)
       .eq("id", params.id);
 
     if (updateError) {
@@ -241,17 +289,37 @@ export default function EditBlogPostPage() {
               className="btn-primary" 
               style={{ padding: "0.5rem 1.5rem", fontSize: "0.8125rem", background: "linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)", border: "none" }}
             >
-              {aiRefining ? "Refining..." : "✨ Refine Post"}
+              {aiRefining ? "Refining..." : "✨ Refine Content"}
             </button>
           </div>
         </div>
+
+        {/* Post-Change Recommendation */}
+        {formData.content && !aiRefining && (
+          <div style={{ padding: "1rem", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <Zap size={18} color="#A855F7" />
+              <span style={{ fontSize: "0.875rem", color: "white" }}>Draft updated. Want to professionalize the entire article?</span>
+            </div>
+            <button 
+              type="button" 
+              onClick={handleAIRefine}
+              style={{ padding: "0.4rem 1rem", background: "#A855F7", color: "white", border: "none", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
+            >
+              🚀 AI Professionalize
+            </button>
+          </div>
+        )}
 
         <div>
           <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.8rem" }}>Blog Content (Rich Text / Markdown)</label>
           <div className="modern-editor-container" style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
             <MdEditor 
               modelValue={formData.content} 
-              onChange={(val) => setFormData({ ...formData, content: val })}
+              onChange={(val) => {
+                setFormData({ ...formData, content: val });
+                extractAndSetTitle(val);
+              }}
               theme="dark"
               language="en-US"
               placeholder="Continue writing..."

@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 
 export default function BlogCMSPage() {
   const [posts, setPosts] = useState<any[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -30,6 +31,7 @@ export default function BlogCMSPage() {
       } else {
         console.log("CMS: Successfully fetched", data?.length || 0, "posts");
         setPosts(data || []);
+        setFilteredPosts(data || []);
       }
     } catch (err: any) {
       console.error("CMS: Unexpected error:", err);
@@ -65,6 +67,41 @@ export default function BlogCMSPage() {
           <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
             Publish and manage blog posts, technical articles, and insights.
           </p>
+          
+          <div style={{ display: "flex", gap: "1rem", marginTop: "2rem", flexWrap: "wrap" }}>
+            <div style={{ position: "relative", flex: "1 1 300px" }}>
+              <input 
+                placeholder="Search by title or author..." 
+                className="input-field" 
+                style={{ paddingLeft: "1rem", borderRadius: "8px", fontSize: "0.875rem" }} 
+                onChange={(e) => {
+                  const term = e.target.value.toLowerCase();
+                  const filtered = posts.filter(p => 
+                    p.title.toLowerCase().includes(term) || 
+                    p.author_name.toLowerCase().includes(term)
+                  );
+                  setFilteredPosts(filtered);
+                }}
+              />
+            </div>
+            <select 
+              className="input-field" 
+              style={{ width: "200px", borderRadius: "8px", fontSize: "0.875rem" }}
+              onChange={(e) => {
+                const cat = e.target.value;
+                if (cat === "All") {
+                  setFilteredPosts(posts);
+                } else {
+                  setFilteredPosts(posts.filter(p => p.category === cat));
+                }
+              }}
+            >
+              <option value="All">All Categories</option>
+              {["Cybersecurity", "Cloud", "AI & Automation", "Network", "Compliance", "News"].map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <Link href="/admin/blog/new" className="btn-primary" style={{ padding: "0.75rem 1.25rem", borderRadius: "8px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
           <PenSquare size={18} /> New Article
@@ -94,14 +131,14 @@ export default function BlogCMSPage() {
                     Loading articles...
                   </td>
                 </tr>
-              ) : posts.length === 0 ? (
+              ) : filteredPosts.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
-                    No articles found. Create one to get started.
+                    No articles match your search.
                   </td>
                 </tr>
               ) : (
-                posts.map((post) => (
+                filteredPosts.map((post) => (
                   <tr key={post.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.05)" }}>
                     <td style={{ padding: "1.25rem 1.5rem", color: "white", fontWeight: 700, fontSize: "0.875rem" }}>
                       {post.title}

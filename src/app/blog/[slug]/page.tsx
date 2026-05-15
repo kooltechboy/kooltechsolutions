@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Calendar, Clock, ArrowLeft, User, Share2, Mail } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import ReadingProgress from "@/components/blog/ReadingProgress";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -112,8 +113,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <ReadingProgress />
       <Navbar />
-      <main style={{ paddingTop: "72px", minHeight: "100vh", background: "var(--color-neutral-950)" }}>
+      <main className="mesh-gradient" style={{ minHeight: "100vh", background: "var(--color-primary-950)" }}>
         <section className="container" style={{ maxWidth: "1200px", margin: "4rem auto", padding: "0 2rem" }}>
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "4rem" }} className="blog-layout-grid">
@@ -161,8 +163,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 fontFamily: "Inter, sans-serif"
               }}>
                 <style dangerouslySetInnerHTML={{ __html: `
-                  .modern-blog-content h2 { color: white; font-family: Syne, sans-serif; font-weight: 800; font-size: 2rem; margin-top: 3.5rem; margin-bottom: 1.5rem; letter-spacing: -0.02em; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2.5rem; }
-                  .modern-blog-content h3 { color: var(--color-accent-400); font-family: Syne, sans-serif; font-weight: 700; font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; }
+                  .modern-blog-content { scroll-behavior: smooth; }
+                  .modern-blog-content h2 { color: white; font-family: Syne, sans-serif; font-weight: 800; font-size: 2rem; margin-top: 3.5rem; margin-bottom: 1.5rem; letter-spacing: -0.02em; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2.5rem; scroll-margin-top: 100px; }
+                  .modern-blog-content h3 { color: var(--color-accent-400); font-family: Syne, sans-serif; font-weight: 700; font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; scroll-margin-top: 100px; }
                   .modern-blog-content p { margin-bottom: 1.5rem; }
                   .modern-blog-content ul, .modern-blog-content ol { margin-bottom: 2rem; padding-left: 1.5rem; }
                   .modern-blog-content li { margin-bottom: 0.75rem; }
@@ -174,7 +177,20 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 
                 <div className="ad-slot" id="blog-top-ad">Google AdSense Slot</div>
 
-                <ReactMarkdown>{post.content}</ReactMarkdown>
+                <ReactMarkdown
+                  components={{
+                    h2: ({node, ...props}) => {
+                      const id = String(props.children).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      return <h2 id={id} {...props} />;
+                    },
+                    h3: ({node, ...props}) => {
+                      const id = String(props.children).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      return <h3 id={id} {...props} />;
+                    }
+                  }}
+                >
+                  {post.content}
+                </ReactMarkdown>
 
                 <div className="ad-slot" id="blog-bottom-ad">Google AdSense Slot</div>
 
