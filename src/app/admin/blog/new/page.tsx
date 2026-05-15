@@ -27,6 +27,22 @@ export default function NewBlogPostPage() {
     image_url: "",
   });
 
+  // Proactive Title Extraction
+  const extractAndSetTitle = (content: string) => {
+    if (!formData.title && content) {
+      // Look for H1 or first non-empty line
+      const lines = content.split('\n').filter(l => l.trim().length > 0);
+      if (lines.length > 0) {
+        const title = lines[0].replace(/^#+\s+/, '').trim();
+        setFormData(prev => ({
+          ...prev,
+          title: prev.title || title,
+          slug: prev.slug || generateSlug(title)
+        }));
+      }
+    }
+  };
+
   const handleAIRefine = async () => {
     if (!formData.content) return;
     setAiRefining(true);
@@ -94,19 +110,20 @@ export default function NewBlogPostPage() {
     const reader = new FileReader();
     reader.onload = async (event) => {
       const content = event.target?.result as string;
-      setFormData({ ...formData, content });
       
-      // Auto-extract title if possible (first H1)
-      const titleMatch = content.match(/^#\s+(.+)$/m);
-      if (titleMatch) {
-        const title = titleMatch[1];
-        setFormData(prev => ({
-          ...prev,
-          content,
-          title,
-          slug: generateSlug(title)
-        }));
+      // Clear title if it's currently empty to allow auto-fill
+      let finalTitle = formData.title;
+      const lines = content.split('\n').filter(l => l.trim().length > 0);
+      if (!finalTitle && lines.length > 0) {
+        finalTitle = lines[0].replace(/^#+\s+/, '').trim();
       }
+
+      setFormData(prev => ({ 
+        ...prev, 
+        content,
+        title: finalTitle,
+        slug: prev.slug || (finalTitle ? generateSlug(finalTitle) : "")
+      }));
     };
     reader.readAsText(file);
   };
