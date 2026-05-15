@@ -7,9 +7,10 @@ import { Calendar, Clock, ArrowLeft, User } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const supabase = await createClient();
-  const { data: post } = await supabase.from("posts").select("*").eq("slug", params.slug).single();
+  const { data: post } = await supabase.from("posts").select("*").eq("slug", slug).single();
   
   if (!post) {
     return { title: "Post Not Found" };
@@ -21,13 +22,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const supabase = await createClient();
   
   const { data: post, error } = await supabase
     .from("posts")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (error || !post) {
