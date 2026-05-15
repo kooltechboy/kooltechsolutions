@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { MdEditor } from 'md-editor-rt';
+import 'md-editor-rt/lib/style.css';
 
 export default function NewBlogPostPage() {
   const router = useRouter();
@@ -155,15 +157,44 @@ export default function NewBlogPostPage() {
         </div>
 
         <div>
-          <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Blog Content (Markdown supported)</label>
-          <textarea 
-            required
-            className="input-field" 
-            value={formData.content} 
-            onChange={e => setFormData({ ...formData, content: e.target.value })} 
-            rows={15}
-            style={{ fontFamily: "monospace" }}
-          />
+          <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.8rem" }}>Blog Content (Rich Text / Markdown)</label>
+          <div className="modern-editor-container" style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <MdEditor 
+              modelValue={formData.content} 
+              onChange={(val) => setFormData({ ...formData, content: val })}
+              theme="dark"
+              language="en-US"
+              placeholder="Start writing your masterpiece..."
+              style={{ height: '500px' }}
+              toolbars={[
+                'bold',
+                'italic',
+                'underline',
+                'strikeThrough',
+                '-',
+                'title',
+                'sub',
+                'sup',
+                'quote',
+                'unorderedList',
+                'orderedList',
+                '-',
+                'code',
+                'link',
+                'image',
+                'table',
+                '-',
+                'revoke',
+                'next',
+                'save',
+                '=',
+                'pageFullscreen',
+                'fullscreen',
+                'preview',
+                'htmlPreview'
+              ]}
+            />
+          </div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
