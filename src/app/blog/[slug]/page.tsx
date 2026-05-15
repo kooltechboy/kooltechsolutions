@@ -17,8 +17,35 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return {
-    title: `${post.title} | Kool Tech Blog`,
+    title: `${post.title} | Kool Tech Solutions`,
     description: post.excerpt,
+    alternates: {
+      canonical: `https://kooltechsolutions.com/blog/${slug}`,
+    },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      url: `https://kooltechsolutions.com/blog/${slug}`,
+      siteName: 'Kool Tech Solutions',
+      images: [
+        {
+          url: post.image_url || 'https://kooltechsolutions.com/og-image.jpg',
+          width: 1200,
+          height: 630,
+        },
+      ],
+      locale: 'en_US',
+      type: 'article',
+      publishedTime: post.created_at,
+      authors: [post.author_name],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+      images: [post.image_url || 'https://kooltechsolutions.com/og-image.jpg'],
+      creator: '@kooltechsolutions',
+    },
   };
 }
 
@@ -49,8 +76,36 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   const color = getCategoryColor(post.category);
 
+  // JSON-LD Structured Data for Google Search
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": post.title,
+    "description": post.excerpt,
+    "image": post.image_url,
+    "datePublished": post.created_at,
+    "dateModified": post.updated_at,
+    "author": {
+      "@type": "Person",
+      "name": post.author_name,
+      "url": "https://kooltechsolutions.com/about"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Kool Tech Solutions",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://kooltechsolutions.com/logo.png"
+      }
+    }
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar />
       <main style={{ paddingTop: "72px", minHeight: "100vh" }}>
         
