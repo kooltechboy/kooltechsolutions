@@ -8,7 +8,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: post } = await supabase.from("posts").select("*").eq("slug", params.slug).single();
   
   if (!post) {
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const { data: post, error } = await supabase
     .from("posts")

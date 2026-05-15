@@ -25,7 +25,7 @@ const getCategoryColor = (category: string) => {
 };
 
 export default async function BlogPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: posts, error } = await supabase
     .from("posts")
     .select("*")
@@ -76,7 +76,7 @@ export default async function BlogPage() {
         {/* Posts Grid */}
         <div className="container" style={{ paddingBottom: "5rem" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
-            {posts && posts.length > 0 ? posts.map(post => {
+            {posts && posts.length > 0 ? posts.map((post: any) => {
               const color = getCategoryColor(post.category);
               return (
                 <Link key={post.id} href={`/blog/${post.slug}`} style={{ textDecoration: "none" }}>
