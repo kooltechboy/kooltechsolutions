@@ -126,15 +126,23 @@ export default function NewBlogPostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.content || !formData.title) {
-      setError("Title and Content are required to publish.");
+    
+    // Auto-extract title from content if missing
+    let currentTitle = formData.title;
+    if (!currentTitle && formData.content) {
+      const firstLine = formData.content.split('\n')[0].replace(/^#+\s+/, '').trim();
+      currentTitle = firstLine.substring(0, 100);
+    }
+
+    if (!formData.content || !currentTitle) {
+      setError("Please provide at least some content or a title.");
       return;
     }
 
     setSaving(true);
     setError(null);
 
-    let finalData = { ...formData };
+    let finalData = { ...formData, title: currentTitle };
 
     // Autonomous Completion: Fill missing fields using AI
     if (!formData.excerpt || formData.category === "Cybersecurity" || !formData.slug) {
@@ -144,7 +152,7 @@ export default function NewBlogPostPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
             mode: 'complete',
-            content: `Title: ${formData.title}\n\nContent: ${formData.content}`
+            content: `Title: ${currentTitle}\n\nContent: ${formData.content}`
           }),
         });
         const data = await response.json();
@@ -152,16 +160,21 @@ export default function NewBlogPostPage() {
           finalData = {
             ...finalData,
             excerpt: formData.excerpt || data.metadata.excerpt,
-            category: formData.category === "Cybersecurity" ? data.metadata.category : formData.category,
-            slug: formData.slug || data.metadata.slug,
-            read_time: formData.read_time === "5 min" ? data.metadata.read_time : formData.read_time
+            category: (formData.category === "Cybersecurity" || !formData.category) ? data.metadata.category : formData.category,
+            slug: formData.slug || data.metadata.slug || generateSlug(currentTitle),
+            read_time: (formData.read_time === "5 min" || !formData.read_time) ? data.metadata.read_time : formData.read_time
           };
-          setFormData(finalData); // Update UI just in case
+          setFormData(finalData);
         }
       } catch (err) {
-        console.warn("AI metadata completion failed, proceeding with default values.", err);
+        console.warn("AI metadata completion failed, using fallbacks.", err);
+        // Fallback slug if AI fails
+        if (!finalData.slug) finalData.slug = generateSlug(currentTitle);
       }
     }
+
+    // Final Slug Sanity Check
+    if (!finalData.slug) finalData.slug = generateSlug(currentTitle);
 
     const { error: insertError } = await supabase.from("posts").insert([finalData]);
 

@@ -21,18 +21,23 @@ export async function POST(req: Request) {
         Analyze this blog content and generate professional metadata for a CMS.
         Content: ${content}
 
-        Return ONLY a JSON object with the following fields:
+        IMPORTANT: Return ONLY a valid JSON object. No markdown blocks, no commentary.
         {
           "excerpt": "A high-impact 1-2 sentence summary for SEO",
           "category": "The best category (e.g. Cybersecurity, Cloud Computing, AI & Automation, Managed IT, Digital Strategy)",
           "read_time": "Estimated read time in minutes (e.g. '5 min')",
-          "slug": "An SEO-friendly URL slug based on the content/title"
+          "slug": "an-seo-friendly-url-slug-based-on-the-content"
         }
       `;
       const result = await model.generateContent(prompt);
       const res = await result.response;
       const jsonText = res.text().replace(/```json|```/g, "").trim();
-      return NextResponse.json({ metadata: JSON.parse(jsonText) });
+      
+      // Strict JSON extraction
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      const cleanedJson = jsonMatch ? jsonMatch[0] : jsonText;
+      
+      return NextResponse.json({ metadata: JSON.parse(cleanedJson) });
     }
 
     if (mode === 'generate') {
