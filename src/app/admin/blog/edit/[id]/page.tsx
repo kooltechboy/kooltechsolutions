@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Sparkles, Zap, Upload } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Sparkles, Zap, Upload, Clock } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
@@ -52,8 +52,7 @@ export default function EditBlogPostPage() {
     setFormData(prev => ({ ...prev, read_time: `${minutes} min` }));
   }, [formData.content]);
 
-  useEffect(() => {
-    const fetchPost = async () => {
+  const fetchPost = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("posts")
@@ -68,6 +67,10 @@ export default function EditBlogPostPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchPost();
+  }, [params.id]);
 
   const handleAIRefine = async () => {
     if (!formData.content) return;
@@ -97,9 +100,9 @@ export default function EditBlogPostPage() {
     }
   };
 
-  const generateSlug = (title: string) => {
+  function generateSlug(title: string) {
     return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-  };
+  }
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
@@ -305,22 +308,6 @@ export default function EditBlogPostPage() {
           </div>
         </div>
 
-        {/* Post-Change Recommendation */}
-        {formData.content && !aiRefining && (
-          <div style={{ padding: "1rem", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <Zap size={18} color="#A855F7" />
-              <span style={{ fontSize: "0.875rem", color: "white" }}>Draft updated. Want to professionalize the entire article?</span>
-            </div>
-            <button 
-              type="button" 
-              onClick={handleAIRefine}
-              style={{ padding: "0.4rem 1rem", background: "#A855F7", color: "white", border: "none", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-            >
-              🚀 AI Professionalize
-            </button>
-          </div>
-        )}
 
         <div>
           <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.8rem" }}>Blog Content (Rich Text / Markdown)</label>
