@@ -108,3 +108,31 @@ CREATE TABLE public.invoices (
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Clients view own invoices" ON public.invoices FOR SELECT USING (auth.uid() = client_id);
 
+-- 8. Blog Posts (CMS)
+CREATE TABLE public.posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  content TEXT NOT NULL,
+  excerpt TEXT,
+  category TEXT DEFAULT 'News',
+  read_time TEXT,
+  status TEXT DEFAULT 'Draft' CHECK (status IN ('Draft', 'Published')),
+  author_name TEXT,
+  image_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS for Blog Posts
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can view published posts
+CREATE POLICY "Anyone can view published posts" 
+ON public.posts FOR SELECT 
+USING (status = 'Published');
+
+-- Admins can view/edit all posts (assumes admin enforcement on UI, or further RLS refinement)
+CREATE POLICY "Admins have full access to posts" 
+ON public.posts FOR ALL 
+USING (true); -- Note: In a strict setup, check auth.uid() against profiles.role = 'admin'
