@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 
 // Provide a fallback placeholder to prevent Vercel build crashes if the key isn't added yet
 const resend = new Resend(process.env.RESEND_API_KEY || "placeholder_key_to_bypass_build_error");
-const ADMIN_EMAIL = "danieljwilliams@kooltechsolutions.com";
+const ADMIN_EMAIL = "danieljwilliams2401@gmail.com";
 
 export async function POST(request: Request) {
   try {
@@ -18,28 +18,11 @@ export async function POST(request: Request) {
     const first_name = nameParts[0] || "Unknown";
     const last_name = nameParts.slice(1).join(" ") || "-";
 
-    // 1. Save to Database
-    const { data: leadData, error: dbError } = await supabase.from("leads").insert({
-      first_name,
-      last_name,
-      email,
-      phone,
-      company_name: company,
-      service_interest: service,
-      notes: message,
-      status: "new"
-    }).select().single();
-
-    if (dbError) {
-      console.error("Supabase error:", dbError);
-      return NextResponse.json({ error: dbError.message }, { status: 500 });
-    }
-
-    // 2. Send Automated Email Alert
+    // 1. Send Automated Email Alert
     try {
       if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_your_api_key_here') {
         await resend.emails.send({
-          from: 'KoolTech Solutions <leads@kooltechsolutions.com>',
+          from: 'onboarding@resend.dev',
           to: [ADMIN_EMAIL],
           subject: `🚀 New High-Value Lead: ${first_name} ${last_name} (${company})`,
           html: `
@@ -72,6 +55,29 @@ export async function POST(request: Request) {
       console.error("Email notification failed:", emailError);
     }
 
+    // 2. Save to Database (done after email to ensure email sends even if DB fails)
+    let leadId = null;
+    try {
+      const { data: leadData, error: dbError } = await supabase.from("leads").insert({
+        first_name,
+        last_name,
+        email,
+        phone,
+        company_name: company,
+        service_interest: service,
+        notes: message,
+        status: "new"
+      }).select().single();
+
+      if (dbError) {
+        console.error("Supabase error:", dbError);
+      } else {
+        leadId = leadData?.id;
+      }
+    } catch (dbEx) {
+      console.error("Database exception:", dbEx);
+    }
+
     // 3. Optional: Discord Webhook Alert (Instant)
     try {
       const DISCORD_WEBHOOK = process.env.DISCORD_LEADS_WEBHOOK;
@@ -99,7 +105,7 @@ export async function POST(request: Request) {
       console.error("Discord alert failed:", discordError);
     }
 
-    return NextResponse.json({ success: true, leadId: leadData?.id });
+    return NextResponse.json({ success: true, leadId });
   } catch (err: any) {
     console.error("API Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
