@@ -339,25 +339,7 @@ export default function NewBlogPostPage() {
           </div>
         </div>
 
-        <div>
-          <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Excerpt (Summary for card)</label>
-          <textarea 
-            className="input-field" 
-            value={formData.excerpt} 
-            onChange={e => setFormData({ ...formData, excerpt: e.target.value })} 
-            rows={2}
-          />
-        </div>
 
-        <div>
-          <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Cover Image URL (Optional)</label>
-          <input 
-            className="input-field" 
-            value={formData.image_url} 
-            onChange={e => setFormData({ ...formData, image_url: e.target.value })} 
-            placeholder="https://..."
-          />
-        </div>
 
         <div style={{ background: "rgba(168,85,247,0.05)", padding: "2rem", borderRadius: "16px", border: "1px solid rgba(168,85,247,0.2)", marginBottom: "1.5rem", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
@@ -377,15 +359,27 @@ export default function NewBlogPostPage() {
               value={aiInstruction}
               onChange={(e) => setAiInstruction(e.target.value)}
             />
-            <button 
-              type="button"
-              onClick={handleAIRefine}
-              disabled={aiRefining}
-              className="btn-primary" 
-              style={{ padding: "0.5rem 2rem", fontSize: "0.875rem", background: "linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)", border: "none", borderRadius: "8px" }}
-            >
-              {aiRefining ? "Processing..." : "✨ Execute Command"}
-            </button>
+            {formData.content ? (
+              <button 
+                type="button"
+                onClick={handleAIRefine}
+                disabled={aiRefining}
+                className="btn-primary" 
+                style={{ padding: "0.5rem 2rem", fontSize: "0.875rem", background: "linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)", border: "none", borderRadius: "8px" }}
+              >
+                {aiRefining ? "Processing..." : "✨ Refine Content"}
+              </button>
+            ) : (
+              <button 
+                type="button"
+                onClick={handleGenerateFromTitle}
+                disabled={aiRefining || !formData.title}
+                className="btn-primary" 
+                style={{ padding: "0.5rem 2rem", fontSize: "0.875rem", background: "linear-gradient(135deg, #10B981 0%, #059669 100%)", border: "none", borderRadius: "8px" }}
+              >
+                {aiRefining ? "Generating..." : "⚡ Generate From Title"}
+              </button>
+            )}
           </div>
         </div>
 

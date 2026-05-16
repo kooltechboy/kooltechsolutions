@@ -1,26 +1,51 @@
-import type { Metadata } from "next";
-import { Download, Search, FileText } from "lucide-react";
-
-export const metadata: Metadata = { title: "Admin — Invoices" };
-
-const invoices = [
-  { id: "INV-2024-089", client: "Acme Corporation", date: "May 01, 2026", amount: "$4,500.00", status: "Paid" },
-  { id: "INV-2024-090", client: "TechStart Logistics", date: "May 01, 2026", amount: "$1,200.00", status: "Paid" },
-  { id: "INV-2024-091", client: "Global Finance Group", date: "May 02, 2026", amount: "$8,900.00", status: "Pending" },
-  { id: "INV-2024-092", client: "Hotel Del Mar", date: "Apr 15, 2026", amount: "$3,200.00", status: "Overdue" },
-  { id: "INV-2024-093", client: "Apex Manufacturing", date: "May 03, 2026", amount: "$2,400.00", status: "Pending" },
-];
+"use client";
+import React, { useEffect, useState } from "react";
+import { Download, Search, FileText, Loader2, Plus } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  async function fetchInvoices() {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*, client:client_id(first_name, last_name, company_name)')
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setInvoices(data);
+    }
+    setLoading(false);
+  }
+
+  if (loading) {
+    return (
+      <div style={{ height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
+      </div>
+    );
+  }
+
   return (
-    <div style={{ padding: "2rem" }}>
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>
-          Billing & Invoices
-        </h1>
-        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-          Track accounts receivable and generate billing statements.
-        </p>
+    <div style={{ padding: "2rem", maxWidth: "1600px", margin: "0 auto" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+        <div>
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>
+            Billing & Invoices
+          </h1>
+          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
+            Track accounts receivable and generate billing statements.
+          </p>
+        </div>
+        <button className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Plus size={16} /> Create Invoice
+        </button>
       </div>
 
       <div className="glass-card" style={{ borderRadius: "12px", overflow: "hidden" }}>
@@ -30,7 +55,7 @@ export default function InvoicesPage() {
             <input 
               type="text" 
               placeholder="Search invoices by ID or Client..." 
-              style={{ width: "100%", padding: "0.625rem 1rem 0.625rem 2.5rem", borderRadius: "8px", border: "1px solid rgba(0,212,255,0.1)", fontSize: "0.875rem", outline: "none" }}
+              style={{ width: "100%", padding: "0.625rem 1rem 0.625rem 2.5rem", borderRadius: "8px", border: "1px solid rgba(0,212,255,0.1)", fontSize: "0.875rem", outline: "none", background: "transparent", color: "white" }}
             />
           </div>
           <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -53,32 +78,50 @@ export default function InvoicesPage() {
               </tr>
             </thead>
             <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.05)" }}>
-                  <td style={{ padding: "1.25rem 1.5rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-accent-600)", fontWeight: 600, fontSize: "0.875rem" }}>
-                      <FileText size={16} /> {inv.id}
-                    </div>
-                  </td>
-                  <td style={{ padding: "1.25rem 1.5rem", color: "white", fontWeight: 500, fontSize: "0.875rem" }}>{inv.client}</td>
-                  <td style={{ padding: "1.25rem 1.5rem", color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>{inv.date}</td>
-                  <td style={{ padding: "1.25rem 1.5rem", color: "white", fontWeight: 700, fontSize: "0.875rem" }}>{inv.amount}</td>
-                  <td style={{ padding: "1.25rem 1.5rem" }}>
-                    <span style={{
-                      padding: "0.25rem 0.625rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600,
-                      background: inv.status === "Paid" ? "rgba(0,230,118,0.1)" : inv.status === "Pending" ? "rgba(255,179,0,0.1)" : "rgba(255,68,68,0.1)",
-                      color: inv.status === "Paid" ? "var(--color-success)" : inv.status === "Pending" ? "var(--color-warning)" : "var(--color-danger)"
-                    }}>
-                      {inv.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: "1.25rem 1.5rem" }}>
-                    <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "none", border: "1px solid rgba(0,212,255,0.1)", padding: "0.375rem 0.75rem", borderRadius: "6px", cursor: "pointer", color: "var(--color-neutral-400)", fontSize: "0.75rem", fontWeight: 600 }}>
-                      <Download size={14} /> PDF
-                    </button>
+              {invoices.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: "4rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
+                    No invoices generated yet.
                   </td>
                 </tr>
-              ))}
+              ) : invoices.map((inv) => {
+                const isPaid = inv.status.toLowerCase() === "paid";
+                const isPending = inv.status.toLowerCase() === "outstanding" || inv.status.toLowerCase() === "draft";
+                const clientName = inv.client?.company_name || `${inv.client?.first_name || ''} ${inv.client?.last_name || ''}`.trim() || 'Unknown Client';
+                
+                return (
+                  <tr key={inv.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.05)", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,212,255,0.03)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <td style={{ padding: "1.25rem 1.5rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "white", fontWeight: 600, fontSize: "0.875rem" }}>
+                        <FileText size={16} color="var(--color-accent-500)" /> {inv.invoice_number || inv.id.slice(0, 8)}
+                      </div>
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem", color: "var(--color-neutral-300)", fontWeight: 500, fontSize: "0.875rem" }}>
+                      {clientName}
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem", color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
+                      {inv.issued_date ? new Date(inv.issued_date).toLocaleDateString() : new Date(inv.created_at).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem", color: "white", fontWeight: 700, fontSize: "0.875rem", fontFamily: "JetBrains Mono, monospace" }}>
+                      ${Number(inv.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem" }}>
+                      <span style={{
+                        padding: "0.35rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase",
+                        background: isPaid ? "rgba(16,185,129,0.1)" : isPending ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)",
+                        color: isPaid ? "#10b981" : isPending ? "#f59e0b" : "#ef4444"
+                      }}>
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem" }}>
+                      <button style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.2)", padding: "0.375rem 0.75rem", borderRadius: "6px", cursor: "pointer", color: "var(--color-accent-500)", fontSize: "0.75rem", fontWeight: 600 }}>
+                        <Download size={14} /> PDF
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

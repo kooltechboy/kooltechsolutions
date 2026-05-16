@@ -13,6 +13,8 @@ export default function AdminTicketDetailPage() {
   const [isInternal, setIsInternal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -52,8 +54,28 @@ export default function AdminTicketDetailPage() {
         .order('created_at', { ascending: true });
       
       if (msgs) setMessages(msgs);
+
+      // Fetch AI summary after data loads
+      if (ticketData) fetchAiSummary(ticketData, msgs || []);
     }
     setLoading(false);
+  }
+
+  async function fetchAiSummary(ticketData: any, msgs: any[]) {
+    setAiLoading(true);
+    try {
+      const res = await fetch('/api/ai-workforce/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketData, messages: msgs }),
+      });
+      const data = await res.json();
+      if (data.summary) setAiSummary(data.summary);
+    } catch (e) {
+      console.error('AI summary fetch failed', e);
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   async function handleSendMessage(e: React.FormEvent) {
@@ -250,11 +272,34 @@ export default function AdminTicketDetailPage() {
               <Bot size={20} color="var(--color-accent-500)" />
               <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700 }}>AI Intelligence</h3>
             </div>
-            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6 }}>
-              <strong>Suggested Fix:</strong> Intermittent VPN drops often relate to MTU size issues or ISP throttling. 
-              <br/><br/>
-              <em>Recommended Action:</em> Run a persistent ping test to the gateway and check logs for re-authentication requests.
-            </div>
+            {aiLoading ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>
+                <Loader2 size={16} className="animate-spin" color="var(--color-accent-500)" />
+                Max is analyzing this ticket...
+              </div>
+            ) : aiSummary ? (
+              <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.7, whiteSpace: "pre-line" }}>
+                {aiSummary.split('\n').map((line, i) => {
+                  if (line.startsWith('Suggested Fix:')) {
+                    return <div key={i}><span style={{ color: "white", fontWeight: 700 }}>Suggested Fix:</span>{line.replace('Suggested Fix:', '')}</div>;
+                  }
+                  if (line.startsWith('Recommended Action:')) {
+                    return <div key={i} style={{ marginTop: "0.75rem" }}><span style={{ color: "var(--color-accent-500)", fontWeight: 700 }}>Recommended Action:</span>{line.replace('Recommended Action:', '')}</div>;
+                  }
+                  return line ? <div key={i}>{line}</div> : null;
+                })}
+              </div>
+            ) : (
+              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>No AI analysis available.</div>
+            )}
+            {!aiLoading && ticket && (
+              <button
+                onClick={() => fetchAiSummary(ticket, messages)}
+                style={{ marginTop: "1rem", background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)", color: "var(--color-accent-500)", fontSize: "0.75rem", fontWeight: 600, padding: "0.4rem 0.875rem", borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem" }}
+              >
+                ↻ Re-analyze
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         const priorityColor = priority === 'critical' ? '#ef4444' : priority === 'high' ? '#f59e0b' : '#3b82f6';
         
         await resend.emails.send({
-          from: 'HelpDesk <support@kooltechsolutions.com>',
+          from: 'onboarding@resend.dev',
           to: [ADMIN_EMAIL],
           subject: `🎟️ New Ticket [${priority?.toUpperCase() || 'NORMAL'}]: ${subject}`,
           html: `
