@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     5. Context: The user is currently on the ${pageContext || 'Home'} page.`;
 
     const result = await streamText({
-      model: google('gemini-1.5-pro'),
+      model: google('gemini-1.5-pro') as any,
       messages,
       system: systemPrompt,
       tools: {
