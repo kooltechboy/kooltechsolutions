@@ -82,6 +82,9 @@ export default function AIChatWidget() {
       agentRole: agent.role,
       context: { pathname }
     },
+    onError: (err) => {
+      console.error('Neural Handshake Error:', err);
+    },
     onFinish: (message) => {
       // Save to persistence
       localStorage.setItem(`kts_messages_${sessionId}`, JSON.stringify([...messages, message]));
@@ -229,6 +232,14 @@ export default function AIChatWidget() {
                         <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
                       </div>
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{agent.name} is thinking...</span>
+                    </div>
+                  </div>
+                )}
+                {error && (
+                  <div className="flex justify-center p-2">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-[11px] text-red-400 flex items-center gap-2">
+                      <Shield size={12} />
+                      Neural Handshake Failed. Please try again.
                     </div>
                   </div>
                 )}
