@@ -111,7 +111,15 @@ function ContactContent() {
                   <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6, marginBottom: "1rem" }}>
                     Prefer to see our platform in action? Book a 30-minute live demo with our team.
                   </p>
-                  <button onClick={() => setBookingOpen(true)} className="btn-primary" style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}>
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setBookingOpen(true);
+                    }} 
+                    className="btn-primary" 
+                    style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}
+                  >
                     Book a Demo Slot
                   </button>
                 </div>

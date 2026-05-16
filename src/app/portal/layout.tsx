@@ -26,7 +26,6 @@ const navItems = [
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-  const [showBooking, setShowBooking] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false); // Global portal booking
   const [profile, setProfile] = useState<any>(null);
   const pathname = usePathname();
@@ -37,7 +36,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.from("profiles").select("first_name, last_name, company_name").eq("id", user.id).single();
-        setProfile(data);
+        setProfile({ ...data, email: user.email });
       }
     }
     loadUser();
@@ -146,7 +145,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   <ChevronDown size={14} color="var(--color-neutral-500)" />
                 </Link>
                 <button 
-                  onClick={() => setBookingOpen(true)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setBookingOpen(true);
+                  }}
                   className="btn-primary" 
                   style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", borderRadius: "8px", marginLeft: "0.5rem" }}
                 >
@@ -159,7 +162,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </main>
       </div>
 
-      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
+      <BookingModal 
+        isOpen={bookingOpen} 
+        onClose={() => setBookingOpen(false)} 
+        initialName={profile ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() : ""}
+        initialEmail={profile?.email || ""}
+      />
 
       <style>{`
         .portal-sidebar { transform: translateX(-100%); }

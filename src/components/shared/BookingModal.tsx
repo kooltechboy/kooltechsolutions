@@ -1,15 +1,36 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2 } from "lucide-react";
 
-export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export default function BookingModal({ 
+  isOpen, 
+  onClose,
+  initialName = "",
+  initialEmail = ""
+}: { 
+  isOpen: boolean; 
+  onClose: () => void;
+  initialName?: string;
+  initialEmail?: string;
+}) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
-  const [form, setForm] = useState({ name: "", email: "" });
+  const [form, setForm] = useState({ name: initialName, email: initialEmail });
+
+  // Update form if initial values change (e.g. after profile loads)
+  useEffect(() => {
+    if (initialName || initialEmail) {
+      setForm(prev => ({
+        ...prev,
+        name: prev.name || initialName,
+        email: prev.email || initialEmail
+      }));
+    }
+  }, [initialName, initialEmail]);
 
   if (!isOpen) return null;
 
@@ -143,12 +164,16 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
   const times = ["09:00 AM", "10:30 AM", "01:00 PM", "02:30 PM", "04:00 PM"];
 
   return (
-    <div style={{
-      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)",
-      zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
-      padding: "1rem", animation: "fadeIn 0.2s ease"
-    }}>
+    <div 
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)",
+        zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "1rem", animation: "fadeIn 0.2s ease"
+      }}
+    >
       <div className="glass-card" style={{
         width: "100%", maxWidth: "500px", borderRadius: "20px",
         overflow: "hidden", position: "relative",
