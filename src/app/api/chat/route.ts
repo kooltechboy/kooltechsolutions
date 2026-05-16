@@ -3,15 +3,17 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-});
+export const runtime = 'nodejs';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
+  const google = createGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  });
+
   try {
     const { messages, sessionId, agentName, pageContext, telemetry } = await req.json();
     const currentSessionId = sessionId || "no-session";
@@ -77,9 +79,8 @@ export async function POST(req: Request) {
     console.log('[AI CHAT] Diagnostic: Initializing streamText with gemini-1.5-flash...');
     
     const result = await streamText({
-      model: google('gemini-1.5-flash') as any,
+      model: google('gemini-1.5-flash'),
       messages,
-      system: systemPrompt,
     });
 
     return result.toDataStreamResponse();
