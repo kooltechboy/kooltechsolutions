@@ -76,16 +76,41 @@ export async function POST(req: Request) {
 
     IMPORTANT: If you use the captureLead tool, always follow up with a verbal confirmation.`;
 
-    console.log('[AI CHAT] Diagnostic: Initializing streamText with gemini-1.5-flash...');
+    console.log('[AI CHAT] NUCLEAR OPTION: Initializing Direct Native Fetch to Google...');
     
-    const result = await streamText({
-      model: google('gemini-1.5-flash'),
-      messages,
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: messages.map((m: any) => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.content }]
+          })),
+          systemInstruction: {
+            parts: [{ text: "You are the KoolTech Solutions AI Workforce. Act as an expert IT Solutions architect." }]
+          }
+        })
+      }
+    );
 
-    return result.toDataStreamResponse();
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[AI CHAT] Direct API Error:', errorData);
+      throw new Error(errorData.error?.message || 'Google API Connection Failed');
+    }
+
+    // Return the raw stream back to the frontend
+    return new Response(response.body, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (error: any) {
-    console.error('AI Chat Error (DIAGNOSTIC):', error);
+    console.error('AI Chat Error (NUCLEAR):', error);
     return new Response(JSON.stringify({ error: error.message || 'Internal Server Error.' }), { status: 500 });
   }
 }
