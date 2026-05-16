@@ -2,17 +2,17 @@
 import { useState } from "react";
 import { 
   HardDrive, Monitor, Laptop, Server, Printer, Network, Search, Filter, 
-  CheckCircle, AlertTriangle, Shield, Clock, Cpu, Zap, Activity, 
-  ExternalLink, Settings, Tool, X, Info, Calendar, User, Hash, Terminal,
-  ChevronRight, ArrowUpRight
+  CheckCircle2, AlertTriangle, Shield, Clock, Cpu, Zap, Activity, 
+  ExternalLink, Settings, Wrench, X, Info, Calendar, User, Hash, Terminal,
+  ChevronRight, ArrowUpRight, ShieldCheck, Database
 } from "lucide-react";
 
 const assetTypes: Record<string, any> = {
-  laptop: { icon: Laptop, color: "#00D4FF", bg: "rgba(0,212,255,0.05)" },
-  workstation: { icon: Monitor, color: "#A855F7", bg: "rgba(168,85,247,0.05)" },
-  server: { icon: Server, color: "#FF4444", bg: "rgba(255,68,68,0.05)" },
-  printer: { icon: Printer, color: "#FFB300", bg: "rgba(255,179,0,0.05)" },
-  network: { icon: Network, color: "#00E676", bg: "rgba(0,230,118,0.05)" },
+  laptop: { icon: Laptop, color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", border: "border-[#00D4FF]/20" },
+  workstation: { icon: Monitor, color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", border: "border-[#A855F7]/20" },
+  server: { icon: Server, color: "text-[#FF4444]", bg: "bg-[#FF4444]/10", border: "border-[#FF4444]/20" },
+  printer: { icon: Printer, color: "text-[#FFB300]", bg: "bg-[#FFB300]/10", border: "border-[#FFB300]/20" },
+  network: { icon: Network, color: "text-[#00E676]", bg: "bg-[#00E676]/10", border: "border-[#00E676]/20" },
 };
 
 const assets = [
@@ -36,139 +36,130 @@ export default function AssetsPage() {
   );
 
   const healthy = assets.filter(a => a.status === "healthy").length;
-  const warnings = assets.filter(a => a.status === "warning").length;
 
   return (
-    <div>
-      <div style={{ marginBottom: "2.5rem" }}>
-        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>
-          Asset <span className="gradient-text">Intelligence</span>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div>
+        <h1 className="text-4xl font-black text-white tracking-tight mb-2 font-syne uppercase">
+          Asset <span className="text-[#00D4FF]">Intelligence</span>
         </h1>
-        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-          Automated hardware lifecycle management and real-time health telemetry.
+        <p className="text-neutral-400 text-sm max-w-md">
+          Automated hardware lifecycle management and real-time health telemetry for your enterprise fleet.
         </p>
       </div>
 
       {/* Summary Metrics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem", marginBottom: "2.5rem" }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: HardDrive, label: "Managed Nodes", value: assets.length, color: "#00D4FF", sub: "+2 this month" },
-          { icon: CheckCircle, label: "Uptime Health", value: `${Math.round((healthy/assets.length)*100)}%`, color: "#00E676", sub: "Operational" },
-          { icon: Shield, label: "Compliance", value: "100%", color: "#A855F7", sub: "All patched" },
-          { icon: Calendar, label: "Lifecycle", value: "3.2y", color: "#FFB300", sub: "Avg. Fleet Age" },
+          { icon: HardDrive, label: "Managed Nodes", value: assets.length, color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", sub: "+2 this month" },
+          { icon: CheckCircle2, label: "Uptime Health", value: `${Math.round((healthy/assets.length)*100)}%`, color: "text-[#00E676]", bg: "bg-[#00E676]/10", sub: "All operational" },
+          { icon: ShieldCheck, label: "Compliance", value: "100%", color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", sub: "Security Patched" },
+          { icon: Clock, label: "Avg Fleet Age", value: "3.2y", color: "text-[#FFB300]", bg: "bg-[#FFB300]/10", sub: "Standard Refresh" },
         ].map(kpi => (
-          <div key={kpi.label} className="kpi-card" style={{ border: `1px solid ${kpi.color}15`, background: `linear-gradient(135deg, ${kpi.color}05 0%, transparent 100%)` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-              <div style={{ width: 40, height: 40, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <kpi.icon size={20} color={kpi.color} />
+          <div key={kpi.label} className="glass-card p-6 border border-white/5 bg-white/[0.02] flex flex-col gap-4">
+            <div className="flex justify-between items-start">
+              <div className={`p-3 rounded-xl ${kpi.bg} ${kpi.color} border border-white/5`}>
+                <kpi.icon size={20} />
               </div>
-              <div style={{ color: kpi.color, fontSize: "0.75rem", fontWeight: 700 }}>LIVE</div>
+              <div className={`${kpi.color} text-[10px] font-black uppercase tracking-widest`}>Live</div>
             </div>
-            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "1.875rem", fontWeight: 800, color: "white" }}>{kpi.value}</div>
-            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", fontWeight: 600, marginTop: "0.25rem" }}>{kpi.label}</div>
-            <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{kpi.sub}</div>
+            <div>
+              <div className="text-3xl font-black text-white font-syne tracking-tight">{kpi.value}</div>
+              <div className="text-neutral-400 text-xs font-bold uppercase tracking-wider mt-1">{kpi.label}</div>
+              <div className="text-neutral-600 text-[10px] uppercase font-bold tracking-widest mt-2">{kpi.sub}</div>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Inventory Table */}
-      <div className="glass-card" style={{ padding: "1.5rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.125rem" }}>Managed Fleet</h2>
-            <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>Displaying all monitored assets</div>
+      {/* Main Inventory */}
+      <div className="glass-card rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-white/[0.02]">
+        <div className="p-6 border-b border-white/5 bg-white/[0.01] flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div>
+            <h2 className="text-white font-bold font-syne tracking-tight">Managed Fleet</h2>
+            <p className="text-neutral-500 text-xs mt-1">Displaying active hardware across all branch locations</p>
           </div>
-          <div style={{ position: "relative" }}>
-            <Search size={16} color="var(--color-neutral-400)" style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }} />
-            <input
-              type="text"
-              placeholder="Search by name, serial, or user..."
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search fleet..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all placeholder:text-neutral-700"
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ 
-                padding: "0.75rem 1rem 0.75rem 2.5rem", 
-                borderRadius: "12px", 
-                border: "1px solid rgba(255,255,255,0.1)", 
-                background: "rgba(0,0,0,0.2)", 
-                color: "white", 
-                fontSize: "0.875rem", 
-                outline: "none", 
-                width: "320px",
-                transition: "border-color 0.2s"
-              }}
-              onFocus={e => e.target.style.borderColor = "var(--color-accent-500)"}
-              onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
 
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 0.25rem" }}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
             <thead>
-              <tr style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>
-                <th style={{ textAlign: "left", padding: "1rem" }}>Asset Detail</th>
-                <th style={{ textAlign: "left", padding: "1rem" }}>User Context</th>
-                <th style={{ textAlign: "left", padding: "1rem" }}>Hardware State</th>
-                <th style={{ textAlign: "left", padding: "1rem" }}>Health</th>
-                <th style={{ textAlign: "left", padding: "1rem" }}>Lifecycle</th>
-                <th style={{ textAlign: "right", padding: "1rem" }}>Actions</th>
+              <tr className="border-b border-white/5 bg-white/[0.01]">
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Asset Detail</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">User Context</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Hardware State</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Health Score</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Lifecycle</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-white/5">
               {filtered.map(asset => {
-                const config = assetTypes[asset.type];
+                const config = assetTypes[asset.type] || assetTypes.workstation;
                 return (
                   <tr 
                     key={asset.id} 
-                    style={{ background: "rgba(255,255,255,0.02)", cursor: "pointer", transition: "all 0.2s" }}
+                    className="group hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setSelectedAsset(asset)}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                   >
-                    <td style={{ padding: "1rem", borderRadius: "12px 0 0 12px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                        <div style={{ width: 42, height: 42, borderRadius: "10px", background: config.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <config.icon size={20} color={config.color} />
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${config.bg} ${config.color} border ${config.border}`}>
+                          <config.icon size={18} />
                         </div>
                         <div>
-                          <div style={{ color: "white", fontWeight: 700, fontSize: "0.9375rem" }}>{asset.name}</div>
-                          <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontFamily: "monospace" }}>{asset.serial}</div>
+                          <div className="text-white font-bold text-sm tracking-tight">{asset.name}</div>
+                          <div className="text-neutral-500 text-[10px] font-mono mt-0.5">{asset.serial}</div>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: "1rem" }}>
-                      <div style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>{asset.user}</div>
-                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>Last Active: {asset.lastSeen}</div>
-                    </td>
-                    <td style={{ padding: "1rem" }}>
-                      <div style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 600 }}>{asset.os}</div>
-                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{asset.cpu} • {asset.ram}</div>
-                    </td>
-                    <td style={{ padding: "1rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <div style={{ flex: 1, width: "60px", height: "6px", background: "rgba(255,255,255,0.05)", borderRadius: "99px", overflow: "hidden" }}>
-                          <div style={{ width: `${asset.health}%`, height: "100%", background: asset.health > 90 ? "#00E676" : asset.health > 70 ? "#FFB300" : "#FF4444" }} />
-                        </div>
-                        <span style={{ color: asset.health > 90 ? "#00E676" : "#FFB300", fontSize: "0.75rem", fontWeight: 800 }}>{asset.health}%</span>
+                    <td className="px-6 py-5">
+                      <div className="text-white font-semibold text-sm">{asset.user}</div>
+                      <div className="text-neutral-500 text-[10px] mt-0.5 flex items-center gap-1 uppercase font-bold tracking-widest">
+                        <Clock size={10} /> {asset.lastSeen}
                       </div>
                     </td>
-                    <td style={{ padding: "1rem" }}>
-                      <div style={{ 
-                        display: "inline-flex", 
-                        padding: "0.25rem 0.625rem", 
-                        borderRadius: "6px", 
-                        fontSize: "0.7rem", 
-                        fontWeight: 800,
-                        background: asset.warranty === "Expired" ? "rgba(255,68,68,0.1)" : "rgba(0,212,255,0.1)",
-                        color: asset.warranty === "Expired" ? "#FF4444" : "#00D4FF"
-                      }}>
+                    <td className="px-6 py-5 text-sm">
+                      <div className="text-neutral-300 font-medium">{asset.os}</div>
+                      <div className="text-neutral-500 text-[10px] mt-0.5">{asset.cpu} · {asset.ram}</div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-[80px] h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-1000 ${
+                              asset.health > 90 ? 'bg-green-500' : asset.health > 70 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${asset.health}%` }}
+                          />
+                        </div>
+                        <span className={`text-[10px] font-black tracking-widest ${
+                          asset.health > 90 ? 'text-green-400' : 'text-yellow-400'
+                        }`}>{asset.health}%</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className={`inline-flex px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-[0.15em] border ${
+                        asset.warranty === "Expired" 
+                          ? "bg-red-500/10 text-red-400 border-red-500/20" 
+                          : "bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/20"
+                      }`}>
                         {asset.warranty === "Expired" ? "EOL REACHED" : `EXP ${asset.warranty}`}
                       </div>
                     </td>
-                    <td style={{ padding: "1rem", borderRadius: "0 12px 12px 0", textAlign: "right" }}>
-                      <button style={{ background: "transparent", border: "none", color: "var(--color-neutral-500)", padding: "0.5rem" }}>
-                        <ChevronRight size={18} />
-                      </button>
+                    <td className="px-6 py-5 text-right">
+                      <ChevronRight size={18} className="text-neutral-700 group-hover:text-white group-hover:translate-x-1 transition-all inline-block" />
                     </td>
                   </tr>
                 );
@@ -178,100 +169,97 @@ export default function AssetsPage() {
         </div>
       </div>
 
-      {/* Asset Detail Slide-over */}
+      {/* Detail Slide-over */}
       {selectedAsset && (
-        <div style={{ 
-          position: "fixed", top: 0, right: 0, bottom: 0, width: "450px", 
-          background: "rgba(10,15,25,0.98)", backdropFilter: "blur(20px)",
-          borderLeft: "1px solid rgba(255,255,255,0.1)", zIndex: 1000,
-          boxShadow: "-20px 0 50px rgba(0,0,0,0.5)",
-          padding: "2.5rem", animation: "slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem" }}>
-            <div style={{ width: 56, height: 56, borderRadius: "14px", background: assetTypes[selectedAsset.type].bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {(() => {
-                const Icon = assetTypes[selectedAsset.type].icon;
-                return <Icon size={28} color={assetTypes[selectedAsset.type].color} />;
-              })()}
-            </div>
-            <button 
-              onClick={() => setSelectedAsset(null)}
-              style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: "1.5rem", fontWeight: 800, color: "white", marginBottom: "0.5rem" }}>{selectedAsset.name}</h2>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-500)", fontSize: "0.875rem", marginBottom: "2.5rem" }}>
-            <Hash size={14} /> {selectedAsset.id} • <Terminal size={14} /> {selectedAsset.serial}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2.5rem" }}>
-            <div style={{ background: "rgba(255,255,255,0.03)", padding: "1.25rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", marginBottom: "0.75rem" }}>Processor</div>
-              <div style={{ color: "white", fontWeight: 700, fontSize: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Cpu size={16} color="#00D4FF" /> {selectedAsset.cpu}
+        <div className="fixed inset-0 z-[1000] flex justify-end">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedAsset(null)} />
+          <div className="relative w-full max-w-lg h-full bg-[#0A1628] border-l border-white/10 shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex justify-between items-center mb-10">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${assetTypes[selectedAsset.type]?.bg} ${assetTypes[selectedAsset.type]?.color} border ${assetTypes[selectedAsset.type]?.border} shadow-lg shadow-black/20`}>
+                {(() => {
+                  const Icon = assetTypes[selectedAsset.type]?.icon || Monitor;
+                  return <Icon size={24} />;
+                })()}
               </div>
+              <button 
+                onClick={() => setSelectedAsset(null)}
+                className="p-2 text-neutral-400 hover:text-white transition-colors rounded-xl bg-white/5 border border-white/10"
+              >
+                <X size={24} />
+              </button>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.03)", padding: "1.25rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", marginBottom: "0.75rem" }}>Memory</div>
-              <div style={{ color: "white", fontWeight: 700, fontSize: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Activity size={16} color="#A855F7" /> {selectedAsset.ram}
-              </div>
-            </div>
-          </div>
 
-          <div style={{ marginBottom: "2.5rem" }}>
-            <h3 style={{ fontSize: "0.875rem", fontWeight: 700, color: "white", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Live Telemetry</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {[
-                { label: "CPU Usage", value: 42, color: "#00D4FF" },
-                { label: "Memory Load", value: 68, color: "#A855F7" },
-                { label: "Disk Health", value: 94, color: "#00E676" },
-              ].map(stat => (
-                <div key={stat.label}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.8125rem" }}>
-                    <span style={{ color: "var(--color-neutral-400)" }}>{stat.label}</span>
-                    <span style={{ color: "white", fontWeight: 700 }}>{stat.value}%</span>
-                  </div>
-                  <div style={{ height: "6px", background: "rgba(255,255,255,0.05)", borderRadius: "99px", overflow: "hidden" }}>
-                    <div style={{ width: `${stat.value}%`, height: "100%", background: stat.color }} />
-                  </div>
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-3xl font-black text-white font-syne tracking-tight uppercase">{selectedAsset.name}</h2>
+                <div className="flex items-center gap-3 text-neutral-500 text-xs font-mono mt-2">
+                  <span className="flex items-center gap-1"><Hash size={12} /> {selectedAsset.id}</span>
+                  <span className="w-1 h-1 rounded-full bg-neutral-800" />
+                  <span className="flex items-center gap-1 uppercase font-bold tracking-widest"><Terminal size={12} /> {selectedAsset.serial}</span>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          <div style={{ background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "16px", padding: "1.25rem", marginBottom: "2rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-              <Shield size={18} color="#00D4FF" />
-              <span style={{ color: "white", fontWeight: 700, fontSize: "0.875rem" }}>Enterprise Protection</span>
-            </div>
-            <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>
-              This device is currently covered under the Global Managed Security Policy. All patches are up to date.
-            </p>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 space-y-2">
+                  <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                    <Cpu size={12} className="text-[#00D4FF]" /> Processor
+                  </div>
+                  <div className="text-white font-bold text-sm tracking-tight">{selectedAsset.cpu}</div>
+                </div>
+                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 space-y-2">
+                  <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                    <Activity size={12} className="text-[#A855F7]" /> Memory
+                  </div>
+                  <div className="text-white font-bold text-sm tracking-tight">{selectedAsset.ram}</div>
+                </div>
+              </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-            <button style={{ 
-              background: "white", color: "black", border: "none", borderRadius: "12px", 
-              padding: "1rem", fontWeight: 700, fontSize: "0.875rem", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem"
-            }}>
-              <Tool size={16} /> Request Service
-            </button>
-            <button style={{ 
-              background: "rgba(255,255,255,0.05)", color: "white", border: "1px solid rgba(255,255,255,0.1)", 
-              borderRadius: "12px", padding: "1rem", fontWeight: 700, fontSize: "0.875rem", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem"
-            }}>
-              <ArrowUpRight size={16} /> Remote View
-            </button>
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] px-1">Live Telemetry</h3>
+                <div className="space-y-6 bg-white/[0.02] p-6 rounded-3xl border border-white/5">
+                  {[
+                    { label: "CPU Usage", value: 42, color: "bg-[#00D4FF]", glow: "shadow-[#00D4FF]/20" },
+                    { label: "Memory Load", value: 68, color: "bg-[#A855F7]", glow: "shadow-[#A855F7]/20" },
+                    { label: "Disk Health", value: 94, color: "bg-[#00E676]", glow: "shadow-[#00E676]/20" },
+                  ].map(stat => (
+                    <div key={stat.label} className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-neutral-500">{stat.label}</span>
+                        <span className="text-white">{stat.value}%</span>
+                      </div>
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${stat.color} ${stat.glow} shadow-lg transition-all duration-1000`} 
+                          style={{ width: `${stat.value}%` }} 
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-[#00D4FF]/5 border border-[#00D4FF]/20 rounded-2xl p-6 flex gap-4">
+                <ShieldCheck size={24} className="text-[#00D4FF] shrink-0" />
+                <div>
+                  <h4 className="text-white font-bold text-sm mb-1">Enterprise Compliance Protected</h4>
+                  <p className="text-neutral-400 text-xs leading-relaxed">
+                    This asset is under active monitoring. Security patches and endpoint protection policies are synchronized.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <button className="bg-white text-[#0A1628] font-black text-xs uppercase tracking-widest py-4 rounded-2xl hover:bg-neutral-200 transition-all flex items-center justify-center gap-2">
+                  <Wrench size={16} /> Service
+                </button>
+                <button className="bg-white/5 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                  <ArrowUpRight size={16} /> Remote
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
-

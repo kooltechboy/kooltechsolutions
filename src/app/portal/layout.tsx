@@ -9,6 +9,7 @@ import {
   Menu, X,
 } from "lucide-react";
 import NotificationHub from "@/components/shared/NotificationHub";
+import BookingModal from "@/components/shared/BookingModal";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/portal" },
@@ -151,8 +152,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 >
                   Book Demo
                 </button>
-              </div>
-            </header>
+              </header>
 
         <main style={{ flex: 1, padding: "2rem 1.5rem" }}>
           {children}

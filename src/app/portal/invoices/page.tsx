@@ -1,30 +1,39 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { FileText, Download, DollarSign, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { 
+  Search, 
+  Filter, 
+  Download, 
+  CreditCard, 
+  Eye, 
+  ArrowUpRight,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  ExternalLink
+} from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import PaymentModal from "@/components/shared/PaymentModal";
-
-const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
-  paid: { color: "#00E676", bg: "rgba(0,230,118,0.1)", label: "Paid", icon: CheckCircle },
-  outstanding: { color: "#FFB300", bg: "rgba(255,179,0,0.1)", label: "Outstanding", icon: Clock },
-  overdue: { color: "#FF4444", bg: "rgba(255,68,68,0.1)", label: "Overdue", icon: AlertCircle },
-  draft: { color: "#6b7280", bg: "rgba(107,114,128,0.1)", label: "Draft", icon: FileText },
-  void: { color: "#6b7280", bg: "rgba(107,114,128,0.1)", label: "Void", icon: AlertCircle }
-};
+import InvoiceDetail from "@/components/portal/InvoiceDetail";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   
   const supabase = createClient();
 
   useEffect(() => {
-    fetchMyInvoices();
+    fetchInvoices();
   }, []);
 
-  async function fetchMyInvoices() {
+  const fetchInvoices = async () => {
+    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -32,177 +41,240 @@ export default function InvoicesPage() {
       .from('invoices')
       .select('*')
       .eq('client_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('issue_date', { ascending: false });
 
     if (!error && data) {
       setInvoices(data);
     }
     setLoading(false);
-  }
-
-  const handlePayNow = (invoice: any) => {
-    setSelectedInvoice(invoice);
-    setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = async (invoiceId: string) => {
-    // Update local state first for instant feedback
-    setInvoices(prev => prev.map(inv => 
-      inv.id === invoiceId ? { ...inv, status: 'paid', paid_date: new Date().toISOString() } : inv
-    ));
+  const handlePaymentSuccess = async () => {
+    if (selectedInvoice) {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ status: 'paid' })
+        .eq('id', selectedInvoice.id);
 
-    // Update database
-    const { error } = await supabase
-      .from('invoices')
-      .update({ 
-        status: 'paid', 
-        paid_date: new Date().toISOString() 
-      })
-      .eq('id', invoiceId);
-
-    if (error) console.error("Error updating invoice status:", error);
+      if (!error) {
+        fetchInvoices();
+        setShowPayment(false);
+        setShowDetail(false);
+      }
+    }
   };
 
-  const handleDownloadPDF = (inv: any) => {
-    // Basic simulation of a print/PDF export
-    alert(`Generating PDF for invoice ${inv.invoice_number || inv.id.slice(0, 8)}...`);
-    window.print();
+  const filteredInvoices = invoices.filter(inv => {
+    const matchesSearch = inv.invoice_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         inv.status?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filterStatus === "all" || inv.status === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
+  const stats = {
+    total: invoices.reduce((acc, inv) => acc + (inv.amount || 0), 0),
+    outstanding: invoices.filter(inv => inv.status !== 'paid').reduce((acc, inv) => acc + (inv.amount || 0), 0),
+    paid: invoices.filter(inv => inv.status === 'paid').length,
+    pending: invoices.filter(inv => inv.status === 'outstanding').length
   };
 
-  if (loading) {
-    return (
-      <div style={{ height: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
-      </div>
-    );
-  }
-
-  const outstanding = invoices.filter(i => i.status === "outstanding" || i.status === "overdue");
-  const paid = invoices.filter(i => i.status === "paid");
-
-  const totalOutstanding = outstanding.reduce((sum, inv) => sum + Number(inv.amount), 0);
-  const totalPaid = paid.reduce((sum, inv) => sum + Number(inv.amount), 0);
+  const statusConfig: any = {
+    paid: { color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20", icon: CheckCircle2 },
+    outstanding: { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", icon: Clock },
+    overdue: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: AlertCircle },
+  };
 
   return (
-    <div>
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>
-          Invoices & <span className="gradient-text">Billing</span>
-        </h1>
-        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-          Review and pay your Kool Tech Solutions invoices.
-        </p>
-      </div>
-
-      {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        {[
-          { icon: DollarSign, label: "Outstanding Balance", value: `$${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "#FFB300" },
-          { icon: CheckCircle, label: "Total Paid", value: `$${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "#00E676" },
-          { icon: FileText, label: "Total Invoices", value: invoices.length.toString(), color: "#00D4FF" },
-        ].map(kpi => (
-          <div key={kpi.label} className="kpi-card">
-            <div style={{ width: 40, height: 40, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
-              <kpi.icon size={20} color={kpi.color} />
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-black text-white tracking-tight mb-2 font-syne uppercase">
+            Invoices <span className="text-[#00D4FF]">&</span> Billing
+          </h1>
+          <p className="text-neutral-400 text-sm max-w-md">
+            Manage your service subscriptions, view payment history, and settle outstanding balances securely.
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4 backdrop-blur-sm">
+            <div>
+              <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Total Outstanding</div>
+              <div className="text-xl font-black text-white">${stats.outstanding.toLocaleString()}</div>
             </div>
-            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "1.75rem", fontWeight: 800, color: "white" }}>{kpi.value}</div>
-            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginTop: "0.25rem" }}>{kpi.label}</div>
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+              <TrendingUp size={20} />
+            </div>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Outstanding */}
-      {outstanding.length > 0 && (
-        <div style={{ marginBottom: "2rem" }}>
-          <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1rem", marginBottom: "1rem" }}>
-            Outstanding Invoices
-          </h2>
-          {outstanding.map(inv => {
-            const s = statusConfig[inv.status] || statusConfig.outstanding;
-            const itemsList = inv.line_items ? (inv.line_items as any[]).map((i: any) => i.description).join(" · ") : "Standard Services";
-            return (
-              <div key={inv.id} className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", marginBottom: "0.75rem", borderLeft: `4px solid ${s.color}` }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-                  <div>
-                    <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1rem" }}>{inv.invoice_number || inv.id.slice(0, 8)}</div>
-                    <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginTop: "0.25rem" }}>Due: {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : 'Upon receipt'}</div>
-                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.78rem", marginTop: "0.375rem" }}>
-                      {itemsList}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, color: "white", fontSize: "1.25rem" }}>
-                        ${Number(inv.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", color: s.color, background: s.bg, padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600 }}>
-                        <s.icon size={11} /> {s.label}
-                      </span>
-                    </div>
-                    <button 
-                      onClick={() => handlePayNow(inv)}
-                      className="btn-primary" 
-                      style={{ padding: "0.625rem 1.25rem", fontSize: "0.875rem" }}
-                    >
-                      Pay Now
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+      {/* Filters & Search */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
+          <input 
+            type="text"
+            placeholder="Search by invoice # or status..."
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 focus:border-[#00D4FF]/40 transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-      )}
+        <div className="flex gap-2">
+          {["all", "outstanding", "paid", "overdue"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${
+                filterStatus === status 
+                  ? "bg-[#00D4FF] text-[#0A1628] border-[#00D4FF]" 
+                  : "bg-white/5 text-neutral-400 border-white/10 hover:border-white/20"
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Invoice History */}
-      <div className="kpi-card">
-        <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1rem", marginBottom: "1.25rem" }}>
-          Invoice History
-        </h2>
-        {paid.length === 0 && <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>No invoice history found.</p>}
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {paid.map(inv => {
-            const s = statusConfig[inv.status] || statusConfig.paid;
-            return (
-              <div key={inv.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(75,132,200,0.08)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "8px", background: "rgba(0,230,118,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <FileText size={16} color="#00E676" />
-                  </div>
-                  <div>
-                    <div style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>{inv.invoice_number || inv.id.slice(0, 8)}</div>
-                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
-                      {inv.issued_date ? new Date(inv.issued_date).toLocaleDateString() : new Date(inv.created_at).toLocaleDateString()}
+      {/* Invoices Table/Grid */}
+      <div className="glass-card rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-white/5 bg-white/[0.02]">
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Invoice</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Issue Date</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Amount</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Status</th>
+                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-20 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-2 border-[#00D4FF] border-t-transparent rounded-full animate-spin" />
+                      <span className="text-neutral-500 text-sm font-medium">Retrieving financial records...</span>
                     </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", color: s.color, background: s.bg, padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600 }}>
-                    <s.icon size={11} /> {s.label}
-                  </span>
-                  <div style={{ color: "white", fontWeight: 700, fontSize: "0.9375rem", fontFamily: "JetBrains Mono, monospace" }}>
-                    ${Number(inv.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                  <button 
-                    onClick={() => handleDownloadPDF(inv)}
-                    style={{ display: "flex", alignItems: "center", gap: "0.3rem", background: "none", border: "1px solid rgba(75,132,200,0.2)", borderRadius: "6px", color: "var(--color-neutral-400)", fontSize: "0.75rem", padding: "0.375rem 0.75rem", cursor: "pointer" }}
-                  >
-                    <Download size={13} /> PDF
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+                  </td>
+                </tr>
+              ) : filteredInvoices.length > 0 ? (
+                filteredInvoices.map((inv) => {
+                  const StatusIcon = statusConfig[inv.status]?.icon || AlertCircle;
+                  return (
+                    <tr key={inv.id} className="group hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-white font-bold text-sm tracking-tight">{inv.invoice_number}</span>
+                          <span className="text-neutral-500 text-[10px] uppercase font-bold tracking-wider mt-1 flex items-center gap-1">
+                            <ExternalLink size={10} /> {inv.id.substring(0, 8)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2 text-neutral-300 text-sm">
+                          <Clock size={14} className="text-neutral-500" />
+                          {new Date(inv.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="text-white font-black text-lg">${inv.amount?.toLocaleString()}</span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${statusConfig[inv.status]?.bg} ${statusConfig[inv.status]?.color} ${statusConfig[inv.status]?.border}`}>
+                          <StatusIcon size={12} />
+                          {inv.status}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => {
+                              setSelectedInvoice(inv);
+                              setShowDetail(true);
+                            }}
+                            className="p-2 text-neutral-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10"
+                            title="View Detail"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          {inv.status !== 'paid' && (
+                            <button 
+                              onClick={() => {
+                                setSelectedInvoice(inv);
+                                setShowPayment(true);
+                              }}
+                              className="bg-[#00D4FF] text-[#0A1628] p-2 rounded-lg hover:bg-[#00D4FF]/90 transition-all shadow-lg shadow-[#00D4FF]/10"
+                              title="Pay Now"
+                            >
+                              <CreditCard size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-20 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-neutral-600">
+                        <AlertCircle size={32} />
+                      </div>
+                      <div>
+                        <p className="text-white font-bold">No invoices found</p>
+                        <p className="text-neutral-500 text-sm mt-1">Try adjusting your search or filters.</p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
+      </div>
+
+      {/* Support CTA */}
+      <div className="p-8 rounded-3xl bg-gradient-to-br from-[#00D4FF]/10 to-transparent border border-[#00D4FF]/20 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#00D4FF]/20 flex items-center justify-center text-[#00D4FF] border border-[#00D4FF]/30 shadow-inner">
+            <CheckCircle2 size={24} />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-lg">Billing Support</h3>
+            <p className="text-neutral-400 text-sm">Have a question about your statement? Our financial team is here to help.</p>
+          </div>
+        </div>
+        <button className="whitespace-nowrap px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold transition-all border border-white/10">
+          Open Billing Ticket
+        </button>
       </div>
 
       {/* Modals */}
-      <PaymentModal 
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        invoice={selectedInvoice}
-        onSuccess={handlePaymentSuccess}
-      />
+      {showDetail && selectedInvoice && (
+        <InvoiceDetail 
+          invoice={selectedInvoice} 
+          onClose={() => setShowDetail(false)} 
+          onPay={() => {
+            setShowDetail(false);
+            setShowPayment(true);
+          }}
+        />
+      )}
+
+      {showPayment && selectedInvoice && (
+        <PaymentModal 
+          isOpen={showPayment} 
+          onClose={() => setShowPayment(false)} 
+          onSuccess={handlePaymentSuccess}
+          invoice={selectedInvoice}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { User, Building, Mail, Phone, Globe, Save, Loader2, CheckCircle } from "lucide-react";
+import { 
+  User, Building, Mail, Phone, Globe, Save, Loader2, CheckCircle2,
+  Shield, Key, Bell, CreditCard, ChevronRight, ArrowUpRight,
+  UserCheck, BadgeCheck, Camera, LogOut, Lock
+} from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function ProfilePage() {
@@ -32,7 +36,6 @@ export default function ProfilePage() {
       first_name: profile.first_name,
       last_name: profile.last_name,
       company_name: profile.company_name,
-      // phone: profile.phone, // Assuming column exists or adding it
     }).eq('id', user?.id);
 
     if (!error) {
@@ -44,75 +47,158 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ height: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
+      <div className="h-[60vh] flex items-center justify-center">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 border-white/5 border-t-[#00D4FF] animate-spin" />
+          <User className="absolute inset-0 m-auto text-[#00D4FF]/40" size={24} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>Account Settings</h1>
-        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Manage your personal and company information.</p>
-      </div>
-
-      <form onSubmit={handleSave} className="glass-card" style={{ padding: "2rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
-          <div>
-            <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.5rem" }}>First Name</label>
-            <input 
-              className="input-field" 
-              value={profile?.first_name || ""} 
-              onChange={e => setProfile({...profile, first_name: e.target.value})}
-            />
-          </div>
-          <div>
-            <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.5rem" }}>Last Name</label>
-            <input 
-              className="input-field" 
-              value={profile?.last_name || ""} 
-              onChange={e => setProfile({...profile, last_name: e.target.value})}
-            />
-          </div>
-          <div style={{ gridColumn: "span 2" }}>
-            <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.5rem" }}>Company Name</label>
-            <div style={{ position: "relative" }}>
-              <Building size={16} color="var(--color-neutral-500)" style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }} />
-              <input 
-                className="input-field" 
-                style={{ paddingLeft: "3rem" }} 
-                value={profile?.company_name || ""} 
-                onChange={e => setProfile({...profile, company_name: e.target.value})}
-              />
-            </div>
-          </div>
-          <div style={{ gridColumn: "span 2" }}>
-            <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.5rem" }}>Email Address (Read-only)</label>
-            <div style={{ position: "relative" }}>
-              <Mail size={16} color="var(--color-neutral-600)" style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }} />
-              <input 
-                className="input-field" 
-                style={{ paddingLeft: "3rem", color: "var(--color-neutral-600)" }} 
-                value={profile?.email || ""} 
-                disabled
-              />
-            </div>
-          </div>
+    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-black text-white tracking-tight mb-2 font-syne uppercase">
+            Account <span className="text-[#00D4FF]">Console</span>
+          </h1>
+          <p className="text-neutral-400 text-sm max-w-md">
+            Manage your professional identity and security parameters.
+          </p>
         </div>
-
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.5rem" }}>
-          {success && (
-            <span style={{ color: "var(--color-success)", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <CheckCircle size={16} /> Profile updated successfully
-            </span>
-          )}
-          <button type="submit" disabled={saving} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-            Save Changes
+        <div className="flex gap-2">
+          <button className="p-3 rounded-xl bg-white/5 border border-white/10 text-neutral-400 hover:text-white transition-all">
+            <Bell size={20} />
+          </button>
+          <button className="px-6 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-black text-[10px] uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center gap-2">
+            <LogOut size={16} /> Sign Out
           </button>
         </div>
-      </form>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Avatar & Trust */}
+        <div className="space-y-6">
+          <div className="glass-card p-8 text-center space-y-4 border border-white/5 bg-white/[0.02]">
+            <div className="relative inline-block mx-auto">
+              <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-[#00D4FF]/20 to-[#A855F7]/20 border border-white/10 flex items-center justify-center overflow-hidden">
+                <User size={64} className="text-white/40" />
+              </div>
+              <button className="absolute -bottom-2 -right-2 p-2.5 rounded-xl bg-[#00D4FF] text-[#0A1628] shadow-xl border border-white/20 hover:scale-110 transition-transform">
+                <Camera size={16} />
+              </button>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white font-syne tracking-tight uppercase">
+                {profile?.first_name} {profile?.last_name}
+              </h2>
+              <p className="text-neutral-500 text-[10px] font-black uppercase tracking-widest mt-1">
+                {profile?.company_name}
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[#00D4FF] text-[9px] font-black uppercase tracking-widest">
+              <BadgeCheck size={12} /> Verified Enterprise
+            </div>
+          </div>
+
+          <div className="glass-card p-6 space-y-4 border border-white/5 bg-white/[0.01]">
+            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] px-1">Security Score</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                <span>Identity Protection</span>
+                <span className="text-[#00E676]">84%</span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-[#00E676] to-[#00D4FF] w-[84%] shadow-[0_0_10px_rgba(0,230,118,0.3)]" />
+              </div>
+              <p className="text-neutral-600 text-[10px] font-bold leading-relaxed">
+                Your account is protected with MFA and hardware-security-key support.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Settings Form */}
+        <div className="lg:col-span-2">
+          <form onSubmit={handleSave} className="glass-card p-8 border border-white/10 bg-white/[0.02] shadow-2xl rounded-[2rem] space-y-8">
+            <div className="flex items-center gap-3 mb-2">
+              <UserCheck size={20} className="text-[#00D4FF]" />
+              <h2 className="text-lg font-bold text-white font-syne tracking-tight uppercase">Profile Information</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">Given Name</label>
+                <input 
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all font-medium"
+                  value={profile?.first_name || ""} 
+                  onChange={e => setProfile({...profile, first_name: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">Surname</label>
+                <input 
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all font-medium"
+                  value={profile?.last_name || ""} 
+                  onChange={e => setProfile({...profile, last_name: e.target.value})}
+                />
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">Corporate Entity</label>
+                <div className="relative">
+                  <Building size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600" />
+                  <input 
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all font-medium"
+                    value={profile?.company_name || ""} 
+                    onChange={e => setProfile({...profile, company_name: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">Primary Communications (Immutable)</label>
+                <div className="relative">
+                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-800" />
+                  <input 
+                    className="w-full bg-white/[0.01] border border-white/5 rounded-2xl p-4 pl-12 text-neutral-600 cursor-not-allowed font-medium"
+                    value={profile?.email || ""} 
+                    disabled
+                  />
+                  <Lock size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-800" />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-4">
+                <button type="button" className="text-[10px] font-black text-neutral-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2">
+                  <Key size={14} /> Reset Credentials
+                </button>
+                <button type="button" className="text-[10px] font-black text-neutral-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2">
+                  <CreditCard size={14} /> Payment Portal
+                </button>
+              </div>
+
+              <div className="flex items-center gap-6">
+                {success && (
+                  <span className="text-[#00E676] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-in slide-in-from-right-4">
+                    <CheckCircle2 size={16} /> Registry Updated
+                  </span>
+                )}
+                <button 
+                  type="submit" 
+                  disabled={saving} 
+                  className="px-10 py-4 rounded-2xl bg-white text-[#0A1628] font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5 flex items-center gap-3 disabled:opacity-50"
+                >
+                  {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                  Commit Changes
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
