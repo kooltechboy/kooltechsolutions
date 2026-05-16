@@ -56,7 +56,7 @@ export default function AIChatWidget() {
   };
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages } = useChat({
-    api: '/api/chat',
+    api: '/api/ai-workforce/v1',
     body: { 
       sessionId, 
       agentName: agent.name, 
