@@ -1,9 +1,11 @@
 "use client";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Shield, Cloud, Network, Monitor, Headphones, Award, CheckCircle2, ArrowRight, Zap, Lock, Globe, Server } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
+import BookingModal from "@/components/shared/BookingModal";
 
 const serviceData: Record<string, any> = {
   "cybersecurity": {
@@ -75,6 +77,7 @@ const serviceData: Record<string, any> = {
 
 export default function ServiceDetailPage() {
   const params = useParams();
+  const [bookingOpen, setBookingOpen] = useState(false);
   const slug = params.slug as string;
   const data = serviceData[slug] || serviceData["cybersecurity"]; // Fallback for demo
 
@@ -102,10 +105,23 @@ export default function ServiceDetailPage() {
               {data.description}
             </p>
             <div style={{ display: "flex", gap: "1rem" }}>
-              <button className="btn-primary" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setBookingOpen(true);
+                }}
+                className="btn-primary" 
+                style={{ padding: "1rem 2rem", fontSize: "1rem" }}
+              >
                 Get Started
               </button>
-              <button className="btn-secondary" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
+              <button 
+                type="button"
+                className="btn-secondary" 
+                style={{ padding: "1rem 2rem", fontSize: "1rem" }}
+                onClick={() => window.print()} // Mock for now, replace with PDF download logic if needed
+              >
                 Download PDF
               </button>
             </div>
@@ -208,17 +224,27 @@ export default function ServiceDetailPage() {
               Join hundreds of enterprise clients who trust Kool Tech Solutions for their mission-critical infrastructure.
             </p>
             <div style={{ display: "flex", gap: "1.5rem", justifyContent: "center" }}>
-              <button className="btn-primary" style={{ padding: "1.25rem 3rem", fontSize: "1.125rem" }}>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setBookingOpen(true);
+                }}
+                className="btn-primary" 
+                style={{ padding: "1.25rem 3rem", fontSize: "1.125rem" }}
+              >
                 Schedule a Consultation
               </button>
-              <button className="btn-secondary" style={{ padding: "1.25rem 3rem", fontSize: "1.125rem" }}>
+              <Link href="/contact" className="btn-secondary" style={{ padding: "1.25rem 3rem", fontSize: "1.125rem", display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
                 Contact Sales
-              </button>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
+
+      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
       <Footer />
     </div>
   );

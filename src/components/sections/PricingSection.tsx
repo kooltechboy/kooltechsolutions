@@ -44,6 +44,7 @@ const tiers = [
 ];
 
 export default function PricingSection() {
+  const [bookingOpen, setBookingOpen] = useState(false);
   return (
     <section className="section" style={{ background: "rgba(10,22,40,0.4)" }}>
       <div className="container">
