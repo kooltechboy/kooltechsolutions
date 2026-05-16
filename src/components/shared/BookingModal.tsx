@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
-import { X, Calendar, Clock, User, Mail, CheckCircle } from "lucide-react";
+import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2 } from "lucide-react";
 
 export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [form, setForm] = useState({ name: "", email: "" });
 
   if (!isOpen) return null;
@@ -38,10 +40,23 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
     }
   };
 
+  const checkAvailability = async (date: string) => {
+    setCheckingAvailability(true);
+    setSelectedTime(null);
+    try {
+      const res = await fetch(`/api/bookings?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      setBookedSlots(data.bookedSlots || []);
+    } catch (error) {
+      console.error("Failed to check availability:", error);
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
   const getGoogleCalendarLink = () => {
     if (!selectedDate || !selectedTime) return "";
     
-    // Extract date components
     const dateMatch = selectedDate.match(/(\w+), (\w+) (\d+)/);
     if (!dateMatch) return "";
     
@@ -55,7 +70,6 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
     const month = monthMap[monthName.substring(0, 3)];
     const day = dayNum.padStart(2, '0');
     
-    // Extract time
     const timeMatch = selectedTime.match(/(\d+):(\d+) (\w+)/);
     if (!timeMatch) return "";
     
@@ -66,7 +80,6 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
     
     const startStr = `${year}${month}${day}T${h.toString().padStart(2, '0')}${minute}00Z`;
     
-    // End time (30 mins later)
     let endH = h;
     let endM = parseInt(minute) + 30;
     if (endM >= 60) {
@@ -76,7 +89,7 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
     const endStr = `${year}${month}${day}T${endH.toString().padStart(2, '0')}${endM.toString().padStart(2, '0')}00Z`;
 
     const text = encodeURIComponent("KoolTech Solutions - Live Platform Demo");
-    const details = encodeURIComponent("30-minute live walkthrough of the KoolTech MSP platform. We'll send the meeting link 15 minutes before the session.");
+    const details = encodeURIComponent("30-minute live walkthrough of the KoolTech MSP platform.");
     const location = encodeURIComponent("Virtual Meeting Link (Sent via Email)");
     
     return `https://www.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${startStr}/${endStr}&details=${details}&location=${location}`;
@@ -85,7 +98,6 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
   const getOutlookLink = () => {
     if (!selectedDate || !selectedTime) return "";
     
-    // Use the same logic to get a valid date
     const dateMatch = selectedDate.match(/(\w+), (\w+) (\d+)/);
     if (!dateMatch) return "";
     
@@ -99,7 +111,6 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
     const month = parseInt(monthMap[monthName.substring(0, 3)]);
     const day = parseInt(dayNum);
     
-    // Extract time
     const timeMatch = selectedTime.match(/(\d+):(\d+) (\w+)/);
     if (!timeMatch) return "";
     
@@ -121,7 +132,6 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
     for (let i = 1; i <= 7; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      // Skip weekends
       if (d.getDay() !== 0 && d.getDay() !== 6) {
         dates.push(d);
       }
@@ -164,24 +174,26 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
                 <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "white", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>
                   <Calendar size={16} color="var(--color-accent-500)" /> Select Date
                 </label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: "0.5rem" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
                   {dates.map((d, i) => {
-                    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
                     const isSelected = selectedDate === dateStr;
                     return (
                       <button
                         key={i}
-                        onClick={() => setSelectedDate(dateStr)}
+                        onClick={() => {
+                          setSelectedDate(dateStr);
+                          checkAvailability(dateStr);
+                        }}
                         style={{
-                          padding: "0.75rem 0.5rem", borderRadius: "8px",
-                          background: isSelected ? "var(--color-accent-500)" : "rgba(255,255,255,0.05)",
+                          padding: "0.8rem 1rem", borderRadius: "12px",
+                          background: isSelected ? "var(--color-accent-500)" : "rgba(255,255,255,0.03)",
                           border: isSelected ? "1px solid var(--color-accent-400)" : "1px solid rgba(255,255,255,0.1)",
-                          color: isSelected ? "#060B18" : "var(--color-neutral-300)",
-                          fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
+                          color: isSelected ? "#060B18" : "white",
+                          fontSize: "0.875rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
                         }}
                       >
-                        <div style={{ fontSize: "0.65rem", opacity: 0.8, marginBottom: "0.2rem", textTransform: "uppercase" }}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                        <div>{d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                        {d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}
                       </button>
                     );
                   })}
@@ -189,26 +201,35 @@ export default function BookingModal({ isOpen, onClose }: { isOpen: boolean; onC
               </div>
 
               {selectedDate && (
-                <div style={{ marginBottom: "1.5rem", animation: "slideUp 0.3s ease" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "white", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>
-                    <Clock size={16} color="var(--color-accent-500)" /> Select Time (AST)
-                  </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem" }}>
-                    {times.map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setSelectedTime(t)}
-                        style={{
-                          padding: "0.6rem", borderRadius: "8px",
-                          background: selectedTime === t ? "var(--color-accent-500)" : "rgba(255,255,255,0.05)",
-                          border: selectedTime === t ? "1px solid var(--color-accent-400)" : "1px solid rgba(255,255,255,0.1)",
-                          color: selectedTime === t ? "#060B18" : "var(--color-neutral-300)",
-                          fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
-                        }}
-                      >
-                        {t}
-                      </button>
-                    ))}
+                <div style={{ animation: "slideUp 0.3s ease", marginBottom: "1.5rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", fontWeight: 800, textTransform: "uppercase" }}>
+                      <Clock size={14} /> Available Slots
+                    </label>
+                    {checkingAvailability && <Loader2 size={12} className="animate-spin" color="var(--color-accent-500)" />}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                    {times.map(t => {
+                      const isBooked = bookedSlots.includes(t);
+                      return (
+                        <button
+                          key={t}
+                          disabled={isBooked}
+                          onClick={() => setSelectedTime(t)}
+                          style={{
+                            padding: "0.6rem", borderRadius: "8px",
+                            background: selectedTime === t ? "var(--color-accent-500)" : "rgba(255,255,255,0.05)",
+                            border: selectedTime === t ? "1px solid var(--color-accent-400)" : "1px solid rgba(255,255,255,0.1)",
+                            color: selectedTime === t ? "#060B18" : isBooked ? "rgba(255,255,255,0.1)" : "var(--color-neutral-300)",
+                            fontSize: "0.8125rem", fontWeight: 600, cursor: isBooked ? "not-allowed" : "pointer", 
+                            transition: "all 0.2s",
+                            textDecoration: isBooked ? "line-through" : "none"
+                          }}
+                        >
+                          {t}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

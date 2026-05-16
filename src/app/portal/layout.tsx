@@ -24,6 +24,9 @@ const navItems = [
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+  const [showBooking, setShowBooking] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false); // Global portal booking
   const [profile, setProfile] = useState<any>(null);
   const pathname = usePathname();
   const supabase = createClient();
@@ -134,19 +137,29 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </button>
           <div style={{ flex: 1 }} />
           <NotificationHub />
-          <Link href="/portal/profile" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", textDecoration: "none" }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ color: "var(--color-accent-500)", fontSize: "0.7rem", fontWeight: 700 }}>{initials}</span>
-            </div>
-            <span style={{ color: "var(--color-neutral-300, #CBD5E1)", fontSize: "0.875rem" }}>{displayName}</span>
-            <ChevronDown size={14} color="var(--color-neutral-500)" />
-          </Link>
-        </header>
+                <Link href="/portal/profile" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", textDecoration: "none" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ color: "var(--color-accent-500)", fontSize: "0.7rem", fontWeight: 700 }}>{initials}</span>
+                  </div>
+                  <span style={{ color: "var(--color-neutral-300, #CBD5E1)", fontSize: "0.875rem" }}>{displayName}</span>
+                  <ChevronDown size={14} color="var(--color-neutral-500)" />
+                </Link>
+                <button 
+                  onClick={() => setBookingOpen(true)}
+                  className="btn-primary" 
+                  style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", borderRadius: "8px", marginLeft: "0.5rem" }}
+                >
+                  Book Demo
+                </button>
+              </div>
+            </header>
 
         <main style={{ flex: 1, padding: "2rem 1.5rem" }}>
           {children}
         </main>
       </div>
+
+      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
 
       <style>{`
         .portal-sidebar { transform: translateX(-100%); }

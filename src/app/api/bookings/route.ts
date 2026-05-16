@@ -90,3 +90,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get('date');
+    if (!date) return NextResponse.json({ bookedSlots: [] });
+
+    const supabase = await createClient();
+    
+    // Fetch all bookings for this specific date
+    // Note format: "LIVE DEMO SCHEDULED: Wednesday, May 20 at 10:30 AM"
+    const { data, error } = await supabase
+      .from('leads')
+      .select('notes')
+      .ilike('notes', `%LIVE DEMO SCHEDULED: ${date}%`);
+
+    if (error) throw error;
+
+    // Extract time slots from the notes
+    const bookedSlots = data
+      .map(lead => {
+        const match = lead.notes?.match(/at\s+(.+)$/);
+        return match ? match[1].trim() : null;
+      })
+      .filter(Boolean);
+
+    return NextResponse.json({ bookedSlots });
+  } catch (err: any) {
+    console.error("Availability Check Error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
