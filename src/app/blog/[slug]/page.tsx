@@ -1,7 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import AIChatWidget from "@/components/ai/AIChatWidget";
 import { notFound } from "next/navigation";
 import { Calendar, Clock, ArrowLeft, User, Share2, Mail } from "lucide-react";
 import Link from "next/link";
@@ -253,7 +252,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </main>
 
       <Footer />
-      <AIChatWidget />
     </>
   );
 }

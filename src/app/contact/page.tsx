@@ -2,7 +2,6 @@
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import AIChatWidget from "@/components/ai/AIChatWidget";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Calendar } from "lucide-react";
 
 const services = [
@@ -171,7 +170,6 @@ export default function ContactPage() {
         </section>
       </main>
       <Footer />
-      <AIChatWidget />
     </>
   );
 }

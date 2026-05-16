@@ -3,7 +3,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Shield, Cloud, Network, Monitor, Headphones, Award, ArrowRight, Zap, CheckCircle2, Server, Lock, Globe } from "lucide-react";
 import Link from "next/link";
-import AIChatWidget from "@/components/ai/AIChatWidget";
 
 const serviceCategories = [
   {
@@ -289,7 +288,6 @@ export default function ServicesPage() {
         `}</style>
       </main>
       <Footer />
-      <AIChatWidget />
     </>
   );
 }

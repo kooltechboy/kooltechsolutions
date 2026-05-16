@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import AIChatWidget from "@/components/ai/AIChatWidget";
 import Link from "next/link";
 import { Calendar, Clock, ArrowRight, Search } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
@@ -120,7 +119,6 @@ export default async function BlogPage() {
         </div>
       </main>
       <Footer />
-      <AIChatWidget />
     </>
   );
 }

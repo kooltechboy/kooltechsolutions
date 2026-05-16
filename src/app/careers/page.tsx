@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import AIChatWidget from "@/components/ai/AIChatWidget";
 import CTASection from "@/components/sections/CTASection";
 import { MapPin, Heart, Zap, Users, Globe, ArrowRight, Mail } from "lucide-react";
 
@@ -119,7 +118,6 @@ export default function CareersPage() {
         <CTASection />
       </main>
       <Footer />
-      <AIChatWidget />
     </>
   );
 }

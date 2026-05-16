@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import AIChatWidget from "@/components/ai/AIChatWidget";
 import CTASection from "@/components/sections/CTASection";
 import { Globe, Target, Heart, Users, Award, Zap, Shield } from "lucide-react";
 
@@ -123,7 +122,6 @@ export default function AboutPage() {
         <CTASection />
       </main>
       <Footer />
-      <AIChatWidget />
     </>
   );
 }
