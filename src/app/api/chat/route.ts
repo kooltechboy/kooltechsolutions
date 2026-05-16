@@ -11,9 +11,15 @@ export async function POST(req: Request) {
   try {
     const { messages, sessionId, agentName, pageContext, telemetry } = await req.json();
     const currentSessionId = sessionId || "no-session";
-    console.log(`[AI CHAT] Request received for session: ${currentSessionId}`);
-    console.log(`[AI CHAT] Page Context: ${pageContext}, Agent: ${agentName}`);
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
+    if (!apiKey) {
+      console.error('[AI CHAT] CRITICAL ERROR: GOOGLE_GENERATIVE_AI_API_KEY is missing from environment.');
+      return new Response(JSON.stringify({ error: 'AI Service configuration missing. Please check API keys.' }), { status: 500 });
+    }
+
+    console.log(`[AI CHAT] Request received. Key detected (length: ${apiKey.length})`);
+    
     // Log User message
     const userMessage = messages[messages.length - 1];
     try {
@@ -58,10 +64,10 @@ export async function POST(req: Request) {
 
     IMPORTANT: If you use the captureLead tool, always follow up with a verbal confirmation.`;
 
-    console.log('[AI CHAT] Minimal test: Initializing streamText...');
+    console.log('[AI CHAT] Diagnostic: Initializing streamText with gemini-1.5-flash...');
     
     const result = await streamText({
-      model: google('gemini-1.5-pro') as any,
+      model: google('gemini-1.5-flash') as any,
       messages,
       system: systemPrompt,
     });
