@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
   try {
-    const { messages, sessionId, agentName, pageContext } = await req.json();
+    const { messages, sessionId, agentName, pageContext, telemetry } = await req.json();
     const currentSessionId = sessionId || crypto.randomUUID();
 
     // Log User message
@@ -36,12 +36,19 @@ export async function POST(req: Request) {
     - Max (Senior Solutions Engineer): Deeply technical, focuses on hardening environments and infrastructure ROI.
     - Aria (Strategic Coordinator): Expert at logistics, securing commitments, and aligning client needs with our engineering team.
 
+    ENVIRONMENTAL CONTEXT (TELEMETRY):
+    - Browser/Platform: ${telemetry?.ua || 'Unknown'}
+    - Screen Resolution: ${telemetry?.screen || 'Unknown'}
+    - Preferred Language: ${telemetry?.lang || 'en-US'}
+    - Referrer: ${telemetry?.referrer || 'Direct'}
+    - Current Page: ${pageContext || 'Home'}
+
     GUIDELINES:
     1. Identify technical pain points early. If a user mentions downtime, security fears, or scaling issues, suggest a discovery session for the relevant service.
     2. Once you gain visitor information (Name, Email, Company, or specific Interests), use the 'captureLead' tool immediately to save it to our CRM.
     3. Be an expert on all services: Cybersecurity, Cloud Orchestration, Network Intelligence, Predictive Monitoring, Help Desk, and Compliance.
     4. Be proactive. Suggest specific solutions that match their technical queries.
-    5. Context: The user is currently on the ${pageContext || 'Home'} page.`;
+    5. Use the Telemetry context to personalize advice (e.g., if they are on a mobile device, mention mobile workforce security).`;
 
     const result = await streamText({
       model: google('gemini-1.5-pro') as any,

@@ -18,8 +18,21 @@ export default function AIChatWidget() {
   const [minimized, setMinimized] = useState(false);
   const [hasProactivelyOpened, setHasProactivelyOpened] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [sessionId] = useState(() => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(7));
   
+  // Persistence Logic: Load or Create Session ID
+  const [sessionId, setSessionId] = useState<string>("");
+
+  useEffect(() => {
+    const savedSessionId = localStorage.getItem("kts_ai_session_id");
+    if (savedSessionId) {
+      setSessionId(savedSessionId);
+    } else {
+      const newId = crypto.randomUUID();
+      localStorage.setItem("kts_ai_session_id", newId);
+      setSessionId(newId);
+    }
+  }, []);
+
   // Determine agent based on path
   const getAgent = () => {
     if (pathname === "/") return AGENTS.home;
@@ -31,26 +44,45 @@ export default function AIChatWidget() {
 
   const agent = getAgent();
 
+  // Telemetry Capture
+  const getTelemetry = () => {
+    if (typeof window === 'undefined') return {};
+    return {
+      ua: navigator.userAgent,
+      screen: `${window.screen.width}x${window.screen.height}`,
+      lang: navigator.language,
+      referrer: document.referrer,
+    };
+  };
+
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
-    body: { sessionId, agentName: agent.name, pageContext: pathname },
+    body: { 
+      sessionId, 
+      agentName: agent.name, 
+      pageContext: pathname,
+      telemetry: getTelemetry()
+    },
     initialMessages: [
       { id: 'initial', role: 'assistant', content: agent.greeting }
-    ]
+    ],
+    onResponse: (response) => {
+      // Logic for tool tracking can go here
+    }
   });
 
   const [isListening, setIsListening] = useState(false);
 
-  // Proactive Engagement Logic: Open after 12 seconds if not already open
+  // Proactive Engagement Logic
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!open && !hasProactivelyOpened) {
+      if (!open && !hasProactivelyOpened && messages.length <= 1) {
         setOpen(true);
         setHasProactivelyOpened(true);
       }
-    }, 12000);
+    }, 15000);
     return () => clearTimeout(timer);
-  }, [open, hasProactivelyOpened]);
+  }, [open, hasProactivelyOpened, messages.length]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -165,6 +197,13 @@ export default function AIChatWidget() {
                   boxShadow: msg.role === "user" ? "0 4px 15px rgba(0,212,255,0.2)" : "none"
                 }}>
                   {msg.content}
+                  {/* Tool Call Feedback */}
+                  {msg.toolInvocations?.map((tool) => (
+                    <div key={tool.toolCallId} style={{ marginTop: "0.5rem", padding: "0.4rem", borderRadius: "8px", background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)", fontSize: "0.7rem", color: "var(--color-accent-500)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <Sparkles size={12} className="animate-spin" />
+                      {tool.state === 'result' ? "Intelligence Synced with CRM" : "Synchronizing with CRM..."}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
