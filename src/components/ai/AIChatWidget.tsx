@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles, RotateCcw, User, Shield, Zap, Calendar, Headphones } from "lucide-react";
+import { MessageCircle, X, Mic, MicOff, Send, Bot, ChevronDown, Sparkles, RotateCcw, User, Shield, Zap, Calendar, Headphones } from "lucide-react";
 import { useChat } from 'ai/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -109,10 +109,12 @@ export default function AIChatWidget() {
   // Proactive Engagement
   useEffect(() => {
     if (!hasProactivelyOpened) {
+      console.log('Neural Gateway: Initializing 20s proactive countdown...');
       const timer = setTimeout(() => {
+        console.log('Neural Gateway: Proactive engagement triggered.');
         setOpen(true);
         setHasProactivelyOpened(true);
-      }, 20000); // Proactive open after 20s
+      }, 20000); 
       return () => clearTimeout(timer);
     }
   }, [hasProactivelyOpened]);
