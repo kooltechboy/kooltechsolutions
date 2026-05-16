@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: {
@@ -54,13 +55,14 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
-        <script
+      </head>
+      <body className="mesh-gradient">
+        <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6964785390310012"
           crossOrigin="anonymous"
-        ></script>
-      </head>
-      <body className="mesh-gradient">
+          strategy="beforeInteractive"
+        />
         {children}
       </body>
     </html>
