@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Download, DollarSign, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import PaymentModal from "@/components/shared/PaymentModal";
 
 const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
   paid: { color: "#00E676", bg: "rgba(0,230,118,0.1)", label: "Paid", icon: CheckCircle },
@@ -14,6 +15,9 @@ const statusConfig: Record<string, { color: string; bg: string; label: string; i
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  
   const supabase = createClient();
 
   useEffect(() => {
@@ -35,6 +39,35 @@ export default function InvoicesPage() {
     }
     setLoading(false);
   }
+
+  const handlePayNow = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = async (invoiceId: string) => {
+    // Update local state first for instant feedback
+    setInvoices(prev => prev.map(inv => 
+      inv.id === invoiceId ? { ...inv, status: 'paid', paid_date: new Date().toISOString() } : inv
+    ));
+
+    // Update database
+    const { error } = await supabase
+      .from('invoices')
+      .update({ 
+        status: 'paid', 
+        paid_date: new Date().toISOString() 
+      })
+      .eq('id', invoiceId);
+
+    if (error) console.error("Error updating invoice status:", error);
+  };
+
+  const handleDownloadPDF = (inv: any) => {
+    // Basic simulation of a print/PDF export
+    alert(`Generating PDF for invoice ${inv.invoice_number || inv.id.slice(0, 8)}...`);
+    window.print();
+  };
 
   if (loading) {
     return (
@@ -106,7 +139,11 @@ export default function InvoicesPage() {
                         <s.icon size={11} /> {s.label}
                       </span>
                     </div>
-                    <button className="btn-primary" style={{ padding: "0.625rem 1.25rem", fontSize: "0.875rem" }}>
+                    <button 
+                      onClick={() => handlePayNow(inv)}
+                      className="btn-primary" 
+                      style={{ padding: "0.625rem 1.25rem", fontSize: "0.875rem" }}
+                    >
                       Pay Now
                     </button>
                   </div>
@@ -146,7 +183,10 @@ export default function InvoicesPage() {
                   <div style={{ color: "white", fontWeight: 700, fontSize: "0.9375rem", fontFamily: "JetBrains Mono, monospace" }}>
                     ${Number(inv.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
-                  <button style={{ display: "flex", alignItems: "center", gap: "0.3rem", background: "none", border: "1px solid rgba(75,132,200,0.2)", borderRadius: "6px", color: "var(--color-neutral-400)", fontSize: "0.75rem", padding: "0.375rem 0.75rem", cursor: "pointer" }}>
+                  <button 
+                    onClick={() => handleDownloadPDF(inv)}
+                    style={{ display: "flex", alignItems: "center", gap: "0.3rem", background: "none", border: "1px solid rgba(75,132,200,0.2)", borderRadius: "6px", color: "var(--color-neutral-400)", fontSize: "0.75rem", padding: "0.375rem 0.75rem", cursor: "pointer" }}
+                  >
                     <Download size={13} /> PDF
                   </button>
                 </div>
@@ -155,6 +195,14 @@ export default function InvoicesPage() {
           })}
         </div>
       </div>
+
+      {/* Modals */}
+      <PaymentModal 
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        invoice={selectedInvoice}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 }

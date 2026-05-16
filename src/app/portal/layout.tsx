@@ -8,6 +8,7 @@ import {
   HardDrive, FolderOpen, Bot, User, LogOut, Bell, ChevronDown,
   Menu, X,
 } from "lucide-react";
+import NotificationHub from "@/components/shared/NotificationHub";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/portal" },
@@ -132,10 +133,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             <Menu size={22} />
           </button>
           <div style={{ flex: 1 }} />
-          <button style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer", position: "relative" }}>
-            <Bell size={20} />
-            <div style={{ position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: "50%", background: "var(--color-danger)" }} />
-          </button>
+          <NotificationHub />
           <Link href="/portal/profile" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", textDecoration: "none" }}>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ color: "var(--color-accent-500)", fontSize: "0.7rem", fontWeight: 700 }}>{initials}</span>

@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Shield, Zap } from "lucide-react";
+import BookingModal from "@/components/shared/BookingModal";
 
 export default function HeroSection() {
+  const [bookingOpen, setBookingOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -96,9 +98,9 @@ export default function HeroSection() {
           </p>
 
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link href="/contact" className="btn-primary">
+            <button onClick={() => setBookingOpen(true)} className="btn-primary">
               Get Free IT Assessment <ArrowRight size={16} />
-            </Link>
+            </button>
             <Link href="/services" className="btn-ghost">
               Explore Services
             </Link>
@@ -152,6 +154,7 @@ export default function HeroSection() {
         </div>
       </div>
       <style>{`@media(min-width:1100px){.hero-card-float{display:block!important}}`}</style>
+      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
     </section>
   );
 }

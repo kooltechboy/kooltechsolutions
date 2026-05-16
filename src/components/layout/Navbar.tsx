@@ -170,7 +170,7 @@ export default function Navbar() {
 
           {/* CTA Buttons */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }} className="desktop-nav">
-            <Link href="/contact" className="btn-primary" style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}>
+            <Link href="/contact?book=true" className="btn-primary" style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}>
               Get Free Assessment
             </Link>
           </div>
@@ -222,7 +222,7 @@ export default function Navbar() {
             }}>
               Client Portal
             </Link>
-            <Link href="/contact" onClick={() => setMobileOpen(false)} className="btn-primary" style={{ justifyContent: "center", marginTop: "0.5rem" }}>
+            <Link href="/contact?book=true" onClick={() => setMobileOpen(false)} className="btn-primary" style={{ justifyContent: "center", marginTop: "0.5rem" }}>
               Get Free Assessment
             </Link>
           </div>

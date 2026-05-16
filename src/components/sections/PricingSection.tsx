@@ -1,6 +1,8 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { Check, Star, Zap, ArrowRight } from "lucide-react";
+import BookingModal from "@/components/shared/BookingModal";
 
 const tiers = [
   {
@@ -100,8 +102,8 @@ export default function PricingSection() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/contact"
+              <button
+                onClick={() => setBookingOpen(true)}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
                   width: "100%", padding: "0.875rem",
@@ -109,11 +111,11 @@ export default function PricingSection() {
                   border: tier.popular ? "none" : `1px solid ${tier.color}50`,
                   borderRadius: "10px", color: tier.popular ? "#0A1628" : tier.color,
                   textDecoration: "none", fontWeight: 700, fontSize: "0.9rem",
-                  transition: "all 0.2s ease",
+                  transition: "all 0.2s ease", cursor: "pointer"
                 }}
               >
                 Get Started <ArrowRight size={16} />
-              </Link>
+              </button>
             </div>
           ))}
         </div>
@@ -122,6 +124,7 @@ export default function PricingSection() {
           * All plans billed monthly. Annual plans available with 15% discount. Custom enterprise pricing available.
         </p>
       </div>
+      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
     </section>
   );
 }

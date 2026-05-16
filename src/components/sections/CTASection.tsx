@@ -1,8 +1,11 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Phone, Calendar } from "lucide-react";
+import BookingModal from "@/components/shared/BookingModal";
 
 export default function CTASection() {
+  const [bookingOpen, setBookingOpen] = useState(false);
   return (
     <section className="section" style={{ position: "relative", overflow: "hidden" }}>
       <div style={{
@@ -31,10 +34,10 @@ export default function CTASection() {
           Get a free, no-obligation IT assessment from our senior engineers. We'll identify risks, opportunities, and craft a custom roadmap for your business.
         </p>
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/contact" className="btn-primary" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
+          <button onClick={() => setBookingOpen(true)} className="btn-primary" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
             <Calendar size={18} /> Schedule Free Assessment
-          </Link>
-          <a href="tel:+18095550100" className="btn-ghost" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
+          </button>
+          <a href="tel:+18297201611" className="btn-ghost" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
             <Phone size={18} /> Call Us Now
           </a>
         </div>
@@ -47,6 +50,7 @@ export default function CTASection() {
           ))}
         </div>
       </div>
+      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
     </section>
   );
 }

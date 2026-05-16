@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Mic, MicOff, Send, Bot, ChevronDown, Sparkles, RotateCcw, User, Shield, Zap, Calendar, Headphones } from "lucide-react";
+import { MessageCircle, X, Mic, MicOff, Send, Bot, ChevronDown, Sparkles, RotateCcw, User, Shield, Zap, Calendar, Headphones, Activity, TrendingUp } from "lucide-react";
 import { useChat } from 'ai/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,6 +35,20 @@ const AGENTS = {
     icon: Calendar,
     greeting: "Hi! I'm Aria. Ready to move forward? I can help you secure a direct consultation with our engineering team. Shall we set an appointment?" 
   },
+  portal: {
+    name: "Cortex",
+    role: "Support Engineer (L3)",
+    color: "#00D4FF",
+    icon: Activity,
+    greeting: "Neural link established. I'm Cortex, your dedicated systems lead. I can help you analyze your infrastructure reports, track asset lifecycles, or troubleshoot service tickets. What's on your radar?"
+  },
+  admin: {
+    name: "Nexus",
+    role: "Growth Intelligence",
+    color: "#a855f7",
+    icon: TrendingUp,
+    greeting: "Nexus online. I'm analyzing your current sales velocity and lead quality. We have several high-intent leads waiting for qualification. How can I help you scale today?"
+  },
   default: { 
     name: "Kira", 
     role: "AI Workforce", 
@@ -64,6 +78,8 @@ export default function AIChatWidget() {
 
   // Determine current agent based on route
   const getAgent = () => {
+    if (pathname.includes('/admin')) return AGENTS.admin;
+    if (pathname.includes('/portal')) return AGENTS.portal;
     if (pathname === '/') return AGENTS.home;
     if (pathname.includes('/services')) return AGENTS.services;
     if (pathname.includes('/blog')) return AGENTS.blog;

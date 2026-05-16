@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Calendar } from "lucide-react";
+import BookingModal from "@/components/shared/BookingModal";
 
 const services = [
   "Managed IT (Essential)",
@@ -26,11 +28,18 @@ const services = [
   "Other / General Inquiry",
 ];
 
-export default function ContactPage() {
+function ContactContent() {
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", service: "", message: "" });
-
   const [loading, setLoading] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("book") === "true") {
+      setBookingOpen(true);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +111,7 @@ export default function ContactPage() {
                   <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6, marginBottom: "1rem" }}>
                     Prefer to see our platform in action? Book a 30-minute live demo with our team.
                   </p>
-                  <button className="btn-primary" style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}>
+                  <button onClick={() => setBookingOpen(true)} className="btn-primary" style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}>
                     Book a Demo Slot
                   </button>
                 </div>
@@ -170,6 +179,15 @@ export default function ContactPage() {
         </section>
       </main>
       <Footer />
+      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
     </>
+  );
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense fallback={<div className="mesh-gradient" style={{ minHeight: "100vh" }} />}>
+      <ContactContent />
+    </Suspense>
   );
 }
