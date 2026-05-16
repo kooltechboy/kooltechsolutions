@@ -109,10 +109,46 @@ export default function AIChatWidget() {
       const timer = setTimeout(() => {
         setOpen(true);
         setHasProactivelyOpened(true);
-      }, 15000); // Proactive open after 15s
+      }, 20000); // Proactive open after 20s
       return () => clearTimeout(timer);
     }
   }, [hasProactivelyOpened]);
+
+  // Voice Recognition
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        handleInputChange({ target: { value: transcript } } as any);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, [handleInputChange]);
+
+  const toggleVoice = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+    } else {
+      setIsListening(true);
+      recognitionRef.current?.start();
+    }
+  };
 
   // Scroll to bottom
   useEffect(() => {
@@ -120,7 +156,7 @@ export default function AIChatWidget() {
   }, [messages]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end pointer-events-none">
+    <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end pointer-events-none">
       <AnimatePresence>
         {open && (
           <motion.div
@@ -131,23 +167,23 @@ export default function AIChatWidget() {
               minimized ? 'h-[72px]' : 'h-[600px] max-h-[80vh]'
             }`}
             style={{ 
-              background: "rgba(10, 22, 45, 0.95)",
-              backdropFilter: "blur(20px)",
-              boxShadow: `0 24px 60px rgba(0,0,0,0.5), 0 0 40px ${agent.color}15`
+              background: "rgba(10, 22, 45, 0.98)",
+              backdropFilter: "blur(25px)",
+              boxShadow: `0 30px 100px rgba(0,0,0,0.6), 0 0 50px ${agent.color}15`
             }}
           >
             {/* Header */}
-            <div className="p-4 flex items-center justify-between border-b border-white/10 bg-white/5">
+            <div className="p-4 flex items-center justify-between border-b border-white/10 bg-white/5 backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${agent.color}, #1E4D8C)` }}>
-                    <agent.icon size={20} />
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${agent.color}, #1E4D8C)` }}>
+                    <agent.icon size={22} />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-[#0a162d] rounded-full" />
+                  <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-[#0a162d] rounded-full shadow-sm" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm tracking-tight">{agent.name}</h3>
-                  <p className="text-[10px] text-blue-400 font-medium uppercase tracking-wider">{agent.role}</p>
+                  <h3 className="font-bold text-white text-sm tracking-tight leading-none mb-1">{agent.name}</h3>
+                  <p className="text-[9px] text-blue-400 font-bold uppercase tracking-[0.15em]">{agent.role}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -156,15 +192,15 @@ export default function AIChatWidget() {
                     localStorage.removeItem(`kts_messages_${sessionId}`);
                     setMessages([{ id: 'initial', role: 'assistant', content: agent.greeting }]);
                   }}
-                  className="p-2 text-slate-400 hover:text-white transition-colors"
+                  className="p-2 text-slate-400 hover:text-white transition-all hover:bg-white/5 rounded-lg"
                   title="Reset Conversation"
                 >
                   <RotateCcw size={16} />
                 </button>
-                <button onClick={() => setMinimized(!minimized)} className="p-2 text-slate-400 hover:text-white transition-colors">
+                <button onClick={() => setMinimized(!minimized)} className="p-2 text-slate-400 hover:text-white transition-all hover:bg-white/5 rounded-lg">
                   <ChevronDown size={18} style={{ transform: minimized ? "rotate(180deg)" : "rotate(0)" }} />
                 </button>
-                <button onClick={() => setOpen(false)} className="p-2 text-slate-400 hover:text-red-400 transition-colors">
+                <button onClick={() => setOpen(false)} className="p-2 text-slate-400 hover:text-red-400 transition-all hover:bg-red-400/5 rounded-lg">
                   <X size={18} />
                 </button>
               </div>
@@ -172,13 +208,13 @@ export default function AIChatWidget() {
 
             {/* Messages Area */}
             {!minimized && (
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar bg-slate-900/40">
                 {messages.map((m, idx) => (
                   <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${
+                    <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
                       m.role === 'user' 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 rounded-tr-none' 
-                        : 'bg-white/10 text-slate-200 backdrop-blur-sm rounded-tl-none border border-white/5'
+                        ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-xl shadow-blue-600/10 rounded-tr-none' 
+                        : 'bg-white/5 text-slate-200 backdrop-blur-sm rounded-tl-none border border-white/5 shadow-inner'
                     }`}>
                       {m.content}
                     </div>
@@ -186,12 +222,13 @@ export default function AIChatWidget() {
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-white/5 p-3 rounded-2xl border border-white/5 rounded-tl-none">
-                      <div className="flex gap-1">
-                        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.4 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 rounded-tl-none flex items-center gap-3">
+                      <div className="flex gap-1.5">
+                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
                       </div>
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{agent.name} is thinking...</span>
                     </div>
                   </div>
                 )}
@@ -201,25 +238,36 @@ export default function AIChatWidget() {
 
             {/* Input Area */}
             {!minimized && (
-              <div className="p-4 border-t border-white/10 bg-white/5">
-                <form onSubmit={handleSubmit} className="relative">
-                  <input
-                    value={input}
-                    onChange={handleInputChange}
-                    placeholder="Ask anything about our solutions..."
-                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-white focus:outline-none focus:border-blue-500 transition-all placeholder:text-slate-500"
-                  />
+              <div className="p-5 border-t border-white/10 bg-white/5">
+                <form onSubmit={handleSubmit} className="relative flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      value={input}
+                      onChange={handleInputChange}
+                      placeholder={isListening ? "Listening..." : "Message our workforce..."}
+                      className="w-full bg-slate-900/80 border border-white/10 rounded-2xl py-3.5 pl-5 pr-12 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all placeholder:text-slate-500 shadow-inner"
+                    />
+                    <button
+                      type="button"
+                      onClick={toggleVoice}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all ${
+                        isListening ? 'text-red-400 bg-red-400/10' : 'text-slate-400 hover:text-blue-400'
+                      }`}
+                    >
+                      {isListening ? <MicOff size={18} className="animate-pulse" /> : <Mic size={18} />}
+                    </button>
+                  </div>
                   <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-3.5 rounded-2xl bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-20 disabled:grayscale transition-all shadow-lg shadow-blue-600/20 active:scale-95"
                   >
-                    <Send size={18} />
+                    <Send size={20} />
                   </button>
                 </form>
-                <div className="mt-3 flex items-center justify-between text-[10px] text-slate-500 font-medium tracking-wide px-1">
-                  <span className="flex items-center gap-1"><Sparkles size={10} className="text-blue-400" /> Powered by Gemini 1.5</span>
-                  <span className="uppercase tracking-widest">KoolTech Solutions</span>
+                <div className="mt-4 flex items-center justify-between text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] px-1 opacity-60">
+                  <span className="flex items-center gap-1.5"><Bot size={12} className="text-blue-500" /> Neural Pipeline V1</span>
+                  <span>KoolTech Solutions</span>
                 </div>
               </div>
             )}
@@ -232,15 +280,19 @@ export default function AIChatWidget() {
         <motion.button
           initial={{ scale: 0, rotate: -20 }}
           animate={{ scale: 1, rotate: 0 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setOpen(true)}
-          className="pointer-events-auto mt-4 w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-blue-600/40 border border-white/20 relative"
+          className="pointer-events-auto mt-4 w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-700 flex items-center justify-center text-white shadow-[0_20px_50px_rgba(0,212,255,0.4)] border border-white/20 relative group"
         >
-          <MessageCircle size={28} />
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-3xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <MessageCircle size={32} className="group-hover:scale-110 transition-transform" />
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-4 border-slate-900 flex items-center justify-center">
             <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
           </div>
+          <span className="absolute -left-32 top-1/2 -translate-y-1/2 bg-white text-slate-900 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap shadow-xl">
+            Live Support
+          </span>
         </motion.button>
       )}
     </div>
