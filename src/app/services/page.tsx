@@ -8,56 +8,56 @@ import AIChatWidget from "@/components/ai/AIChatWidget";
 const serviceCategories = [
   {
     id: "security",
-    title: "Cybersecurity & Defense",
+    title: "Zero-Trust Cybersecurity",
     icon: Shield,
     color: "#00D4FF",
-    description: "Enterprise-grade threat protection, zero-trust architecture, and 24/7 security operations to keep your assets secure.",
-    features: ["Threat Intelligence", "Incident Response", "Identity Management", "Endpoint Protection"],
+    description: "In an era of hyper-velocity threats, we deploy a multi-layered 'Defense-in-Depth' architecture. Our framework integrates AI-driven EDR (Endpoint Detection & Response), automated SIEM log analysis, and rigorous identity orchestration to eliminate blind spots across your entire digital estate.",
+    features: ["SIEM/SOC Operations", "Penetration Testing", "MFA & Identity Governance", "Encrypted Data At-Rest/In-Transit"],
     href: "/services/cybersecurity"
   },
   {
     id: "cloud",
-    title: "Cloud & Infrastructure",
+    title: "Hybrid Cloud Orchestration",
     icon: Cloud,
     color: "#A855F7",
-    description: "Seamless cloud migration, hybrid infrastructure management, and high-performance server solutions scaled for growth.",
-    features: ["Azure/AWS Management", "Hybrid Cloud", "Data Migration", "Disaster Recovery"],
+    description: "We transition static legacy environments into fluid, high-availability cloud ecosystems. By leveraging advanced containerization and serverless architectures, we optimize your compute costs while ensuring your infrastructure is globally distributed and virtually indestructible.",
+    features: ["Azure/AWS Governance", "Infrastructure as Code (IaC)", "Container Orchestration", "Predictive Scaling"],
     href: "/services/cloud"
   },
   {
     id: "network",
-    title: "Network Intelligence",
+    title: "Enterprise Connectivity",
     icon: Network,
     color: "#00E676",
-    description: "Resilient, high-speed networking designed for zero-downtime and maximum data velocity across your organization.",
-    features: ["SD-WAN", "Wireless Optimization", "Network Security", "Fiber Infrastructure"],
+    description: "Our network designs prioritize low-latency data velocity and absolute resilience. We implement SD-WAN fabrics, fiber-optic backbones, and redundant wireless meshes that ensure your remote offices and headquarters remain synchronized 24/7/365.",
+    features: ["SD-WAN Optimization", "Network Edge Security", "Fiber Mesh Deployment", "QoS Voice/Data Prioritization"],
     href: "/services/network"
   },
   {
     id: "monitoring",
-    title: "Proactive Monitoring",
+    title: "Predictive Intelligence",
     icon: Monitor,
     color: "#FFB300",
-    description: "Always-on surveillance of your entire IT stack. We solve problems before they impact your business operations.",
-    features: ["24/7 RMM", "System Health Audits", "Performance Tuning", "Automated Patching"],
+    description: "Moving beyond traditional monitoring, we utilize predictive analytics to identify hardware degradation and software anomalies before they manifest as downtime. Our RMM agents provide deep-telemetry into every CPU cycle and packet flow in your organization.",
+    features: ["AI-Driven Diagnostics", "Heuristic Health Checks", "Automatic Patch Management", "Hardware Lifecycle Auditing"],
     href: "/services/monitoring"
   },
   {
     id: "support",
-    title: "Technical Help Desk",
+    title: "Elite Engineering Support",
     icon: Headphones,
     color: "#FF4444",
-    description: "Elite technical support with rapid response times. Our engineers are an extension of your internal team.",
-    features: ["VIP Remote Support", "On-site Dispatch", "VIP Escalation", "Asset Management"],
+    description: "Our Help Desk is not a call center; it is a rapid-response engineering corps. Every ticket is handled by certified senior technicians who understand your specific business workflows, ensuring rapid resolution and minimum friction for your workforce.",
+    features: ["L3 Senior Support", "Executive White-Glove Desk", "Rapid On-Site Dispatch", "Workflow Automation Support"],
     href: "/services/support"
   },
   {
     id: "compliance",
-    title: "Compliance & Auditing",
+    title: "Regulatory Governance",
     icon: Award,
     color: "#33DDFF",
-    description: "Meeting the highest regulatory standards. We ensure your infrastructure is audit-ready and legally compliant.",
-    features: ["HIPAA/PCI Compliance", "Security Audits", "Data Privacy", "Risk Assessment"],
+    description: "We harden your IT infrastructure against the world's most rigorous regulatory frameworks. From HIPAA and PCI-DSS to regional Caribbean financial standards, we provide the auditing, reporting, and continuous monitoring required for absolute compliance.",
+    features: ["Audit-Ready Reporting", "Continuous Data Audits", "HIPAA/PCI Hardening", "Disaster Recovery Testing"],
     href: "/services/compliance"
   }
 ];
@@ -146,6 +146,65 @@ export default function ServicesPage() {
           </div>
         </section>
 
+        {/* Methodology Section */}
+        <section style={{ padding: "8rem 0", background: "linear-gradient(180deg, transparent 0%, rgba(0,212,255,0.03) 50%, transparent 100%)" }}>
+          <div className="container">
+            <div style={{ textAlign: "center", marginBottom: "5rem" }}>
+              <div className="badge badge-cyan" style={{ marginBottom: "1.5rem" }}>Our Process</div>
+              <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "2.5rem", color: "white", marginBottom: "1.5rem" }}>
+                The KoolTech <span className="gradient-text">Engineering Blueprint</span>
+              </h2>
+              <p style={{ color: "var(--color-neutral-400)", maxWidth: "600px", margin: "0 auto" }}>
+                We don't just fix IT; we architect business resilience through a disciplined three-phase deployment framework.
+              </p>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "3rem" }}>
+              {[
+                { 
+                  step: "01", 
+                  title: "Discovery & Audit", 
+                  desc: "We perform a deep-packet analysis and infrastructure audit to identify security vulnerabilities, compute inefficiencies, and technical debt.",
+                  details: ["Asset Mapping", "Security Baseline", "Cloud Readiness Assessment"]
+                },
+                { 
+                  step: "02", 
+                  title: "Strategic Orchestration", 
+                  desc: "Our engineers design a custom roadmap, deploying zero-trust security fabrics and scalable cloud infrastructure tailored to your velocity.",
+                  details: ["Architectural Design", "Zero-Downtime Migration", "Staff Onboarding"]
+                },
+                { 
+                  step: "03", 
+                  title: "Hyper-Evolution", 
+                  desc: "Continuous 24/7 monitoring and predictive maintenance ensure your platform evolves ahead of market demands and security threats.",
+                  details: ["Predictive Analytics", "Quarterly Strategy Reviews", "Infinite Scalability"]
+                }
+              ].map((item) => (
+                <div key={item.step} style={{ position: "relative" }}>
+                  <div style={{ 
+                    fontSize: "4rem", 
+                    fontWeight: 900, 
+                    fontFamily: "Syne, sans-serif", 
+                    color: "rgba(0,212,255,0.08)",
+                    lineHeight: 1,
+                    marginBottom: "-1.5rem",
+                    marginLeft: "-0.5rem"
+                  }}>{item.step}</div>
+                  <h3 style={{ color: "white", fontSize: "1.5rem", marginBottom: "1rem", position: "relative" }}>{item.title}</h3>
+                  <p style={{ color: "var(--color-neutral-400)", fontSize: "0.9375rem", lineHeight: 1.6, marginBottom: "1.5rem" }}>{item.desc}</p>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    {item.details.map(d => (
+                      <li key={d} style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "var(--color-neutral-300)", fontSize: "0.875rem" }}>
+                        <Zap size={14} color="var(--color-accent-500)" /> {d}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Global Infrastructure Section */}
         <section style={{ padding: "8rem 0", background: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
           <div className="container">
@@ -196,6 +255,17 @@ export default function ServicesPage() {
                 {/* Background pulse effect */}
                 <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "120%", height: "120%", background: "radial-gradient(circle, rgba(0,212,255,0.1) 0%, transparent 70%)", zIndex: -1 }} />
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Tech Stack Section */}
+        <section style={{ padding: "6rem 0", background: "rgba(0,212,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="container">
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "4rem", opacity: 0.6, filter: "grayscale(100%)" }}>
+              {["Microsoft 365", "AWS", "Google Cloud", "Fortinet", "Cisco", "SentinelOne", "Datto"].map(vendor => (
+                <div key={vendor} style={{ color: "white", fontSize: "1.25rem", fontWeight: 700, fontFamily: "Syne, sans-serif", letterSpacing: "-0.02em" }}>{vendor}</div>
+              ))}
             </div>
           </div>
         </section>
