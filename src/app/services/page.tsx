@@ -1,74 +1,222 @@
-import type { Metadata } from "next";
+"use client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import AIChatWidget from "@/components/ai/AIChatWidget";
-import PricingSection from "@/components/sections/PricingSection";
-import CTASection from "@/components/sections/CTASection";
-import { Shield, Cloud, Network, Monitor, Headphones, Award, Check, ArrowRight } from "lucide-react";
+import { Shield, Cloud, Network, Monitor, Headphones, Award, ArrowRight, Zap, CheckCircle2, Server, Lock, Globe } from "lucide-react";
 import Link from "next/link";
+import AIChatWidget from "@/components/ai/AIChatWidget";
 
-export const metadata: Metadata = {
-  title: "IT Services & Managed Plans",
-  description: "Explore Kool Tech Solutions' full service portfolio — cybersecurity, cloud, networking, monitoring, help desk, and compliance. Bronze, Silver & Gold plans.",
-};
-
-const services = [
-  { slug: "cybersecurity", icon: Shield, color: "#FF4444", title: "Cybersecurity", desc: "Enterprise-grade threat protection, 24/7 SIEM monitoring with Wazuh, vulnerability management via OpenVAS, firewall administration, and security awareness training.", features: ["Wazuh SIEM & SOC", "OpenVAS Vulnerability Scanning", "OPNsense Firewall Management", "Endpoint Detection & Response", "Security Awareness Training", "Incident Response Planning"] },
-  { slug: "cloud", icon: Cloud, color: "#00D4FF", title: "Cloud Services", desc: "Full-lifecycle cloud management from strategy and migration through ongoing optimization of your AWS, Azure, or hybrid infrastructure.", features: ["Cloud Strategy & Architecture", "Migration Planning & Execution", "Cost Optimization", "Hybrid Cloud Design", "Backup & Disaster Recovery", "Cloud Security Posture"] },
-  { slug: "network", icon: Network, color: "#4B84C8", title: "Network Management", desc: "Enterprise network design, implementation, and continuous management including SD-WAN, VPN, and high-availability configurations.", features: ["Network Architecture Design", "SD-WAN Implementation", "VPN & Remote Access", "Nginx Proxy Management", "Bandwidth Optimization", "Network Monitoring"] },
-  { slug: "monitoring", icon: Monitor, color: "#FFB300", title: "24/7 Monitoring", desc: "Proactive infrastructure monitoring through Uptime Kuma, Tactical RMM, and Grafana dashboards with automated alerting.", features: ["Uptime Kuma Monitoring", "Tactical RMM Agent Deployment", "Grafana Dashboard Visibility", "Real-Time SMS/Email Alerts", "Action1 Endpoint Management", "Prometheus Metrics"] },
-  { slug: "support", icon: Headphones, color: "#00E676", title: "Help Desk Support", desc: "Multi-channel technical support powered by AI-assisted ticket routing, remote access tools, and certified engineers.", features: ["AI-Powered Ticket Routing", "Remote Desktop Support", "ITFlow Ticketing System", "Multi-Channel Support", "Priority Escalation", "Knowledge Base Access"] },
-  { slug: "compliance", icon: Award, color: "#A855F7", title: "IT Compliance", desc: "Navigate complex regulatory landscapes with structured compliance programs for HIPAA, SOC 2, PCI-DSS, and ISO 27001.", features: ["Compliance Gap Analysis", "Policy & Procedure Creation", "Risk Assessment & Management", "Audit Preparation", "Compliance Reporting", "Ongoing Advisory"] },
+const serviceCategories = [
+  {
+    id: "security",
+    title: "Cybersecurity & Defense",
+    icon: Shield,
+    color: "#00D4FF",
+    description: "Enterprise-grade threat protection, zero-trust architecture, and 24/7 security operations to keep your assets secure.",
+    features: ["Threat Intelligence", "Incident Response", "Identity Management", "Endpoint Protection"],
+    href: "/services/cybersecurity"
+  },
+  {
+    id: "cloud",
+    title: "Cloud & Infrastructure",
+    icon: Cloud,
+    color: "#A855F7",
+    description: "Seamless cloud migration, hybrid infrastructure management, and high-performance server solutions scaled for growth.",
+    features: ["Azure/AWS Management", "Hybrid Cloud", "Data Migration", "Disaster Recovery"],
+    href: "/services/cloud"
+  },
+  {
+    id: "network",
+    title: "Network Intelligence",
+    icon: Network,
+    color: "#00E676",
+    description: "Resilient, high-speed networking designed for zero-downtime and maximum data velocity across your organization.",
+    features: ["SD-WAN", "Wireless Optimization", "Network Security", "Fiber Infrastructure"],
+    href: "/services/network"
+  },
+  {
+    id: "monitoring",
+    title: "Proactive Monitoring",
+    icon: Monitor,
+    color: "#FFB300",
+    description: "Always-on surveillance of your entire IT stack. We solve problems before they impact your business operations.",
+    features: ["24/7 RMM", "System Health Audits", "Performance Tuning", "Automated Patching"],
+    href: "/services/monitoring"
+  },
+  {
+    id: "support",
+    title: "Technical Help Desk",
+    icon: Headphones,
+    color: "#FF4444",
+    description: "Elite technical support with rapid response times. Our engineers are an extension of your internal team.",
+    features: ["VIP Remote Support", "On-site Dispatch", "VIP Escalation", "Asset Management"],
+    href: "/services/support"
+  },
+  {
+    id: "compliance",
+    title: "Compliance & Auditing",
+    icon: Award,
+    color: "#33DDFF",
+    description: "Meeting the highest regulatory standards. We ensure your infrastructure is audit-ready and legally compliant.",
+    features: ["HIPAA/PCI Compliance", "Security Audits", "Data Privacy", "Risk Assessment"],
+    href: "/services/compliance"
+  }
 ];
 
 export default function ServicesPage() {
   return (
     <>
       <Navbar />
-      <main style={{ paddingTop: "72px" }}>
-        {/* Hero */}
-        <section style={{ padding: "5rem 0 4rem", background: "linear-gradient(180deg, rgba(15,32,68,0.5) 0%, transparent 100%)", borderBottom: "1px solid rgba(0,212,255,0.08)" }}>
-          <div className="container" style={{ textAlign: "center" }}>
-            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>Service Portfolio</div>
-            <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3.5rem)", color: "white", marginBottom: "1rem" }}>
-              Complete IT <span className="gradient-text">Solutions</span>
+      <main style={{ minHeight: "100vh" }}>
+        {/* Hero Section */}
+        <section style={{ padding: "8rem 0 4rem", textAlign: "center" }}>
+          <div className="container">
+            <div className="badge badge-cyan" style={{ marginBottom: "1.5rem" }}>Our Capabilities</div>
+            <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2.5rem, 6vw, 4rem)", color: "white", marginBottom: "1.5rem", lineHeight: 1.1 }}>
+              Enterprise <span className="gradient-text">Solutions</span> & <br />Managed IT Excellence
             </h1>
-            <p style={{ color: "var(--color-neutral-400)", maxWidth: "560px", margin: "0 auto", lineHeight: 1.7, fontSize: "1.0625rem" }}>
-              From endpoint security to cloud infrastructure — we manage your entire IT environment so you can focus on growing your business.
+            <p style={{ color: "var(--color-neutral-400)", maxWidth: "700px", margin: "0 auto 3rem", fontSize: "1.1rem", lineHeight: 1.7 }}>
+              Kool Tech Solutions provides the technical backbone for modern enterprises. From zero-trust security to high-velocity cloud infrastructure, we deliver the elite engineering your business demands.
             </p>
           </div>
         </section>
 
         {/* Services Grid */}
-        <section className="section">
+        <section style={{ padding: "2rem 0 8rem" }}>
           <div className="container">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "1.5rem" }}>
-              {services.map(svc => (
-                <div key={svc.slug} className="glass-card" style={{ borderRadius: "16px", padding: "2rem" }}>
-                  <div style={{ width: 56, height: 56, borderRadius: "14px", background: `${svc.color}15`, border: `1px solid ${svc.color}30`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.25rem" }}>
-                    <svc.icon size={26} color={svc.color} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "2rem" }}>
+              {serviceCategories.map((service) => (
+                <div 
+                  key={service.id} 
+                  className="glass-card" 
+                  style={{ 
+                    padding: "2.5rem", 
+                    borderRadius: "24px", 
+                    display: "flex", 
+                    flexDirection: "column",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    position: "relative",
+                    overflow: "hidden"
+                  }}
+                >
+                  <div style={{
+                    width: 60, height: 60, borderRadius: "16px",
+                    background: `${service.color}15`, display: "flex",
+                    alignItems: "center", justifyContent: "center", marginBottom: "1.5rem",
+                    border: `1px solid ${service.color}30`
+                  }}>
+                    <service.icon size={28} color={service.color} />
                   </div>
-                  <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "white", marginBottom: "0.75rem" }}>{svc.title}</h2>
-                  <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", lineHeight: 1.7, marginBottom: "1.5rem" }}>{svc.desc}</p>
-                  <ul style={{ listStyle: "none", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "1.5rem" }}>
-                    {svc.features.map(f => (
-                      <li key={f} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                        <Check size={13} color={svc.color} style={{ flexShrink: 0 }} />
-                        <span style={{ color: "var(--color-neutral-400)", fontSize: "0.78rem" }}>{f}</span>
-                      </li>
+
+                  <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: "1.5rem", color: "white", marginBottom: "1rem" }}>{service.title}</h3>
+                  <p style={{ color: "var(--color-neutral-400)", fontSize: "0.9375rem", lineHeight: 1.6, marginBottom: "2rem", flex: 1 }}>
+                    {service.description}
+                  </p>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "2rem" }}>
+                    {service.features.map(f => (
+                      <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-300)", fontSize: "0.8125rem" }}>
+                        <CheckCircle2 size={14} color={service.color} /> {f}
+                      </div>
                     ))}
-                  </ul>
-                  <Link href={`/services/${svc.slug}`} style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: svc.color, textDecoration: "none", fontSize: "0.875rem", fontWeight: 600 }}>
-                    Learn More <ArrowRight size={14} />
+                  </div>
+
+                  <Link 
+                    href={service.href} 
+                    style={{ 
+                      display: "inline-flex", 
+                      alignItems: "center", 
+                      gap: "0.5rem", 
+                      color: service.color, 
+                      textDecoration: "none", 
+                      fontWeight: 600, 
+                      fontSize: "0.875rem",
+                      transition: "gap 0.2s"
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.gap = "0.75rem")}
+                    onMouseLeave={e => (e.currentTarget.style.gap = "0.5rem")}
+                  >
+                    Explore Solutions <ArrowRight size={16} />
                   </Link>
+
+                  {/* Decorative background glow */}
+                  <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "150px", height: "150px", background: service.color, filter: "blur(80px)", opacity: 0.05, pointerEvents: "none" }} />
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <PricingSection />
-        <CTASection />
+        {/* Global Infrastructure Section */}
+        <section style={{ padding: "8rem 0", background: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="container">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }} className="services-info-grid">
+              <div>
+                <div className="badge badge-cyan" style={{ marginBottom: "1.5rem" }}>Global Reach</div>
+                <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "2.5rem", color: "white", marginBottom: "1.5rem" }}>
+                  Managed Infrastructure <br /><span className="gradient-text">Without Borders</span>
+                </h2>
+                <p style={{ color: "var(--color-neutral-400)", fontSize: "1.1rem", lineHeight: 1.7, marginBottom: "2rem" }}>
+                  We support organizations across the Dominican Republic, USA, Canada, and the Caribbean. Our centralized command centers provide real-time intelligence and rapid response dispatch regardless of your geographic footprint.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  {[
+                    { icon: Globe, title: "Multinational Support", desc: "Coordinated IT strategy across regional offices." },
+                    { icon: Server, title: "Edge Computing", desc: "Low-latency infrastructure located where you need it." },
+                    { icon: Lock, title: "Unified Security", desc: "Consistent defense policies across global endpoints." }
+                  ].map(item => (
+                    <div key={item.title} style={{ display: "flex", gap: "1rem" }}>
+                      <div style={{ width: 44, height: 44, borderRadius: "10px", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <item.icon size={20} color="var(--color-accent-500)" />
+                      </div>
+                      <div>
+                        <div style={{ color: "white", fontWeight: 600, fontSize: "1rem" }}>{item.title}</div>
+                        <div style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>{item.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ position: "relative" }}>
+                <div className="glass-card" style={{ padding: "3rem", borderRadius: "32px", border: "1px solid rgba(0,212,255,0.15)", background: "rgba(6,11,24,0.6)" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ color: "var(--color-accent-500)", fontSize: "3rem", fontWeight: 800, fontFamily: "Syne, sans-serif" }}>99.99%</div>
+                      <div style={{ color: "var(--color-neutral-400)", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.1em", fontWeight: 700 }}>Uptime Guarantee</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ color: "var(--color-success)", fontSize: "3rem", fontWeight: 800, fontFamily: "Syne, sans-serif" }}>15min</div>
+                      <div style={{ color: "var(--color-neutral-400)", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.1em", fontWeight: 700 }}>Average Response Time</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ color: "white", fontSize: "3rem", fontWeight: 800, fontFamily: "Syne, sans-serif" }}>24/7/365</div>
+                      <div style={{ color: "var(--color-neutral-400)", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.1em", fontWeight: 700 }}>Active Monitoring</div>
+                    </div>
+                  </div>
+                </div>
+                {/* Background pulse effect */}
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "120%", height: "120%", background: "radial-gradient(circle, rgba(0,212,255,0.1) 0%, transparent 70%)", zIndex: -1 }} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ padding: "8rem 0", textAlign: "center" }}>
+          <div className="container">
+            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "2.5rem", color: "white", marginBottom: "1.5rem" }}>Ready to Optimize Your Infrastructure?</h2>
+            <p style={{ color: "var(--color-neutral-400)", maxWidth: "600px", margin: "0 auto 3rem", fontSize: "1.1rem" }}>
+              Our senior engineers are ready to build the technology foundation your business deserves.
+            </p>
+            <Link href="/contact" className="btn-primary" style={{ padding: "1rem 3rem", fontSize: "1rem" }}>
+              Book a Strategy Session
+            </Link>
+          </div>
+        </section>
+
+        <style>{`
+          @media (max-width: 900px) {
+            .services-info-grid { grid-template-columns: 1fr !important; gap: 3rem !important; }
+          }
+        `}</style>
       </main>
       <Footer />
       <AIChatWidget />

@@ -97,24 +97,26 @@ export default function Navbar() {
             <NavLink href="/">Home</NavLink>
             <NavLink href="/about">About</NavLink>
 
-            {/* Services Dropdown */}
             <div
               style={{ position: "relative" }}
               onMouseEnter={() => setServicesOpen(true)}
               onMouseLeave={() => setServicesOpen(false)}
             >
-              <button style={{
-                display: "flex", alignItems: "center", gap: "0.25rem",
-                padding: "0.5rem 0.75rem", background: "transparent",
-                border: "none", color: "var(--color-neutral-400)",
-                fontSize: "0.875rem", fontWeight: 500, cursor: "pointer",
-                fontFamily: "DM Sans, sans-serif", transition: "color 0.2s ease",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = "white")}
-              onMouseLeave={e => (e.currentTarget.style.color = "var(--color-neutral-400)")}
+              <Link 
+                href="/services"
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.25rem",
+                  padding: "0.5rem 0.75rem", background: "transparent",
+                  border: "none", color: "var(--color-neutral-400)",
+                  fontSize: "0.875rem", fontWeight: 500, cursor: "pointer",
+                  fontFamily: "DM Sans, sans-serif", transition: "color 0.2s ease",
+                  textDecoration: "none"
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = "white")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--color-neutral-400)")}
               >
                 Services/Solutions <ChevronDown size={14} />
-              </button>
+              </Link>
               {servicesOpen && (
                 <div style={{
                   position: "absolute", top: "calc(100% + 8px)", left: "-160px",
