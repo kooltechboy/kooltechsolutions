@@ -55,7 +55,7 @@ export default function AIChatWidget() {
     };
   };
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages } = useChat({
     api: '/api/chat',
     body: { 
       sessionId, 
@@ -66,10 +66,32 @@ export default function AIChatWidget() {
     initialMessages: [
       { id: 'initial', role: 'assistant', content: agent.greeting }
     ],
-    onResponse: (response) => {
-      // Logic for tool tracking can go here
-    }
+    maxSteps: 5,
   });
+
+  // Persist messages to localStorage
+  useEffect(() => {
+    if (messages.length > 1) {
+      localStorage.setItem(`kts_messages_${sessionId}`, JSON.stringify(messages));
+    }
+  }, [messages, sessionId]);
+
+  // Load messages from localStorage
+  useEffect(() => {
+    if (sessionId) {
+      const saved = localStorage.getItem(`kts_messages_${sessionId}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.length > 0) {
+            setMessages(parsed);
+          }
+        } catch (e) {
+          console.error("Failed to load messages", e);
+        }
+      }
+    }
+  }, [sessionId, setMessages]);
 
   const [isListening, setIsListening] = useState(false);
 
@@ -86,7 +108,7 @@ export default function AIChatWidget() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, error]);
 
   const startVoice = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -215,6 +237,11 @@ export default function AIChatWidget() {
                 <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontStyle: "italic", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   {agent.name} is thinking... <Sparkles size={12} className="animate-pulse" />
                 </div>
+              </div>
+            )}
+            {error && (
+              <div style={{ padding: "1rem", borderRadius: "12px", background: "rgba(255,68,68,0.1)", border: "1px solid rgba(255,68,68,0.2)", color: "#ff6b6b", fontSize: "0.8rem", textAlign: "center" }}>
+                Neural connection interrupted. Please check your network or try again.
               </div>
             )}
             <div ref={messagesEndRef} />

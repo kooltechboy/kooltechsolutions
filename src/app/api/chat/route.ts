@@ -11,6 +11,7 @@ export async function POST(req: Request) {
   try {
     const { messages, sessionId, agentName, pageContext, telemetry } = await req.json();
     const currentSessionId = sessionId || crypto.randomUUID();
+    console.log(`[AI CHAT] Request from session: ${currentSessionId}, Agent: ${agentName || 'Kira'}`);
 
     // Log User message
     const userMessage = messages[messages.length - 1];
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
     5. Use the Telemetry context to personalize advice (e.g., if they are on a mobile device, mention mobile workforce security).`;
 
     const result = await streamText({
-      model: google('gemini-1.5-pro') as any,
+      model: google('models/gemini-1.5-pro') as any,
       messages,
       system: systemPrompt,
       tools: {
@@ -84,15 +85,20 @@ export async function POST(req: Request) {
         }),
       },
       async onFinish({ text }) {
-        if (supabaseUrl && supabaseUrl !== 'https://your-project-ref.supabase.co') {
-          await supabase.from('agent_logs').insert({
-            session_id: currentSessionId,
-            role: 'agent',
-            content: text,
-            agent_name: agentName || 'Kira'
-          });
+        try {
+          if (supabaseUrl && supabaseUrl !== 'https://your-project-ref.supabase.co') {
+            await supabase.from('agent_logs').insert({
+              session_id: currentSessionId,
+              role: 'agent',
+              content: text,
+              agent_name: agentName || 'Kira'
+            });
+          }
+        } catch (logError) {
+          console.error('Failed to log agent response:', logError);
         }
-      }
+      },
+      maxSteps: 5,
     });
 
     return result.toDataStreamResponse();
