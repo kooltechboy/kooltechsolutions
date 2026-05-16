@@ -55,7 +55,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body>{children}</body>
+      <body className="mesh-gradient">{children}</body>
     </html>
   );
 }

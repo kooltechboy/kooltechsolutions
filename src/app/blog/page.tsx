@@ -39,9 +39,9 @@ export default async function BlogPage() {
   return (
     <>
       <Navbar />
-      <main style={{ minHeight: "100vh", background: "var(--color-primary-950)" }}>
+      <main style={{ minHeight: "100vh" }}>
         {/* Hero */}
-        <section className="mesh-gradient" style={{ padding: "5rem 0 3rem" }}>
+        <section style={{ padding: "5rem 0 3rem" }}>
           <div className="container" style={{ textAlign: "center" }}>
             <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>Knowledge Hub</div>
             <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3rem)", color: "white", marginBottom: "1rem" }}>
@@ -75,7 +75,7 @@ export default async function BlogPage() {
 
         {/* Posts Grid */}
         <div className="container" style={{ paddingBottom: "5rem", paddingTop: "2rem" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem" }}>
             {posts && posts.length > 0 ? posts.map((post: any) => {
               const color = getCategoryColor(post.category);
               return (

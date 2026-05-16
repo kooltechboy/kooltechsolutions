@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="mesh-gradient" style={{ display: "flex", minHeight: "100vh", background: "var(--color-primary-950)" }}>
+    <div style={{ display: "flex", minHeight: "100vh" }}>
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 

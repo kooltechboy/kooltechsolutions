@@ -116,7 +116,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       />
       <ReadingProgress />
       <Navbar />
-      <main className="mesh-gradient" style={{ minHeight: "100vh", background: "var(--color-primary-950)" }}>
+      <main style={{ minHeight: "100vh" }}>
         <section className="container" style={{ maxWidth: "1200px", margin: "4rem auto", padding: "0 2rem" }}>
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "4rem" }} className="blog-layout-grid">
