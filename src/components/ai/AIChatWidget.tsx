@@ -5,10 +5,10 @@ import { useChat } from 'ai/react';
 import { usePathname } from 'next/navigation';
 
 const AGENTS = {
-  home: { name: "Kira", role: "Executive Assistant", color: "#00D4FF", emoji: "👋", greeting: "Hi! I'm Kira. Welcome to Kool Tech Solutions. Are you looking to strengthen your IT infrastructure or perhaps interested in our Free Vulnerability Assessment? I'm here to help! 😊" },
-  services: { name: "Max", role: "Senior Sales Engineer", color: "#00E676", emoji: "🛡️", greeting: "Hello, I'm Max. I specialize in enterprise-grade security and cloud orchestration. Would you like a technical overview of how we can harden your environment with a Free Vulnerability Assessment?" },
-  blog: { name: "Kira", role: "Knowledge Lead", color: "#00D4FF", emoji: "📚", greeting: "Hi there! I'm Kira. Diving into our latest tech insights? If you have questions about any of these topics—or want to see how they apply to your business—just let me know!" },
-  contact: { name: "Aria", role: "Deployment Coordinator", color: "#FFB300", emoji: "📅", greeting: "Hi! I'm Aria. Ready to take the next step? I can help you secure a priority slot for your Free Vulnerability Assessment right now. What's the best email to reach you at?" },
+  home: { name: "Kira", role: "Executive Assistant", color: "#00D4FF", emoji: "👋", greeting: "Hi! I'm Kira. Welcome to Kool Tech Solutions. Are you looking to optimize your IT infrastructure or perhaps explore a specific solution for your business? I'm here to guide you! 😊" },
+  services: { name: "Max", role: "Senior Solutions Engineer", color: "#00E676", emoji: "🛡️", greeting: "Hello, I'm Max. I specialize in enterprise-grade security, cloud orchestration, and network resilience. Which area of your technology stack are we focusing on today?" },
+  blog: { name: "Kira", role: "Knowledge Lead", color: "#00D4FF", emoji: "📚", greeting: "Hi there! I'm Kira. Diving into our latest technical insights? If you have questions about our research—or want to see how these innovations can scale your business—just let me know!" },
+  contact: { name: "Aria", role: "Strategic Coordinator", color: "#FFB300", emoji: "📅", greeting: "Hi! I'm Aria. Ready to elevate your IT strategy? I can help you secure a consultation with our engineering team for any of our solutions. What's the best email for follow-up?" },
   default: { name: "Kira", role: "AI Workforce", color: "#00D4FF", emoji: "🤖", greeting: "Hello! How can the Kool Tech AI team assist your business today?" },
 };
 
