@@ -1,58 +1,76 @@
 "use client";
-
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Volume2 } from "lucide-react";
+import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles } from "lucide-react";
+import { useChat } from 'ai/react';
+import { usePathname } from 'next/navigation';
 
 const AGENTS = {
-  home: { name: "Kira", role: "Customer Service", color: "#00D4FF", emoji: "👋" },
-  services: { name: "Max", role: "Sales Specialist", color: "#00E676", emoji: "💼" },
-  contact: { name: "Aria", role: "Appointment Setter", color: "#FFB300", emoji: "📅" },
-  default: { name: "Kira", role: "AI Assistant", color: "#00D4FF", emoji: "🤖" },
+  home: { name: "Kira", role: "Executive Assistant", color: "#00D4FF", emoji: "👋", greeting: "Hi! I'm Kira. Welcome to Kool Tech Solutions. Are you looking to strengthen your IT infrastructure or perhaps interested in our Free Vulnerability Assessment? I'm here to help! 😊" },
+  services: { name: "Max", role: "Senior Sales Engineer", color: "#00E676", emoji: "🛡️", greeting: "Hello, I'm Max. I specialize in enterprise-grade security and cloud orchestration. Would you like a technical overview of how we can harden your environment with a Free Vulnerability Assessment?" },
+  blog: { name: "Kira", role: "Knowledge Lead", color: "#00D4FF", emoji: "📚", greeting: "Hi there! I'm Kira. Diving into our latest tech insights? If you have questions about any of these topics—or want to see how they apply to your business—just let me know!" },
+  contact: { name: "Aria", role: "Deployment Coordinator", color: "#FFB300", emoji: "📅", greeting: "Hi! I'm Aria. Ready to take the next step? I can help you secure a priority slot for your Free Vulnerability Assessment right now. What's the best email to reach you at?" },
+  default: { name: "Kira", role: "AI Workforce", color: "#00D4FF", emoji: "🤖", greeting: "Hello! How can the Kool Tech AI team assist your business today?" },
 };
 
-import { useChat } from 'ai/react';
-
 export default function AIChatWidget() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [hasProactivelyOpened, setHasProactivelyOpened] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [sessionId] = useState(() => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(7));
-  const agent = AGENTS.home;
   
+  // Determine agent based on path
+  const getAgent = () => {
+    if (pathname === "/") return AGENTS.home;
+    if (pathname.startsWith("/services")) return AGENTS.services;
+    if (pathname.startsWith("/blog")) return AGENTS.blog;
+    if (pathname.startsWith("/contact")) return AGENTS.contact;
+    return AGENTS.default;
+  };
+
+  const agent = getAgent();
+
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
-    body: { sessionId, agentName: agent.name },
+    body: { sessionId, agentName: agent.name, pageContext: pathname },
     initialMessages: [
-      { id: 'initial', role: 'assistant', content: "Hi! I'm Kira, your AI assistant at Kool Tech Solutions. How can I help you today? I can tell you about our IT services, pricing, or connect you with a specialist. 😊" }
+      { id: 'initial', role: 'assistant', content: agent.greeting }
     ]
   });
 
   const [isListening, setIsListening] = useState(false);
 
+  // Proactive Engagement Logic: Open after 12 seconds if not already open
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!open && !hasProactivelyOpened) {
+        setOpen(true);
+        setHasProactivelyOpened(true);
+      }
+    }, 12000);
+    return () => clearTimeout(timer);
+  }, [open, hasProactivelyOpened]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
   const startVoice = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("Voice recognition is not supported in this browser.");
+      alert("Voice recognition is not supported.");
       return;
     }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    
     recognition.onstart = () => setIsListening(true);
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       handleInputChange({ target: { value: input ? input + " " + transcript : transcript } } as any);
     };
-    recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
-    
     recognition.start();
   };
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
 
   if (!open) {
     return (
@@ -64,17 +82,17 @@ export default function AIChatWidget() {
           background: "linear-gradient(135deg, #00D4FF, #1E4D8C)",
           border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 0 30px rgba(0,212,255,0.4), 0 4px 20px rgba(0,0,0,0.3)",
+          boxShadow: "0 0 30px rgba(0,212,255,0.4)",
           animation: "pulse-ring 2s ease infinite",
         }}
-        aria-label="Open AI Chat"
       >
+        <div style={{ position: "absolute", top: -10, right: -5, background: "var(--color-accent-500)", color: "var(--color-primary-950)", fontSize: "0.65rem", fontWeight: 800, padding: "2px 6px", borderRadius: "10px", boxShadow: "0 4px 10px rgba(0,0,0,0.3)" }}>AI LIVE</div>
         <MessageCircle size={26} color="white" />
         <style>{`
           @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 rgba(0,212,255,0.4), 0 4px 20px rgba(0,0,0,0.3); }
-            70% { box-shadow: 0 0 0 16px rgba(0,212,255,0), 0 4px 20px rgba(0,0,0,0.3); }
-            100% { box-shadow: 0 0 0 0 rgba(0,212,255,0), 0 4px 20px rgba(0,0,0,0.3); }
+            0% { box-shadow: 0 0 0 0 rgba(0,212,255,0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(0,212,255,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,212,255,0); }
           }
         `}</style>
       </button>
@@ -84,44 +102,45 @@ export default function AIChatWidget() {
   return (
     <div style={{
       position: "fixed", bottom: "2rem", right: "2rem", zIndex: 9999,
-      width: 380, borderRadius: "20px", overflow: "hidden",
-      boxShadow: "0 24px 80px rgba(0,0,0,0.5), 0 0 40px rgba(0,212,255,0.1)",
-      border: "1px solid rgba(0,212,255,0.2)",
+      width: 400, borderRadius: "24px", overflow: "hidden",
+      boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+      border: "1px solid rgba(255,255,255,0.1)",
       display: "flex", flexDirection: "column",
-      maxHeight: minimized ? "72px" : "520px",
-      transition: "max-height 0.3s ease",
+      maxHeight: minimized ? "72px" : "580px",
+      transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+      background: "rgba(6, 11, 24, 0.95)",
+      backdropFilter: "blur(20px)",
     }}>
       {/* Header */}
       <div style={{
-        background: "linear-gradient(135deg, var(--color-primary-800), var(--color-primary-900))",
-        padding: "1rem 1.25rem",
+        background: "linear-gradient(135deg, rgba(10,22,40,0.8), rgba(6,11,24,0.9))",
+        padding: "1.25rem",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        borderBottom: "1px solid rgba(0,212,255,0.15)",
-        flexShrink: 0,
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           <div style={{
-            width: 40, height: 40, borderRadius: "50%",
-            background: `radial-gradient(circle, ${agent.color}30, ${agent.color}10)`,
-            border: `2px solid ${agent.color}50`,
+            width: 44, height: 44, borderRadius: "14px",
+            background: `${agent.color}20`,
+            border: `1px solid ${agent.color}40`,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "1.25rem",
+            fontSize: "1.4rem",
           }}>
             {agent.emoji}
           </div>
           <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.9rem" }}>{agent.name}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-              <span className="status-dot status-online" style={{ width: 6, height: 6 }} />
-              <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{agent.role} · Online</span>
+            <div style={{ color: "#fff", fontWeight: 700, fontSize: "1rem", letterSpacing: "-0.01em" }}>{agent.name}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#00E676", boxShadow: "0 0 8px #00E676" }} />
+              <span style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem", fontWeight: 500 }}>{agent.role}</span>
             </div>
           </div>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button onClick={() => setMinimized(!minimized)} style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer", padding: "0.25rem" }}>
-            <ChevronDown size={18} style={{ transform: minimized ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }} />
+          <button onClick={() => setMinimized(!minimized)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", cursor: "pointer", padding: "0.5rem", borderRadius: "8px" }}>
+            <ChevronDown size={18} style={{ transform: minimized ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.3s" }} />
           </button>
-          <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer", padding: "0.25rem" }}>
+          <button onClick={() => setOpen(false)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", cursor: "pointer", padding: "0.5rem", borderRadius: "8px" }}>
             <X size={18} />
           </button>
         </div>
@@ -129,81 +148,57 @@ export default function AIChatWidget() {
 
       {!minimized && (
         <>
-          {/* Messages */}
-          <div style={{
-            flex: 1, overflowY: "auto", padding: "1rem",
-            background: "var(--color-primary-950)",
-            display: "flex", flexDirection: "column", gap: "0.75rem",
-          }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
             {messages.map((msg) => (
-              <div key={msg.id} style={{
-                display: "flex", flexDirection: msg.role === "user" ? "row-reverse" : "row",
-                alignItems: "flex-end", gap: "0.5rem",
-              }}>
+              <div key={msg.id} style={{ display: "flex", flexDirection: msg.role === "user" ? "row-reverse" : "row", gap: "0.75rem" }}>
                 {msg.role !== "user" && (
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Bot size={14} color="var(--color-accent-500)" />
+                  <div style={{ width: 32, height: 32, borderRadius: "10px", background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Bot size={16} color="var(--color-accent-500)" />
                   </div>
                 )}
                 <div style={{
-                  maxWidth: "80%", padding: "0.625rem 0.875rem", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                  background: msg.role === "user" ? "linear-gradient(135deg, #00D4FF, #0099CC)" : "rgba(15,32,68,0.8)",
-                  border: msg.role !== "user" ? "1px solid rgba(0,212,255,0.15)" : "none",
-                  color: msg.role === "user" ? "#0A1628" : "var(--color-neutral-50)",
-                  fontSize: "0.8125rem", lineHeight: 1.5, fontWeight: msg.role === "user" ? 500 : 400,
-                  whiteSpace: "pre-wrap"
+                  maxWidth: "85%", padding: "0.875rem 1.125rem", borderRadius: msg.role === "user" ? "20px 20px 4px 20px" : "4px 20px 20px 20px",
+                  background: msg.role === "user" ? "linear-gradient(135deg, #00D4FF, #1E4D8C)" : "rgba(255,255,255,0.03)",
+                  border: msg.role !== "user" ? "1px solid rgba(255,255,255,0.05)" : "none",
+                  color: msg.role === "user" ? "white" : "var(--color-neutral-200)",
+                  fontSize: "0.875rem", lineHeight: 1.6,
+                  boxShadow: msg.role === "user" ? "0 4px 15px rgba(0,212,255,0.2)" : "none"
                 }}>
                   {msg.content}
                 </div>
               </div>
             ))}
             {isLoading && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Bot size={14} color="var(--color-accent-500)" />
+              <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                <div style={{ width: 32, height: 32, borderRadius: "10px", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Bot size={16} color="var(--color-accent-500)" />
                 </div>
-                <div style={{ padding: "0.625rem 1rem", borderRadius: "16px 16px 16px 4px", background: "rgba(15,32,68,0.8)", border: "1px solid rgba(0,212,255,0.15)", display: "flex", gap: "4px", alignItems: "center" }}>
-                  {[0, 1, 2].map(i => (
-                    <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent-500)", animation: `bounce 1.2s ${i * 0.2}s ease-in-out infinite` }} />
-                  ))}
-                  <style>{`@keyframes bounce { 0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)} }`}</style>
+                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontStyle: "italic", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {agent.name} is thinking... <Sparkles size={12} className="animate-pulse" />
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <form onSubmit={handleSubmit} style={{
-            padding: "0.875rem", background: "var(--color-primary-900)",
-            borderTop: "1px solid rgba(0,212,255,0.1)",
-            display: "flex", gap: "0.5rem", alignItems: "center",
-          }}>
-            <button type="button" onClick={startVoice} style={{ background: isListening ? "rgba(255,0,0,0.1)" : "none", border: "none", color: isListening ? "#ff4444" : "var(--color-neutral-400)", cursor: "pointer", padding: "0.25rem", borderRadius: "50%" }} title="Voice mode">
-              <Mic size={18} />
+          <form onSubmit={handleSubmit} style={{ padding: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: "0.75rem" }}>
+            <button type="button" onClick={startVoice} style={{ background: isListening ? "rgba(255,68,68,0.1)" : "rgba(255,255,255,0.05)", border: "none", color: isListening ? "#ff4444" : "white", cursor: "pointer", width: 44, height: 44, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Mic size={20} />
             </button>
             <input
               value={input}
               onChange={handleInputChange}
-              placeholder="Ask anything..."
+              placeholder={`Ask ${agent.name} about IT solutions...`}
               style={{
-                flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(0,212,255,0.15)",
-                borderRadius: "20px", padding: "0.5rem 1rem", color: "white", fontSize: "0.8125rem",
-                outline: "none", fontFamily: "DM Sans, sans-serif",
+                flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "12px", padding: "0.75rem 1rem", color: "white", fontSize: "0.875rem",
+                outline: "none", transition: "border 0.2s"
               }}
+              onFocus={e => e.currentTarget.style.border = "1px solid var(--color-accent-500)"}
+              onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)"}
             />
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              style={{
-                width: 36, height: 36, borderRadius: "50%",
-                background: "linear-gradient(135deg, #00D4FF, #0099CC)",
-                border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                opacity: (!input.trim() || isLoading) ? 0.5 : 1
-              }}
-            >
-              <Send size={15} color="#0A1628" />
+            <button type="submit" disabled={!input.trim() || isLoading} style={{ width: 44, height: 44, borderRadius: "12px", background: "linear-gradient(135deg, #00D4FF, #1E4D8C)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: !input.trim() || isLoading ? 0.5 : 1 }}>
+              <Send size={20} color="white" />
             </button>
           </form>
         </>
