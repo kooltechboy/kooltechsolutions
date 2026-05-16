@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles } from "lucide-react";
+import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles, RotateCcw } from "lucide-react";
 import { useChat } from 'ai/react';
 import { usePathname } from 'next/navigation';
 

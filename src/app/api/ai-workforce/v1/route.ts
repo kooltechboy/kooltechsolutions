@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const google = createGoogleGenerativeAI({ apiKey });
 
     const result = await streamText({
-      model: google('gemini-flash-latest'),
+      model: google('gemini-flash-latest') as any,
       messages,
       system: "You are the KoolTech Solutions AI Workforce. Act as an expert IT Solutions architect.",
     });
