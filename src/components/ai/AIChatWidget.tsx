@@ -191,6 +191,12 @@ export default function AIChatWidget() {
           </div>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button onClick={() => {
+              localStorage.removeItem(`kts_messages_${sessionId}`);
+              setMessages([{ id: 'initial', role: 'assistant', content: agent.greeting }]);
+            }} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", cursor: "pointer", padding: "0.5rem", borderRadius: "8px" }}>
+            <RotateCcw size={16} />
+          </button>
           <button onClick={() => setMinimized(!minimized)} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "white", cursor: "pointer", padding: "0.5rem", borderRadius: "8px" }}>
             <ChevronDown size={18} style={{ transform: minimized ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.3s" }} />
           </button>
