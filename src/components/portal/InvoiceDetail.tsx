@@ -1,5 +1,7 @@
 "use client";
 import { X, Download, Printer, CreditCard, Building2, MapPin, Mail, Phone, Calendar, Clock } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "-";
@@ -21,6 +23,36 @@ export default function InvoiceDetail({ invoice, onClose, onPay }: InvoiceDetail
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById("invoice-printable");
+    if (!element) return;
+    
+    // Add a temporary style to ensure the element renders completely for the canvas
+    const originalStyle = element.style.cssText;
+    element.style.padding = "40px";
+    
+    try {
+      const canvas = await html2canvas(element, { 
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      
+      element.style.cssText = originalStyle;
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Invoice_${invoice.invoice_number}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF", error);
+      element.style.cssText = originalStyle;
+    }
   };
 
   const lineItems = invoice.line_items || [];
@@ -52,6 +84,13 @@ export default function InvoiceDetail({ invoice, onClose, onPay }: InvoiceDetail
               title="Print Invoice"
             >
               <Printer size={18} />
+            </button>
+            <button 
+              onClick={handleDownloadPDF}
+              className="p-2 text-[#00D4FF] hover:text-white transition-colors rounded-lg hover:bg-white/5"
+              title="Download PDF"
+            >
+              <Download size={18} />
             </button>
             <button 
               onClick={onClose}
