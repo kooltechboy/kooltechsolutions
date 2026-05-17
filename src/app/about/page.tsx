@@ -10,10 +10,7 @@ export const metadata: Metadata = {
 };
 
 const team = [
-  { name: "Carlos Méndez", title: "CEO & Founder", emoji: "👨‍💼", bio: "15+ years in enterprise IT. Former IT Director at a Fortune 500 company. Built KTS to bring world-class IT to Caribbean businesses." },
-  { name: "Sofia Reyes", title: "CTO", emoji: "👩‍💻", bio: "Cybersecurity expert with CISSP & CISM certifications. Leads our security operations center and AI workforce development." },
-  { name: "Miguel Torres", title: "Head of Cloud", emoji: "👨‍🔬", bio: "AWS & Azure certified architect. Designed cloud migrations for 50+ organizations across the Dominican Republic." },
-  { name: "Ana García", title: "Head of Support", emoji: "👩‍🎧", bio: "ITIL v4 certified with 10+ years in managed services. Champions our <1hr response time guarantee." },
+  { name: "Daniel J Williams", title: "CEO & Founder", emoji: "👨‍💼", bio: "15+ years in enterprise IT. Former IT Director at a Fortune 500 company. Built KTS to bring world-class IT to Caribbean businesses." },
 ];
 
 const values = [
