@@ -6,12 +6,16 @@ export default function BookingModal({
   isOpen, 
   onClose,
   initialName = "",
-  initialEmail = ""
+  initialEmail = "",
+  initialService = "",
+  initialMessage = ""
 }: { 
   isOpen: boolean; 
   onClose: () => void;
   initialName?: string;
   initialEmail?: string;
+  initialService?: string;
+  initialMessage?: string;
 }) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -23,20 +27,22 @@ export default function BookingModal({
     name: initialName, 
     email: initialEmail,
     phone: "",
-    service: "",
-    message: ""
+    service: initialService,
+    message: initialMessage
   });
 
-  // Update form if initial values change (e.g. after profile loads)
+  // Update form if initial values change (e.g. after profile loads or custom package changes)
   useEffect(() => {
-    if (initialName || initialEmail) {
+    if (initialName || initialEmail || initialService || initialMessage) {
       setForm(prev => ({
         ...prev,
         name: prev.name || initialName,
-        email: prev.email || initialEmail
+        email: prev.email || initialEmail,
+        service: initialService || prev.service,
+        message: initialMessage || prev.message
       }));
     }
-  }, [initialName, initialEmail]);
+  }, [initialName, initialEmail, initialService, initialMessage]);
 
   if (!isOpen) return null;
 
@@ -320,6 +326,7 @@ export default function BookingModal({
                     <option value="Help Desk Support">Help Desk Support</option>
                     <option value="Network Management">Network Management</option>
                     <option value="IT Compliance">IT Compliance</option>
+                    <option value="Custom Package">Custom Package</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>

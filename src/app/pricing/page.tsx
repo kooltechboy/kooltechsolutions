@@ -1,41 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PricingSection from "@/components/sections/PricingSection";
 import BookingModal from "@/components/shared/BookingModal";
-import { Shield, Cloud, Server, Headphones, Check, Plus, ArrowRight, HelpCircle } from "lucide-react";
-
-const individualServices = [
-  {
-    name: "Cybersecurity Suite",
-    icon: Shield,
-    price: "Starts at $150/mo",
-    desc: "Standalone zero-trust security architecture, endpoint protection, and 24/7 SOC monitoring.",
-    features: ["Next-Gen Antivirus", "EDR / XDR", "Dark Web Monitoring", "Phishing Simulation"],
-  },
-  {
-    name: "Cloud Infrastructure",
-    icon: Cloud,
-    price: "Starts at $200/mo",
-    desc: "AWS & Azure cloud management, optimization, and secure migration services.",
-    features: ["Cloud Architecture", "Cost Optimization", "Daily Backups", "Disaster Recovery"],
-  },
-  {
-    name: "Network Operations",
-    icon: Server,
-    price: "Starts at $250/mo",
-    desc: "Complete network management, firewall configuration, and ISP vendor management.",
-    features: ["Firewall Management", "SD-WAN Routing", "Wi-Fi Optimization", "VPN Setup"],
-  },
-  {
-    name: "Help Desk Support",
-    icon: Headphones,
-    price: "Starts at $100/user",
-    desc: "Dedicated L1-L3 support for your team, available during business hours or 24/7.",
-    features: ["Remote Support", "Ticketing System", "SLA Guarantees", "Software Troubleshooting"],
-  }
-];
+import { ArrowRight, HelpCircle, ShoppingCart, Check } from "lucide-react";
+import { serviceCatalog, Service } from "@/data/services";
+import * as Icons from "lucide-react";
 
 const faqs = [
   {
@@ -58,11 +29,46 @@ const faqs = [
 
 export default function PricingPage() {
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+
+  const toggleService = (service: Service) => {
+    setSelectedServices(prev => {
+      const isSelected = prev.find(s => s.id === service.id);
+      if (isSelected) {
+        return prev.filter(s => s.id !== service.id);
+      }
+      return [...prev, service];
+    });
+  };
+
+  const customMessage = useMemo(() => {
+    if (selectedServices.length === 0) return "";
+    const list = selectedServices.map(s => `- ${s.name} (${s.code})`).join("\n");
+    return `I am interested in a custom package including the following services:\n\n${list}`;
+  }, [selectedServices]);
+
+  const customPriceInfo = useMemo(() => {
+    let hasCustom = false;
+    let totalMonthly = 0;
+    
+    selectedServices.forEach(s => {
+      if (s.price.toLowerCase() === "custom") {
+        hasCustom = true;
+      } else {
+        const numPrice = parseFloat(s.price.replace(/[^0-9.]/g, ""));
+        if (!isNaN(numPrice) && s.priceType === "Monthly") {
+          totalMonthly += numPrice;
+        }
+      }
+    });
+
+    return { totalMonthly, hasCustom };
+  }, [selectedServices]);
 
   return (
     <>
       <Navbar />
-      <main style={{ paddingTop: "72px" }}>
+      <main style={{ paddingTop: "72px", paddingBottom: selectedServices.length > 0 ? "80px" : "0", transition: "padding 0.3s ease" }}>
         
         {/* Hero Section */}
         <section style={{ padding: "5rem 0 3rem", background: "linear-gradient(180deg, rgba(15,32,68,0.5) 0%, transparent 100%)", textAlign: "center" }}>
@@ -81,52 +87,99 @@ export default function PricingPage() {
         {/* Combo Packages (Reused Section) */}
         <PricingSection />
 
-        {/* Individual Services & Add-ons */}
-        <section className="section" style={{ position: "relative" }}>
+        {/* Comprehensive Catalog & Custom Builder */}
+        <section className="section" id="custom-builder" style={{ position: "relative" }}>
           <div className="container">
-            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+            <div style={{ textAlign: "center", marginBottom: "4rem" }}>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.75rem, 4vw, 2.5rem)", color: "white", marginBottom: "1rem" }}>
-                Individual Solutions & Add-ons
+                Build Your Custom Stack
               </h2>
-              <p style={{ color: "var(--color-neutral-400)", maxWidth: "600px", margin: "0 auto" }}>
-                Need something specific? Build a customized IT plan with our standalone services tailored to fill gaps in your existing infrastructure.
+              <p style={{ color: "var(--color-neutral-400)", maxWidth: "700px", margin: "0 auto", fontSize: "1.0625rem", lineHeight: 1.6 }}>
+                Need something specific? Browse our comprehensive catalog below and select the services you need to build a custom package. We'll give you a tailored quote.
               </p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
-              {individualServices.map((service, index) => (
-                <div key={index} className="glass-card" style={{ padding: "2rem", borderRadius: "16px", display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-                    <div style={{ width: 48, height: 48, borderRadius: "12px", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent-500)" }}>
-                      <service.icon size={24} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>
+              {serviceCatalog.map((category) => {
+                const IconComponent = (Icons as any)[category.icon] || Icons.HelpCircle;
+                
+                return (
+                  <div key={category.name}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "1rem" }}>
+                      <div style={{ width: 48, height: 48, borderRadius: "12px", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent-500)", flexShrink: 0 }}>
+                        <IconComponent size={24} />
+                      </div>
+                      <div>
+                        <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.5rem", margin: 0 }}>
+                          {category.name}
+                        </h3>
+                        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", margin: "0.25rem 0 0 0" }}>
+                          {category.description}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.125rem", margin: 0 }}>{service.name}</h3>
-                      <div style={{ color: "var(--color-accent-500)", fontSize: "0.875rem", fontWeight: 600 }}>{service.price}</div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
+                      {category.services.map((service) => {
+                        const isSelected = selectedServices.some(s => s.id === service.id);
+                        
+                        return (
+                          <div 
+                            key={service.id} 
+                            onClick={() => toggleService(service)}
+                            className="glass-card" 
+                            style={{ 
+                              padding: "1.5rem", 
+                              borderRadius: "16px", 
+                              display: "flex", 
+                              flexDirection: "column",
+                              border: isSelected ? "1px solid var(--color-accent-500)" : "1px solid rgba(255,255,255,0.05)",
+                              background: isSelected ? "rgba(0,212,255,0.05)" : "rgba(10,22,40,0.6)",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease"
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                              <div style={{ flex: 1, paddingRight: "1rem" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                  <h4 style={{ color: "white", fontSize: "1rem", fontWeight: 600, margin: 0 }}>{service.name}</h4>
+                                  {service.priority === "High" && (
+                                    <span style={{ fontSize: "0.6rem", background: "rgba(255,68,68,0.1)", color: "#ff4444", padding: "0.15rem 0.4rem", borderRadius: "4px", fontWeight: 700, textTransform: "uppercase" }}>Critical</span>
+                                  )}
+                                </div>
+                                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginTop: "0.25rem" }}>{service.code}</div>
+                              </div>
+                              <div style={{ 
+                                width: 24, height: 24, borderRadius: "6px", 
+                                background: isSelected ? "var(--color-accent-500)" : "rgba(255,255,255,0.1)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                color: isSelected ? "#060B18" : "transparent",
+                                flexShrink: 0,
+                                transition: "all 0.2s ease"
+                              }}>
+                                <Check size={14} strokeWidth={3} />
+                              </div>
+                            </div>
+                            
+                            <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", lineHeight: 1.5, marginBottom: "1.5rem", flexGrow: 1 }}>
+                              {service.description}
+                            </p>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                              <div style={{ color: "var(--color-accent-500)", fontSize: "1.125rem", fontWeight: 700 }}>
+                                {service.price}
+                              </div>
+                              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 600 }}>
+                                {service.priceType}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  
-                  <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", lineHeight: 1.6, marginBottom: "1.5rem", flexGrow: 1 }}>
-                    {service.desc}
-                  </p>
-
-                  <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.5rem 0", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    {service.features.map((feature, i) => (
-                      <li key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-neutral-300)" }}>
-                        <Plus size={14} color="var(--color-accent-500)" /> {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <button 
-                    onClick={() => setBookingOpen(true)}
-                    className="btn-secondary" 
-                    style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}
-                  >
-                    Request Quote
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -179,8 +232,66 @@ export default function PricingPage() {
         </section>
 
       </main>
+
+      {/* Sticky Custom Package Builder Footer */}
+      {selectedServices.length > 0 && (
+        <div style={{ 
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
+          background: "rgba(10,22,40,0.95)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(0,212,255,0.2)",
+          padding: "1rem", display: "flex", justifyContent: "center",
+          animation: "slideUp 0.3s ease",
+          boxShadow: "0 -10px 40px rgba(0,0,0,0.5)"
+        }}>
+          <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent-500)", border: "1px solid rgba(0,212,255,0.2)" }}>
+                  <ShoppingCart size={20} />
+                </div>
+                <div>
+                  <div style={{ color: "white", fontWeight: 700, fontSize: "1rem" }}>{selectedServices.length} Services Selected</div>
+                  <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>Custom Package Builder</div>
+                </div>
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: "1.5rem", marginLeft: "0.5rem" }}>
+                <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>Est. Monthly Total</div>
+                <div style={{ color: "var(--color-accent-500)", fontWeight: 800, fontSize: "1.25rem", display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
+                  ${customPriceInfo.totalMonthly.toFixed(2)}
+                  {customPriceInfo.hasCustom && <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", fontWeight: 500 }}>+ Custom Pricing</span>}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <button 
+                onClick={() => setSelectedServices([])}
+                style={{ background: "none", border: "none", color: "var(--color-neutral-400)", fontSize: "0.875rem", cursor: "pointer", fontWeight: 600 }}
+              >
+                Clear Cart
+              </button>
+              <button 
+                onClick={() => setBookingOpen(true)}
+                className="btn-primary" 
+                style={{ padding: "0.75rem 1.5rem" }}
+              >
+                Request Quote
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
-      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
+      <BookingModal 
+        isOpen={bookingOpen} 
+        onClose={() => setBookingOpen(false)} 
+        initialService={selectedServices.length > 0 ? "Custom Package" : ""}
+        initialMessage={customMessage}
+      />
+      <style>{`
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      `}</style>
     </>
   );
 }
