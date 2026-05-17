@@ -164,6 +164,7 @@ export default function Navbar() {
               )}
             </div>
 
+            <NavLink href="/pricing">Pricing</NavLink>
             <NavLink href="/blog">Blog/Insights</NavLink>
             <NavLink href="/contact">Contact</NavLink>
           </div>
@@ -200,6 +201,7 @@ export default function Navbar() {
               { label: "Home", href: "/" },
               { label: "About", href: "/about" },
               { label: "Services/Solutions", href: "/services" },
+              { label: "Pricing", href: "/pricing" },
               { label: "Blog/Insights", href: "/blog" },
               { label: "Contact", href: "/contact" }
             ].map(item => (

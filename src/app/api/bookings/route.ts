@@ -8,7 +8,7 @@ const ADMIN_EMAIL = "danieljwilliams2401@gmail.com";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, date, time } = body;
+    const { name, email, date, time, phone, service, message } = body;
 
     const supabase = await createClient();
 
@@ -34,6 +34,9 @@ export async function POST(request: Request) {
               <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p><strong>Name:</strong> ${first_name} ${last_name}</p>
                 <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Phone / WhatsApp:</strong> ${phone || 'N/A'}</p>
+                <p><strong>Interest:</strong> ${service || 'Live Demo'}</p>
+                <p><strong>Message:</strong> ${message || 'No message provided.'}</p>
                 <p><strong>Scheduled Slot:</strong> <span style="background: #e0faff; color: #007791; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${date} at ${time}</span></p>
               </div>
 
@@ -75,8 +78,9 @@ export async function POST(request: Request) {
       first_name,
       last_name,
       email,
-      service_interest: "Live Demo",
-      notes: bookingNote,
+      phone: phone || null,
+      service_interest: service || "Live Demo",
+      notes: `${bookingNote}\n\nClient Message: ${message || 'None'}`,
       status: "qualified" // Booked demos are immediately qualified
     }).select().single();
 

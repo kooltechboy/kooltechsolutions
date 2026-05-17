@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2 } from "lucide-react";
+import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2, Phone, MessageSquare, Briefcase } from "lucide-react";
 
 export default function BookingModal({ 
   isOpen, 
@@ -19,7 +19,13 @@ export default function BookingModal({
   const [loading, setLoading] = useState(false);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
-  const [form, setForm] = useState({ name: initialName, email: initialEmail });
+  const [form, setForm] = useState({ 
+    name: initialName, 
+    email: initialEmail,
+    phone: "",
+    service: "",
+    message: ""
+  });
 
   // Update form if initial values change (e.g. after profile loads)
   useEffect(() => {
@@ -47,6 +53,9 @@ export default function BookingModal({
           email: form.email,
           date: selectedDate,
           time: selectedTime,
+          phone: form.phone,
+          service: form.service,
+          message: form.message,
         }),
       });
 
@@ -292,6 +301,33 @@ export default function BookingModal({
                     <Mail size={14} /> Work Email *
                   </label>
                   <input required type="email" className="input-field" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="john@company.com" />
+                </div>
+                <div>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.4rem" }}>
+                    <Phone size={14} /> Phone / WhatsApp *
+                  </label>
+                  <input required type="tel" className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+1 (829) 000-0000" />
+                </div>
+                <div>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.4rem" }}>
+                    <Briefcase size={14} /> Interested In *
+                  </label>
+                  <select required className="input-field" value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}>
+                    <option value="">Select a service...</option>
+                    <option value="Cybersecurity">Cybersecurity</option>
+                    <option value="Cloud Services">Cloud Services</option>
+                    <option value="Managed IT">Managed IT</option>
+                    <option value="Help Desk Support">Help Desk Support</option>
+                    <option value="Network Management">Network Management</option>
+                    <option value="IT Compliance">IT Compliance</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.4rem" }}>
+                    <MessageSquare size={14} /> Brief Message
+                  </label>
+                  <textarea className="input-field" rows={3} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Tell us a bit about your needs..." style={{ resize: "none" }} />
                 </div>
               </div>
 
