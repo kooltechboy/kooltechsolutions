@@ -1,16 +1,33 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Lock, Mail, ArrowRight, ShieldCheck, User } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
+/** Allowlist of safe internal redirect paths. Prevents open-redirect attacks. */
+const ALLOWED_REDIRECT_PREFIXES = ["/portal", "/admin"];
+
+function getSafeRedirect(raw: string | null): string {
+  if (!raw) return "/portal";
+  try {
+    // Reject absolute URLs or protocol-relative URLs
+    if (raw.startsWith("//") || raw.includes("://")) return "/portal";
+    const isAllowed = ALLOWED_REDIRECT_PREFIXES.some((prefix) =>
+      raw.startsWith(prefix)
+    );
+    return isAllowed ? raw : "/portal";
+  } catch {
+    return "/portal";
+  }
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/portal";
+  const redirect = getSafeRedirect(searchParams.get("redirect"));
   const supabase = createClient();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,21 +38,14 @@ function LoginForm() {
     setLoading(true);
     setError(null);
 
-    // Hardcoded Super Admin Bypass
-    if (email === "danieljwilliams2401@gmail.com" && password === "daniel2480") {
-      document.cookie = "admin_auth=true; path=/";
-      router.push(redirect);
-      router.refresh();
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
       password,
     });
 
-    if (error) {
-      setError(error.message);
+    if (authError) {
+      // Return a generic message — do not leak whether the email exists
+      setError("Invalid email or password. Please try again.");
       setLoading(false);
     } else {
       router.push(redirect);
@@ -50,23 +60,24 @@ function LoginForm() {
           {error}
         </div>
       )}
-      
+
       <div>
         <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Email Address</label>
         <div style={{ position: "relative" }}>
           <Mail size={16} color="var(--color-neutral-500)" style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }} />
-          <input 
-            type="email" 
-            required 
-            className="input-field" 
-            placeholder="admin@company.com" 
-            value={email} 
-            onChange={e => setEmail(e.target.value)} 
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            className="input-field"
+            placeholder="you@company.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             style={{ paddingLeft: "2.75rem" }}
           />
         </div>
       </div>
-      
+
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
           <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>Password</label>
@@ -74,21 +85,22 @@ function LoginForm() {
         </div>
         <div style={{ position: "relative" }}>
           <Lock size={16} color="var(--color-neutral-500)" style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }} />
-          <input 
-            type="password" 
-            required 
-            className="input-field" 
-            placeholder="••••••••" 
-            value={password} 
-            onChange={e => setPassword(e.target.value)} 
+          <input
+            type="password"
+            required
+            autoComplete="current-password"
+            className="input-field"
+            placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
             style={{ paddingLeft: "2.75rem" }}
           />
         </div>
       </div>
-      
-      <button 
-        type="submit" 
-        className="btn-primary" 
+
+      <button
+        type="submit"
+        className="btn-primary"
         disabled={loading}
         style={{ justifyContent: "center", padding: "0.875rem", marginTop: "0.5rem" }}
       >
@@ -113,7 +125,7 @@ export default function LoginPage() {
               </div>
               <span style={{ color: "white", fontWeight: 700, fontSize: "1.25rem", fontFamily: "Syne, sans-serif" }}>Kool Tech Solutions</span>
             </Link>
-            
+
             <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.5rem" }}>
               Welcome Back
             </h1>
@@ -121,23 +133,23 @@ export default function LoginPage() {
               Secure access to your enterprise IT environment.
             </p>
           </div>
-          
+
           <div className="glass-card" style={{ borderRadius: "20px", padding: "2rem" }}>
             <Suspense fallback={<div style={{ textAlign: "center", color: "var(--color-neutral-500)" }}>Loading...</div>}>
               <LoginForm />
             </Suspense>
           </div>
-          
+
           <p style={{ textAlign: "center", color: "var(--color-neutral-500)", fontSize: "0.75rem", marginTop: "2rem" }}>
             Need an account? Contact your Kool Tech Solutions account manager.
           </p>
         </div>
       </div>
-      
+
       {/* Right side - Visuals (hidden on mobile) */}
-      <div style={{ 
-        flex: 1, 
-        background: "linear-gradient(135deg, rgba(10,22,40,0.8), rgba(6,11,24,0.95))", 
+      <div style={{
+        flex: 1,
+        background: "linear-gradient(135deg, rgba(10,22,40,0.8), rgba(6,11,24,0.95))",
         borderLeft: "1px solid rgba(0,212,255,0.08)",
         display: "none",
         flexDirection: "column",
@@ -147,10 +159,9 @@ export default function LoginPage() {
         position: "relative",
         overflow: "hidden"
       }} className="login-visual-panel">
-        
-        {/* Abstract background mesh */}
+
         <div style={{ position: "absolute", inset: 0, opacity: 0.3, background: "radial-gradient(circle at 50% 50%, rgba(0,212,255,0.1) 0%, transparent 60%)" }} />
-        
+
         <div style={{ maxWidth: "480px", position: "relative", zIndex: 10 }}>
           <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
             <div style={{ width: 48, height: 48, borderRadius: "12px", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(0,212,255,0.2)" }}>
@@ -160,7 +171,7 @@ export default function LoginPage() {
               <User size={24} color="var(--color-success)" />
             </div>
           </div>
-          
+
           <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.5rem, 3vw, 2.5rem)", color: "white", marginBottom: "1rem", lineHeight: 1.2 }}>
             Enterprise IT, <br />
             <span className="gradient-text">Simplified.</span>
@@ -168,7 +179,7 @@ export default function LoginPage() {
           <p style={{ color: "var(--color-neutral-400)", fontSize: "1.0625rem", lineHeight: 1.7, marginBottom: "2.5rem" }}>
             You are entering a secure environment. All actions are logged and monitored by our 24/7 Security Operations Center.
           </p>
-          
+
           <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "16px", borderLeft: "3px solid var(--color-accent-500)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-success)" }} className="pulse-online" />
@@ -180,7 +191,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      
+
       <style>{`
         @media (min-width: 900px) {
           .login-visual-panel { display: flex !important; }

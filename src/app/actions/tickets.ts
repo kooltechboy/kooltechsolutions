@@ -1,51 +1,87 @@
-'use server'
+"use server";
 
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from "@/utils/supabase/server";
 
+/**
+ * Fetch the most recent tickets for the authenticated user.
+ * Returns [] if unauthenticated or on error — never throws to the caller.
+ */
 export async function getTickets() {
-  const supabase = await createClient()
+  const supabase = await createClient();
 
-  // This assumes you have a 'tickets' table in Supabase
-  const { data: tickets, error } = await supabase
-    .from('tickets')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(5)
+  // Auth guard — server actions must verify auth independently
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-  if (error) {
-    console.error('Error fetching tickets:', error)
-    return []
+  if (authError || !user) {
+    console.warn("[getTickets] Called without authentication");
+    return [];
   }
 
-  return tickets
+  const { data: tickets, error } = await supabase
+    .from("tickets")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (error) {
+    console.error("[getTickets] Error fetching tickets:", error.message);
+    return [];
+  }
+
+  return tickets;
 }
 
-export async function createTicket(subject: string, description: string, priority: string) {
-  const supabase = await createClient()
-  
-  // Get the current user
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    throw new Error('Not authenticated')
+/**
+ * Create a new ticket for the authenticated user.
+ * Throws a safe user-facing error if auth fails or DB insert fails.
+ */
+export async function createTicket(
+  subject: string,
+  description: string,
+  priority: string
+) {
+  // Basic input sanity (full validation should happen at the form layer)
+  if (!subject?.trim() || !description?.trim()) {
+    throw new Error("Subject and description are required.");
+  }
+
+  const safeSubject = subject.trim().slice(0, 200);
+  const safeDescription = description.trim().slice(0, 5000);
+  const safePriority = ["low", "normal", "high", "critical"].includes(priority)
+    ? priority
+    : "normal";
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("You must be signed in to create a ticket.");
   }
 
   const { data, error } = await supabase
-    .from('tickets')
+    .from("tickets")
     .insert([
-      { 
-        user_id: user.id, 
-        subject, 
-        description, 
-        priority,
-        status: 'Open' 
-      }
+      {
+        user_id: user.id,
+        subject: safeSubject,
+        description: safeDescription,
+        priority: safePriority,
+        status: "Open",
+      },
     ])
-    .select()
+    .select();
 
   if (error) {
-    throw new Error(error.message)
+    console.error("[createTicket] DB error:", error.message);
+    throw new Error("Failed to create ticket. Please try again.");
   }
 
-  return data
+  return data;
 }

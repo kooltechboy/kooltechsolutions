@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import {
   LayoutDashboard, Ticket, FileText, Server, BarChart3,
@@ -25,13 +25,13 @@ const navItems = [
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-  const [bookingOpen, setBookingOpen] = useState(false); // Global portal booking
+  const [bookingOpen, setBookingOpen] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const pathname = usePathname();
-  const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
+    const supabase = createClient();
     async function loadUser() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -111,9 +111,18 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <div style={{ color: "white", fontSize: "0.8125rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayName}</div>
               <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Active Client</div>
             </div>
-            <Link href="/login" style={{ color: "var(--color-neutral-500)" }} title="Sign out">
+            <button
+              onClick={async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                router.push("/login");
+                router.refresh();
+              }}
+              title="Sign out"
+              style={{ color: "var(--color-neutral-500)", background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}
+            >
               <LogOut size={15} />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>

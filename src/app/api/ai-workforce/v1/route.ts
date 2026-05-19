@@ -1,18 +1,51 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createClient } from "@/utils/supabase/server";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { aiChatSchema } from "@/lib/validation";
+import {
+  validationError,
+  serverError,
+  rateLimitError,
+} from "@/lib/errors";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  try {
-    const { messages, agentName, agentRole, context } = await req.json();
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  // ── Rate limiting: 30 messages per IP per minute ───────────────────────────
+  const ip = getClientIp(req);
+  const rl = rateLimit(`ai-chat:${ip}`, { limit: 30, windowSecs: 60 });
+  if (!rl.success) return rateLimitError(rl.resetAt);
 
+  try {
+    // ── Input validation ───────────────────────────────────────────────────────
+    const body = await req.json();
+    const parsed = aiChatSchema.safeParse(body);
+    if (!parsed.success) return validationError(parsed.error);
+
+    const { messages, agentName, agentRole, context } = parsed.data;
+
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!apiKey) {
-      return new Response('Neural configuration missing.', { status: 500 });
+      return serverError(new Error("AI API key not configured"), "ai-chat");
     }
 
-    const systemInstruction = `You are ${agentName}, the ${agentRole} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
-Current page context: ${JSON.stringify(context)}
+    // ── Portal/Admin agent auth check ──────────────────────────────────────────
+    // Cortex (portal) and Nexus (admin) agents require authentication.
+    const restrictedAgents = ["Cortex", "Nexus"];
+    if (agentName && restrictedAgents.includes(agentName)) {
+      const supabase = await createClient();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError || !user) {
+        const { NextResponse } = await import("next/server");
+        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      }
+    }
+
+    const systemInstruction = `You are ${agentName ?? "Kira"}, the ${agentRole ?? "AI Workforce"} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
+Current page context: ${JSON.stringify(context ?? {})}
 
 PERSONALITY:
 - Professional, warm, and engaging — never robotic.
@@ -35,8 +68,6 @@ SERVICES YOU OFFER:
 Always offer to connect the visitor with a KoolTech engineer for a free consultation. If they provide contact details, acknowledge that a team member will reach out.`;
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    
-    // systemInstruction MUST go in getGenerativeModel, not startChat
     const model = genAI.getGenerativeModel({
       model: "gemini-flash-latest",
       systemInstruction,
@@ -46,20 +77,19 @@ Always offer to connect the visitor with a KoolTech engineer for a free consulta
       },
     });
 
-    // Build chat history (all messages except the last user message)
-    const history = messages.slice(0, -1)
-      .filter((m: any) => m.role === 'user' || m.role === 'assistant')
-      .map((m: any) => ({
-        role: m.role === 'user' ? 'user' : 'model',
+    // Build history (all messages except the last user message)
+    const history = messages
+      .slice(0, -1)
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({
+        role: m.role === "user" ? "user" : "model",
         parts: [{ text: m.content }],
       }));
 
     const currentMessage = messages[messages.length - 1].content;
-
     const chat = model.startChat({ history });
     const result = await chat.sendMessageStream(currentMessage);
 
-    // Stream response in the format expected by ai/react useChat
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -70,11 +100,11 @@ Always offer to connect the visitor with a KoolTech engineer for a free consulta
               controller.enqueue(encoder.encode(`0:${JSON.stringify(text)}\n`));
             }
           }
-          // Signal stream end
           controller.enqueue(encoder.encode(`d:{"finishReason":"stop"}\n`));
           controller.close();
-        } catch (e: any) {
-          console.error('Neural Stream Error:', e.message);
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : "Stream error";
+          console.error("[AI Chat] Stream error:", message);
           controller.error(e);
         }
       },
@@ -82,16 +112,11 @@ Always offer to connect the visitor with a KoolTech engineer for a free consulta
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Vercel-AI-Data-Stream': 'v1',
+        "Content-Type": "text/plain; charset=utf-8",
+        "X-Vercel-AI-Data-Stream": "v1",
       },
     });
-
-  } catch (error: any) {
-    console.error('Neural Gateway Error:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  } catch (err) {
+    return serverError(err, "ai-chat");
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Mic, MicOff, Send, Bot, ChevronDown, Sparkles, RotateCcw, User, Shield, Zap, Calendar, Headphones, Activity, TrendingUp } from "lucide-react";
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -89,7 +89,9 @@ export default function AIChatWidget() {
 
   const agent = getAgent();
 
-  const { messages, input, handleInputChange, handleSubmit, setMessages, isLoading, error } = useChat({
+  const [input, setInput] = useState("");
+
+  const { messages, setMessages, append, isLoading, error } = useChat({
     api: '/api/ai-workforce/v1',
     id: sessionId,
     initialMessages: [{ id: 'initial', role: 'assistant', content: agent.greeting }],
@@ -106,6 +108,20 @@ export default function AIChatWidget() {
       localStorage.setItem(`kts_messages_${sessionId}`, JSON.stringify([...messages, message]));
     }
   });
+
+  // isLoading is directly provided by useChat
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() || isLoading) return;
+    
+    append({ role: 'user', content: input });
+    setInput("");
+  };
 
   // Load persistence
   useEffect(() => {

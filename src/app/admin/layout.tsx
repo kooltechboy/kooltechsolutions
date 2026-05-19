@@ -1,6 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import {
   LayoutDashboard, Users, Ticket, BarChart3, DollarSign,
   PenSquare, Plug, Bot, Monitor, Shield, Zap, Settings, Database,
@@ -40,9 +42,30 @@ const navGroups = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [active, setActive] = useState("/admin");
-
+  const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [adminUser, setAdminUser] = useState<{ email: string; initials: string } | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        const parts = user.email.split("@")[0].split(".");
+        const initials = parts.length >= 2
+          ? (parts[0][0] + parts[1][0]).toUpperCase()
+          : user.email.slice(0, 2).toUpperCase();
+        setAdminUser({ email: user.email, initials });
+      }
+    });
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -89,21 +112,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div style={{ color: "var(--color-neutral-500)", fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "0 0.5rem", marginBottom: "0.5rem" }}>
                 {group.label}
               </div>
-              {group.items.map(item => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => {
-                    setActive(item.href);
-                    setSidebarOpen(false);
-                  }}
-                  className={`nav-item ${active === item.href ? "active" : ""}`}
-                  style={{ marginBottom: "0.125rem", display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.625rem 0.75rem", borderRadius: "8px", color: "var(--color-neutral-400)", textDecoration: "none", fontSize: "0.875rem", fontWeight: 500 }}
-                >
-                  <item.icon size={16} />
-                  {item.label}
-                </Link>
-              ))}
+              {group.items.map(item => {
+                const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`nav-item ${isActive ? "active" : ""}`}
+                    style={{ marginBottom: "0.125rem", display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.625rem 0.75rem", borderRadius: "8px", color: "var(--color-neutral-400)", textDecoration: "none", fontSize: "0.875rem", fontWeight: 500 }}
+                  >
+                    <item.icon size={16} />
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           ))}
         </nav>
@@ -112,15 +135,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div style={{ padding: "1rem", borderTop: "1px solid rgba(0,212,255,0.08)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", padding: "0.75rem", borderRadius: "10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.02)" }}>
             <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ color: "var(--color-accent-500)", fontSize: "0.75rem", fontWeight: 700 }}>SA</span>
+              <span style={{ color: "var(--color-accent-500)", fontSize: "0.75rem", fontWeight: 700 }}>{adminUser?.initials ?? "AD"}</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: "white", fontSize: "0.8125rem", fontWeight: 600 }}>Super Admin</div>
-              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>kts@kooltech.solutions</div>
+              <div style={{ color: "white", fontSize: "0.8125rem", fontWeight: 600 }}>Admin</div>
+              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{adminUser?.email ?? "Loading..."}</div>
             </div>
-            <Link href="/" style={{ color: "var(--color-neutral-400)", background: "none", border: "none" }}>
+            <button onClick={handleSignOut} title="Sign out" style={{ color: "var(--color-neutral-400)", background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
               <LogOut size={15} />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
