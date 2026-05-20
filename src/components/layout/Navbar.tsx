@@ -44,7 +44,7 @@ export default function Navbar() {
         }}
       >
         {/* Top Contact Bar */}
-        <div style={{
+        <div className="top-contact-bar" style={{
           background: "linear-gradient(90deg, rgba(10,22,40,0.9) 0%, rgba(6,11,24,0.95) 100%)",
           borderBottom: "1px solid rgba(0, 212, 255, 0.05)",
           padding: "0.375rem 0",
@@ -192,7 +192,7 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileOpen && (
-          <div style={{
+          <div className="mobile-menu" style={{
             background: "rgba(6, 11, 24, 0.98)", backdropFilter: "blur(24px)",
             borderTop: "1px solid rgba(0,212,255,0.1)",
             padding: "1.5rem 1rem", display: "flex", flexDirection: "column", gap: "0.5rem",

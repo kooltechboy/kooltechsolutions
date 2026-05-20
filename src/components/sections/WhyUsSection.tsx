@@ -25,7 +25,7 @@ export default function WhyUsSection() {
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.25rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "1.25rem" }}>
           {reasons.map(r => (
             <div key={r.title} className="glass-card" style={{ borderRadius: "14px", padding: "1.5rem", display: "flex", gap: "1rem", alignItems: "flex-start" }}>
               <div style={{

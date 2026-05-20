@@ -37,7 +37,7 @@ export default function Footer() {
       paddingTop: "4rem",
     }}>
       <div className="container">
-        <div style={{
+        <div className="footer-layout-grid" style={{
           display: "grid",
           gridTemplateColumns: "2fr 1fr 1fr 1fr",
           gap: "3rem",

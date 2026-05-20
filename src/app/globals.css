@@ -352,4 +352,122 @@ body {
   border-color: rgba(0, 212, 255, 0.3);
 }
 
-/* Responsive utilities */
+/* Responsive and Mobile-First Enhancements */
+@keyframes slideDownMobile {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-menu {
+  animation: slideDownMobile 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Dynamic Grid Safeguards (Prevent Horizontal Scroll Overflow) */
+@media (max-width: 480px) {
+  /* Enforce single-column on all large auto-fit grids on small viewports */
+  .grid, 
+  [style*="gridTemplateColumns"], 
+  [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Section padding optimization for mobile screens */
+  .section {
+    padding: 3rem 0;
+  }
+
+  /* Top contact info bar - hide on mobile to keep header clean */
+  .top-contact-bar {
+    display: none !important;
+  }
+
+  /* Force standard margins on mobile container */
+  .container {
+    padding: 0 1.25rem !important;
+  }
+
+  /* Pricing popular card: remove scaling to prevent alignment issues */
+  .pricing-popular-card {
+    transform: none !important;
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.15) !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  /* Milestones Timeline layout override for mobile first readability */
+  .timeline-line {
+    left: 20px !important;
+    transform: none !important;
+  }
+  
+  .timeline-item {
+    flex-direction: row !important;
+    gap: 1rem !important;
+    align-items: flex-start !important;
+  }
+  
+  .timeline-content {
+    text-align: left !important;
+    flex: 1 !important;
+    order: 2 !important;
+  }
+  
+  .timeline-dot {
+    order: 1 !important;
+    margin-left: 14px !important;
+    margin-top: 6px !important;
+    flex-shrink: 0 !important;
+  }
+  
+  .timeline-spacer {
+    display: none !important;
+  }
+
+  /* Contact page layouts */
+  .contact-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+  
+  .contact-form-row {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  /* Footer layout */
+  .footer-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2.5rem !important;
+  }
+
+  /* Portal dashboard layouts */
+  .portal-dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  .portal-ticket-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  /* Fix height of ticket chat container on mobile first layout */
+  [style*="height: calc(100vh - 120px)"] {
+    height: auto !important;
+    min-height: 500px !important;
+  }
+
+  /* Services info grid global reach section */
+  .services-info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+}
+

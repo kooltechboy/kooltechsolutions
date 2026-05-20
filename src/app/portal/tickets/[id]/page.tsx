@@ -108,7 +108,7 @@ export default function TicketDetailPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "1.5rem", flex: 1, minHeight: 0 }}>
+      <div className="portal-ticket-grid" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "1.5rem", flex: 1, minHeight: 0 }}>
         {/* Chat Area */}
         <div className="glass-card" style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
           <div ref={scrollRef} style={{ flex: 1, padding: "1.5rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "1.5rem" }}>

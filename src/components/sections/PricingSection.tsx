@@ -60,11 +60,11 @@ export default function PricingSection() {
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
           gap: "1.5rem", alignItems: "start",
         }}>
           {tiers.map(tier => (
-            <div key={tier.name} style={{
+            <div key={tier.name} className={tier.popular ? "pricing-popular-card" : ""} style={{
               position: "relative",
               background: tier.popular ? "rgba(0,212,255,0.06)" : "rgba(10,22,40,0.7)",
               border: tier.popular ? "2px solid rgba(0,212,255,0.5)" : "1px solid rgba(75,132,200,0.15)",

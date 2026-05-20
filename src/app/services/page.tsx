@@ -82,7 +82,7 @@ export default function ServicesPage() {
         {/* Services Grid */}
         <section style={{ padding: "2rem 0 8rem" }}>
           <div className="container">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "2rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", gap: "2rem" }}>
               {serviceCategories.map((service) => (
                 <div 
                   key={service.id} 
@@ -158,7 +158,7 @@ export default function ServicesPage() {
               </p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "3rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "3rem" }}>
               {[
                 { 
                   step: "01", 

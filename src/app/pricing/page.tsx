@@ -119,7 +119,7 @@ export default function PricingPage() {
                       </div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))", gap: "1.5rem" }}>
                       {category.services.map((service) => {
                         const isSelected = selectedServices.some(s => s.id === service.id);
                         

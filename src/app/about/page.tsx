@@ -97,19 +97,19 @@ export default function AboutPage() {
                 A Decade of <span className="gradient-text">Growth</span>
               </h2>
             </div>
-            <div style={{ position: "relative", maxWidth: "640px", margin: "0 auto" }}>
-              <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", background: "rgba(0,212,255,0.15)", transform: "translateX(-50%)" }} />
+            <div className="timeline-container" style={{ position: "relative", maxWidth: "640px", margin: "0 auto" }}>
+              <div className="timeline-line" style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", background: "rgba(0,212,255,0.15)", transform: "translateX(-50%)" }} />
               {milestones.map((m, i) => (
-                <div key={m.year} style={{
+                <div key={m.year} className="timeline-item" style={{
                   display: "flex", gap: "1.5rem", marginBottom: "2rem",
                   flexDirection: i % 2 === 0 ? "row" : "row-reverse", alignItems: "center",
                 }}>
-                  <div style={{ flex: 1, textAlign: i % 2 === 0 ? "right" : "left" }}>
+                  <div className="timeline-content" style={{ flex: 1, textAlign: i % 2 === 0 ? "right" : "left" }}>
                     <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "var(--color-accent-500)", fontSize: "0.875rem" }}>{m.year}</div>
                     <div style={{ color: "var(--color-neutral-300, #CBD5E1)", fontSize: "0.875rem" }}>{m.event}</div>
                   </div>
-                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--color-accent-500)", flexShrink: 0, boxShadow: "0 0 12px rgba(0,212,255,0.5)" }} />
-                  <div style={{ flex: 1 }} />
+                  <div className="timeline-dot" style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--color-accent-500)", flexShrink: 0, boxShadow: "0 0 12px rgba(0,212,255,0.5)" }} />
+                  <div className="timeline-spacer" style={{ flex: 1 }} />
                 </div>
               ))}
             </div>
