@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
     // Proxy request to ITFlow instance
     const ITFLOW_API_KEY = process.env.ITFLOW_API_KEY;
-    const ITFLOW_API_URL = process.env.ITFLOW_API_URL || "https://itflow.example.com/api";
+    // const ITFLOW_API_URL = process.env.ITFLOW_API_URL || "https://itflow.example.com/api";
 
     if (!ITFLOW_API_KEY) {
       // Return mock data based on requested endpoint
@@ -44,8 +44,9 @@ export async function GET(request: Request) {
     */
 
     return NextResponse.json({ error: "Not implemented" }, { status: 501 });
-  } catch (err: any) {
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     console.error("ITFlow API Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

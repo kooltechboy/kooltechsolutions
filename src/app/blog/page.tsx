@@ -23,6 +23,18 @@ const getCategoryColor = (category: string) => {
   }
 };
 
+interface Post {
+  id: string;
+  title: string;
+  excerpt: string;
+  slug: string;
+  category: string;
+  read_time: string;
+  image_url?: string;
+  created_at: string;
+  status: string;
+}
+
 export default async function BlogPage() {
   const supabase = await createClient();
   const { data: posts, error } = await supabase
@@ -75,7 +87,7 @@ export default async function BlogPage() {
         {/* Posts Grid */}
         <div className="container" style={{ paddingBottom: "5rem", paddingTop: "2rem" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem" }}>
-            {posts && posts.length > 0 ? posts.map((post: any) => {
+            {posts && posts.length > 0 ? posts.map((post: Post) => {
               const color = getCategoryColor(post.category);
               return (
                 <Link key={post.id} href={`/blog/${post.slug}`} style={{ textDecoration: "none" }}>

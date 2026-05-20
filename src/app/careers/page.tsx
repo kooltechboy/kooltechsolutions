@@ -33,7 +33,7 @@ export default function CareersPage() {
         {/* Hero */}
         <section style={{ padding: "5rem 0 4rem", background: "linear-gradient(180deg, rgba(15,32,68,0.5) 0%, transparent 100%)" }}>
           <div className="container" style={{ textAlign: "center" }}>
-            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>We're Hiring</div>
+            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>We&apos;re Hiring</div>
             <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3.5rem)", color: "white", marginBottom: "1rem" }}>
               Build the Future of<br /><span className="gradient-text">Caribbean IT</span>
             </h1>
@@ -45,7 +45,7 @@ export default function CareersPage() {
             </a>
           </div>
         </section>
-
+ 
         {/* Benefits */}
         <section className="section">
           <div className="container">
@@ -68,7 +68,7 @@ export default function CareersPage() {
             </div>
           </div>
         </section>
-
+ 
         {/* Open Roles */}
         <section id="roles" className="section" style={{ background: "rgba(10,22,40,0.4)" }}>
           <div className="container">
@@ -100,13 +100,13 @@ export default function CareersPage() {
                 </div>
               ))}
             </div>
-
+ 
             {/* General Application */}
             <div className="glass-card" style={{ padding: "2rem", borderRadius: "16px", textAlign: "center", marginTop: "2rem", background: "linear-gradient(135deg, rgba(0,212,255,0.05), rgba(168,85,247,0.05))" }}>
               <Mail size={32} color="var(--color-accent-500)" style={{ marginBottom: "1rem" }} />
-              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.25rem", marginBottom: "0.75rem" }}>Don't See Your Role?</h3>
+              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.25rem", marginBottom: "0.75rem" }}>Don&apos;t See Your Role?</h3>
               <p style={{ color: "var(--color-neutral-400)", maxWidth: "480px", margin: "0 auto 1.5rem", lineHeight: 1.7 }}>
-                We're always looking for exceptional talent. Send us your resume and tell us how you'd add value to the KTS team.
+                We&apos;re always looking for exceptional talent. Send us your resume and tell us how you&apos;d add value to the KTS team.
               </p>
               <a href="mailto:careers@kooltech.solutions" className="btn-primary" style={{ display: "inline-flex", textDecoration: "none" }}>
                 Send General Application <ArrowRight size={16} />

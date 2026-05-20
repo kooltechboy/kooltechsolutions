@@ -1,33 +1,40 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Bot, Activity, MessageSquare, Zap, Shield, Loader2, Brain, CheckCircle, Clock } from "lucide-react";
+import { Activity, MessageSquare, Zap, Shield, Loader2, Brain } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
+interface AgentLog {
+  id: string;
+  created_at: string;
+  agent_name?: string;
+  role?: string;
+  content?: string;
+}
+
 const agents = [
-  { id: 'kira', name: 'Kira', role: 'Support Agent', icon: MessageSquare, color: '#00D4FF', desc: 'Handles level 1 technical support and ticket triaging.' },
-  { id: 'max', name: 'Max', role: 'System Optimizer', icon: Zap, color: '#FFB300', desc: 'Monitors infrastructure health and automates patches.' },
-  { id: 'nova', name: 'Nova', role: 'Security Analyst', icon: Shield, color: '#A855F7', desc: 'Detects threats and manages compliance drift.' },
+  { id: 'kira', name: 'Kira', role: 'Support Agent', icon: MessageSquare, color: '#00D4FF', desc: 'Handles level 1 technical support and ticket triaging.', tasks24h: 38 },
+  { id: 'max', name: 'Max', role: 'System Optimizer', icon: Zap, color: '#FFB300', desc: 'Monitors infrastructure health and automates patches.', tasks24h: 47 },
+  { id: 'nova', name: 'Nova', role: 'Security Analyst', icon: Shield, color: '#A855F7', desc: 'Detects threats and manages compliance drift.', tasks24h: 23 },
 ];
 
 export default function AIWorkforceDashboard() {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AgentLog[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
+    async function fetchLogs() {
+      const { data, error } = await supabase
+        .from('agent_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (!error && data) setLogs(data);
+      setLoading(false);
+    }
     fetchLogs();
-  }, []);
-
-  async function fetchLogs() {
-    const { data, error } = await supabase
-      .from('agent_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20);
-    
-    if (!error && data) setLogs(data);
-    setLoading(false);
-  }
+  }, [supabase]);
 
   if (loading) {
     return (
@@ -61,7 +68,7 @@ export default function AIWorkforceDashboard() {
             <div style={{ display: "flex", gap: "1rem", paddingTop: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
               <div>
                 <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Tasks (24h)</div>
-                <div style={{ color: "white", fontWeight: 700 }}>{Math.floor(Math.random() * 50 + 10)}</div>
+                <div style={{ color: "white", fontWeight: 700 }}>{agent.tasks24h}</div>
               </div>
               <div>
                 <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Efficiency</div>
@@ -96,7 +103,7 @@ export default function AIWorkforceDashboard() {
                       <span style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>{agentName} <span style={{ color: "var(--color-neutral-500)", fontWeight: 400 }}>· {roleLabel}</span></span>
                       <span style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>{new Date(log.created_at).toLocaleTimeString()}</span>
                     </div>
-                    <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", margin: 0, whiteSpace: "pre-wrap" }}>{log.content?.slice(0, 200)}{log.content?.length > 200 ? "..." : ""}</p>
+                    <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", margin: 0, whiteSpace: "pre-wrap" }}>{log.content?.slice(0, 200)}{(log.content?.length ?? 0) > 200 ? "..." : ""}</p>
                   </div>
                 </div>
               );

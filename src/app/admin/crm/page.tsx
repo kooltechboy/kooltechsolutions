@@ -1,10 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { 
-  Plus, MoreHorizontal, User, DollarSign, Calendar, TrendingUp, 
+  Plus, User, DollarSign, Calendar, TrendingUp, 
   Building, Loader2, X, Mail, Phone, MessageSquare, Briefcase, 
-  Search, Filter, ShieldCheck, Zap, Activity, Clock, ArrowRight,
-  TrendingDown, Star, LayoutGrid, List
+  Search, Filter, ShieldCheck, Zap, Activity, Clock, Star, LayoutGrid, List
 } from 'lucide-react';
 import BookingModal from "@/components/shared/BookingModal";
 import { createClient } from '@/utils/supabase/client';
@@ -20,30 +19,42 @@ const STAGE_MAP: Record<string, string> = {
 
 const PIPELINE_STAGES = ['New Lead', 'Contacted', 'Qualified', 'Proposal Sent', 'Closed Won'];
 
+interface Lead {
+  id: string;
+  first_name: string;
+  last_name: string;
+  company_name?: string;
+  email: string;
+  phone?: string;
+  service_interest?: string;
+  status: string;
+  notes?: string;
+  created_at: string;
+}
+
 export default function CRMPage() {
-  const [leads, setLeads] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLead, setSelectedLead] = useState<any | null>(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [showBooking, setShowBooking] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
-    fetchLeads();
-  }, []);
-
-  async function fetchLeads() {
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setLeads(data);
+    async function fetchLeads() {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setLeads(data);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  }
+    fetchLeads();
+  }, [supabase]);
 
   async function updateLeadStatus(id: string, newStatus: string) {
     const { error } = await supabase
@@ -70,7 +81,6 @@ export default function CRMPage() {
   };
 
   const demoCount = leads.filter(l => l.notes?.includes("LIVE DEMO")).length;
-  const pipelineValue = leads.filter(l => l.status !== 'lost' && l.status !== 'won').length * 4500;
   const wonValue = leads.filter(l => l.status === 'won').length * 12000;
 
   if (loading) {
@@ -197,7 +207,8 @@ export default function CRMPage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {stageLeads.map(lead => {
                       const isDemo = lead.notes?.includes("LIVE DEMO");
-                      const score = isDemo ? 95 : Math.floor(Math.random() * 40) + 40;
+                      const leadIdHash = lead.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+                      const score = isDemo ? 95 : 40 + (leadIdHash % 41);
                       return (
                         <div 
                           key={lead.id} 

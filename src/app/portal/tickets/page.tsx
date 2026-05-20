@@ -2,40 +2,50 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Ticket, Send, AlertCircle, CheckCircle2, Clock, Search, Plus, Loader2, 
-  ChevronRight, Filter, MessageSquare, Shield, Zap, X, ArrowUpRight,
+  ChevronRight, Filter, MessageSquare, Shield, Zap, X,
   User, Activity, LifeBuoy, Bell
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
+interface TicketData {
+  id: string;
+  subject: string;
+  description: string;
+  priority: string;
+  status: string;
+  created_at: string;
+}
+
 export default function ClientTicketsPage() {
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<TicketData[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showNewForm, setShowNewForm] = useState(false);
   const [form, setForm] = useState({ subject: '', description: '', priority: 'normal' });
   const [success, setSuccess] = useState(false);
+  const [tempTicketNum, setTempTicketNum] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const supabase = createClient();
 
   useEffect(() => {
-    fetchMyTickets();
-  }, []);
+    async function fetchMyTickets() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-  async function fetchMyTickets() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false });
 
-    const { data, error } = await supabase
-      .from('tickets')
-      .select('*')
-      .eq('client_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setTickets(data);
+      if (!error && data) {
+        setTickets(data);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  }
+    fetchMyTickets();
+  }, [supabase, refreshKey]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,12 +65,13 @@ export default function ClientTicketsPage() {
       });
 
       if (res.ok) {
+        setTempTicketNum(Math.floor(1000 + Math.random() * 9000).toString());
         setSuccess(true);
         setForm({ subject: '', description: '', priority: 'normal' });
         setTimeout(() => {
           setSuccess(false);
           setShowNewForm(false);
-          fetchMyTickets();
+          setRefreshKey(prev => prev + 1);
         }, 2500);
       }
     } catch (err) {
@@ -159,7 +170,7 @@ export default function ClientTicketsPage() {
                 <div>
                   <h3 className="text-2xl font-black text-white font-syne uppercase tracking-tight">Submission Received</h3>
                   <p className="text-neutral-500 text-sm mt-2 max-w-xs mx-auto font-medium">
-                    Ticket #{(Math.random() * 10000).toFixed(0)} has been queued for assignment.
+                    Ticket #{tempTicketNum} has been queued for assignment.
                   </p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Bell, X, Shield, DollarSign, Activity, Clock, ArrowRight, Zap, Info } from "lucide-react";
+import { useState } from "react";
+import { Bell, Shield, DollarSign, Activity, Clock, ArrowRight, Zap, Info } from "lucide-react";
 
 type Notification = {
   id: string;

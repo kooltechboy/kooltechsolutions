@@ -3,26 +3,41 @@ import React, { useEffect, useState } from "react";
 import { Download, Search, FileText, Loader2, Plus } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
+interface ClientDetails {
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+}
+
+interface Invoice {
+  id: string;
+  invoice_number?: string;
+  client?: ClientDetails | ClientDetails[] | null;
+  issued_date?: string;
+  created_at: string;
+  amount: number;
+  status: string;
+}
+
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    fetchInvoices();
-  }, []);
-
-  async function fetchInvoices() {
-    const { data, error } = await supabase
-      .from('invoices')
-      .select('*, client:client_id(first_name, last_name, company_name)')
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setInvoices(data);
+    async function fetchInvoices() {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*, client:client_id(first_name, last_name, company_name)')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setInvoices(data);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  }
+    fetchInvoices();
+  }, [supabase]);
 
   if (loading) {
     return (
@@ -87,7 +102,8 @@ export default function InvoicesPage() {
               ) : invoices.map((inv) => {
                 const isPaid = inv.status.toLowerCase() === "paid";
                 const isPending = inv.status.toLowerCase() === "outstanding" || inv.status.toLowerCase() === "draft";
-                const clientName = inv.client?.company_name || `${inv.client?.first_name || ''} ${inv.client?.last_name || ''}`.trim() || 'Unknown Client';
+                const clientObj = Array.isArray(inv.client) ? inv.client[0] : inv.client;
+                const clientName = clientObj?.company_name || `${clientObj?.first_name || ''} ${clientObj?.last_name || ''}`.trim() || 'Unknown Client';
                 
                 return (
                   <tr key={inv.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.05)", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,212,255,0.03)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>

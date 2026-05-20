@@ -4,41 +4,54 @@ import { PenSquare, Edit, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 
+interface Post {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  category: string;
+  read_time: string;
+  status: string;
+  author_name: string;
+  created_at: string;
+}
+
 export default function BlogCMSPage() {
-  const [posts, setPosts] = useState<any[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    async function fetchPosts() {
+      console.log("CMS: Fetching posts from Supabase...");
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-  const fetchPosts = async () => {
-    console.log("CMS: Fetching posts from Supabase...");
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("CMS: Supabase Error:", error);
-        setError(`DATABASE CONNECTION FAILED: ${error.message} (Code: ${error.code})`);
-      } else {
-        console.log("CMS: Successfully fetched", data?.length || 0, "posts");
-        setPosts(data || []);
-        setFilteredPosts(data || []);
+        if (error) {
+          console.error("CMS: Supabase Error:", error);
+          setError(`DATABASE CONNECTION FAILED: ${error.message} (Code: ${error.code})`);
+        } else {
+          console.log("CMS: Successfully fetched", data?.length || 0, "posts");
+          setPosts(data || []);
+          setFilteredPosts(data || []);
+        }
+      } catch (err) {
+        console.error("CMS: Unexpected error:", err);
+        setError(`CRITICAL SYSTEM ERROR: ${err instanceof Error ? err.message : String(err)}`);
       }
-    } catch (err: any) {
-      console.error("CMS: Unexpected error:", err);
-      setError(`CRITICAL SYSTEM ERROR: ${err.message}`);
+      setLoading(false);
     }
-    setLoading(false);
-  };
+    fetchPosts();
+  }, [supabase, refreshKey]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this article?")) return;
@@ -47,7 +60,7 @@ export default function BlogCMSPage() {
     if (error) {
       alert("Error deleting: " + error.message);
     } else {
-      fetchPosts();
+      setRefreshKey(prev => prev + 1);
     }
   };
 

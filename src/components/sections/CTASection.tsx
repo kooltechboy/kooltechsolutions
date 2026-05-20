@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Phone, Calendar } from "lucide-react";
+import { Phone, Calendar } from "lucide-react";
 import BookingModal from "@/components/shared/BookingModal";
 
 export default function CTASection() {
@@ -31,7 +30,7 @@ export default function CTASection() {
           <span className="gradient-text">Your IT Infrastructure?</span>
         </h2>
         <p style={{ color: "var(--color-neutral-400)", maxWidth: "520px", margin: "0 auto 2.5rem", lineHeight: 1.7, fontSize: "1.0625rem" }}>
-          Get a free, no-obligation IT assessment from our senior engineers. We'll identify risks, opportunities, and craft a custom roadmap for your business.
+          Get a free, no-obligation IT assessment from our senior engineers. We&apos;ll identify risks, opportunities, and craft a custom roadmap for your business.
         </p>
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
           <button onClick={() => setBookingOpen(true)} className="btn-primary" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>

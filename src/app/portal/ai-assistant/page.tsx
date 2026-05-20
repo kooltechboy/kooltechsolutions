@@ -38,7 +38,7 @@ export default function AIAssistantPage() {
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
-      let reply = "";
+      const replyBuffer: string[] = [];
       setMessages(prev => [...prev, { role: "assistant", content: "" }]);
 
       if (reader) {
@@ -51,10 +51,11 @@ export default function AIAssistantPage() {
           for (const line of lines) {
             try {
               const txt = JSON.parse(line.slice(2));
-              reply += txt;
+              replyBuffer.push(txt);
+              const currentReply = replyBuffer.join("");
               setMessages(prev => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: "assistant", content: reply };
+                updated[updated.length - 1] = { role: "assistant", content: currentReply };
                 return updated;
               });
             } catch {}

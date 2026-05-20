@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { 
   Search, 
   Filter, 
@@ -16,38 +16,59 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import PaymentModal from "@/components/shared/PaymentModal";
 import InvoiceDetail from "@/components/portal/InvoiceDetail";
+ 
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  amount: number;
+  status: string;
+  issue_date: string;
+  due_date: string;
+  stripe_payment_intent_id?: string;
+  client_id?: string;
+}
 
+interface StatusItem {
+  color: string;
+  bg: string;
+  border: string;
+  icon: typeof CheckCircle2;
+}
+ 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   
   const supabase = createClient();
-
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
-
-  const fetchInvoices = async () => {
+ 
+  const fetchInvoices = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
+ 
     const { data, error } = await supabase
       .from('invoices')
       .select('*')
       .eq('client_id', user.id)
       .order('issue_date', { ascending: false });
-
+ 
     if (!error && data) {
-      setInvoices(data);
+      setInvoices(data as Invoice[]);
     }
     setLoading(false);
-  };
+  }, [supabase]);
+ 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchInvoices();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchInvoices]);
 
   const handlePaymentSuccess = async () => {
     if (selectedInvoice) {
@@ -78,7 +99,7 @@ export default function InvoicesPage() {
     pending: invoices.filter(inv => inv.status === 'outstanding').length
   };
 
-  const statusConfig: any = {
+  const statusConfig: Record<string, StatusItem> = {
     paid: { color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20", icon: CheckCircle2 },
     outstanding: { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", icon: Clock },
     overdue: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: AlertCircle },

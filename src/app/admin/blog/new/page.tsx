@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Sparkles, Upload, Zap, Clock } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Upload, Clock } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
@@ -27,21 +27,7 @@ export default function NewBlogPostPage() {
     image_url: "",
   });
 
-  // Proactive Title Extraction
-  const extractAndSetTitle = (content: string) => {
-    if (!formData.title && content) {
-      // Look for H1 or first non-empty line
-      const lines = content.split('\n').filter(l => l.trim().length > 0);
-      if (lines.length > 0) {
-        const title = lines[0].replace(/^#+\s+/, '').trim();
-        setFormData(prev => ({
-          ...prev,
-          title: prev.title || title,
-          slug: prev.slug || generateSlug(title)
-        }));
-      }
-    }
-  };
+
 
   const handleAIRefine = async () => {
     if (!formData.content) return;
@@ -64,8 +50,8 @@ export default function NewBlogPostPage() {
       } else {
         throw new Error(data.error || "Failed to refine content");
       }
-    } catch (err: any) {
-      setError("AI Refine Error: " + err.message);
+    } catch (err) {
+      setError("AI Refine Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setAiRefining(false);
     }
@@ -96,19 +82,16 @@ export default function NewBlogPostPage() {
       } else {
         throw new Error(data.error || "Failed to generate article");
       }
-    } catch (err: any) {
-      setError("Generation Error: " + err.message);
+    } catch (err) {
+      setError("Generation Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setAiRefining(false);
     }
   };
 
-  // Calculate dynamic read time
-  useEffect(() => {
-    const words = formData.content.split(/\s+/).filter(w => w.length > 0).length;
-    const minutes = Math.max(1, Math.ceil(words / 200));
-    setFormData(prev => ({ ...prev, read_time: `${minutes} min` }));
-  }, [formData.content]);
+  // Compute dynamic read time on the fly
+  const words = formData.content?.split(/\s+/).filter(w => w.length > 0).length || 0;
+  const dynamicReadTime = `${Math.max(1, Math.ceil(words / 200))} min`;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -166,7 +149,11 @@ export default function NewBlogPostPage() {
     setSaving(true);
     setError(null);
 
-    let finalData = { ...formData, title: currentTitle };
+    let finalData = { 
+      ...formData, 
+      title: currentTitle,
+      read_time: dynamicReadTime 
+    };
 
     // Autonomous Completion (Enforcing Excerpt, Category, and Cover Image)
     if (!formData.excerpt || formData.category === "Cybersecurity" || !formData.image_url) {
@@ -196,7 +183,7 @@ export default function NewBlogPostPage() {
             finalData.image_url = `https://source.unsplash.com/featured/1200x630?${searchTerms}`;
           }
         }
-      } catch (err) {
+      } catch {
         console.warn("AI metadata completion failed.");
       }
     }
@@ -323,7 +310,7 @@ export default function NewBlogPostPage() {
           <div style={{ flex: "1 1 100px" }}>
             <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Read Time</label>
             <div className="input-field" style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.2)", cursor: "default" }}>
-              <Clock size={14} style={{ marginRight: "0.5rem", color: "var(--color-accent-400)" }} /> {formData.read_time}
+              <Clock size={14} style={{ marginRight: "0.5rem", color: "var(--color-accent-400)" }} /> {dynamicReadTime}
             </div>
           </div>
           <div style={{ flex: "1 1 150px" }}>

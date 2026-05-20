@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, ChevronDown, Shield, Cloud, Network, Monitor, Headphones, Award, Globe, Phone, MessageCircle, ArrowRight } from "lucide-react";
+import { Menu, X, ChevronDown, Shield, Cloud, Network, Monitor, Headphones, Award, Phone, MessageCircle, ArrowRight } from "lucide-react";
 
 const services = [
   { name: "Cybersecurity", href: "/services/cybersecurity", icon: Shield, desc: "Advanced threat protection" },

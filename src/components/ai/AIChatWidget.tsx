@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Mic, MicOff, Send, Bot, ChevronDown, Sparkles, RotateCcw, User, Shield, Zap, Calendar, Headphones, Activity, TrendingUp } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { MessageCircle, X, Mic, MicOff, Send, Bot, ChevronDown, Sparkles, RotateCcw, Shield, Zap, Calendar, Activity, TrendingUp } from "lucide-react";
 import { useChat } from '@ai-sdk/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -111,9 +111,9 @@ export default function AIChatWidget() {
 
   // isLoading is directly provided by useChat
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-  };
+  }, []);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -152,19 +152,40 @@ export default function AIChatWidget() {
   }, [hasProactivelyOpened]);
 
   // Voice Recognition
+  interface SpeechRecognitionEvent {
+    results: {
+      [index: number]: {
+        [index: number]: {
+          transcript: string;
+        };
+      };
+    };
+  }
+
+  interface SpeechRecognitionInstance {
+    continuous: boolean;
+    interimResults: boolean;
+    onresult: ((event: SpeechRecognitionEvent) => void) | null;
+    onerror: (() => void) | null;
+    onend: (() => void) | null;
+    start: () => void;
+    stop: () => void;
+  }
+
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
+      const SpeechRecognitionConstructor = (window as unknown as Record<string, new () => SpeechRecognitionInstance>).SpeechRecognition || 
+                                           (window as unknown as Record<string, new () => SpeechRecognitionInstance>).webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognitionConstructor();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
 
-      recognitionRef.current.onresult = (event: any) => {
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
-        handleInputChange({ target: { value: transcript } } as any);
+        setInput(transcript);
         setIsListening(false);
       };
 
@@ -176,7 +197,7 @@ export default function AIChatWidget() {
         setIsListening(false);
       };
     }
-  }, [handleInputChange]);
+  }, []);
 
   const toggleVoice = () => {
     if (isListening) {
@@ -246,7 +267,7 @@ export default function AIChatWidget() {
             {/* Messages Area */}
             {!minimized && (
               <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar bg-slate-900/40">
-                {messages.map((m, idx) => (
+                {messages.map((m) => (
                   <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
                       m.role === 'user' 

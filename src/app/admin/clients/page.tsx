@@ -3,27 +3,37 @@ import React, { useEffect, useState } from 'react';
 import { Building2, Search, Plus, MoreHorizontal, Loader2 } from "lucide-react";
 import { createClient } from '@/utils/supabase/client';
 
+interface ClientProfile {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  created_at: string;
+}
+
 export default function ClientsPage() {
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<ClientProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    fetchClients();
-  }, []);
-
-  async function fetchClients() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'client')
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setClients(data);
+    async function fetchClients() {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'client')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setClients(data);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  }
+    fetchClients();
+  }, [supabase]);
 
   if (loading) {
     return (

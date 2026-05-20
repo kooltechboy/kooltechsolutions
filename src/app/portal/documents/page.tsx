@@ -1,10 +1,17 @@
 "use client";
 import { useState } from "react";
 import { 
-  FolderOpen, FileText, Shield, Book, Download, Search, Lock, 
-  ChevronRight, ArrowUpRight, ShieldCheck, Database, 
-  ExternalLink, Info, Filter, MoreVertical, FileCode, FileType
+  FileText, Shield, Book, Download, Search, Lock, 
+  Database, Filter, MoreVertical
 } from "lucide-react";
+
+interface DocumentItem {
+  name: string;
+  date: string;
+  size: string;
+  type: string;
+  locked: boolean;
+}
 
 const documentCategories = [
   {
@@ -148,7 +155,7 @@ export default function DocumentsPage() {
   );
 }
 
-function DocRow({ doc, color, bg, border }: { doc: any; color: string; bg: string; border: string }) {
+function DocRow({ doc, color, bg, border }: { doc: DocumentItem; color: string; bg: string; border: string }) {
   return (
     <div className="group flex items-center justify-between p-4 hover:bg-white/[0.03] rounded-2xl transition-all cursor-pointer border border-transparent hover:border-white/5">
       <div className="flex items-center gap-5 min-w-0 flex-1">

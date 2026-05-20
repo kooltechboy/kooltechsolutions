@@ -95,13 +95,13 @@ export default function PricingPage() {
                 Build Your Custom Stack
               </h2>
               <p style={{ color: "var(--color-neutral-400)", maxWidth: "700px", margin: "0 auto", fontSize: "1.0625rem", lineHeight: 1.6 }}>
-                Need something specific? Browse our comprehensive catalog below and select the services you need to build a custom package. We'll give you a tailored quote.
+                Need something specific? Browse our comprehensive catalog below and select the services you need to build a custom package. We&apos;ll give you a tailored quote.
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>
               {serviceCatalog.map((category) => {
-                const IconComponent = (Icons as any)[category.icon] || Icons.HelpCircle;
+                const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; color?: string }>>)[category.icon] || Icons.HelpCircle;
                 
                 return (
                   <div key={category.name}>

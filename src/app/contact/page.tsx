@@ -32,14 +32,15 @@ function ContactContent() {
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", service: "", message: "" });
   const [loading, setLoading] = useState(false);
-  const [bookingOpen, setBookingOpen] = useState(false);
   const searchParams = useSearchParams();
+  const [bookingOpen, setBookingOpen] = useState(() => searchParams.get("book") === "true");
+  const [prevBook, setPrevBook] = useState(() => searchParams.get("book"));
 
-  useEffect(() => {
-    if (searchParams.get("book") === "true") {
-      setBookingOpen(true);
-    }
-  }, [searchParams]);
+  const currentBook = searchParams.get("book");
+  if (currentBook !== prevBook) {
+    setPrevBook(currentBook);
+    setBookingOpen(currentBook === "true");
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

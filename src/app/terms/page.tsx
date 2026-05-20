@@ -54,7 +54,7 @@ export default function TermsPage() {
               Terms of <span className="gradient-text">Service</span>
             </h1>
             <p style={{ color: "var(--color-neutral-400)", maxWidth: "520px", margin: "0 auto", lineHeight: 1.7 }}>
-              Last updated: May 1, 2026. Please read these terms carefully before using Kool Tech Solutions' services.
+              Last updated: May 1, 2026. Please read these terms carefully before using Kool Tech Solutions&apos; services.
             </p>
           </div>
         </section>

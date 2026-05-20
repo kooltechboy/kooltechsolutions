@@ -2,10 +2,16 @@
 import React, { useState } from "react";
 import { X, CreditCard, ShieldCheck, Lock, CheckCircle2, Loader2, Apple } from "lucide-react";
 
+interface InvoiceData {
+  id: string;
+  amount: number | string;
+  invoice_number?: string;
+}
+
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  invoice: any;
+  invoice: InvoiceData | null;
   onSuccess: (invoiceId: string) => void;
 }
 

@@ -1,13 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
 import { 
-  HardDrive, Monitor, Laptop, Server, Printer, Network, Search, Filter, 
-  CheckCircle2, AlertTriangle, Shield, Clock, Cpu, Zap, Activity, 
-  ExternalLink, Settings, Wrench, X, Info, Calendar, User, Hash, Terminal,
-  ChevronRight, ArrowUpRight, ShieldCheck, Database
+  HardDrive, Monitor, Laptop, Server, Printer, Network, Search, 
+  CheckCircle2, Clock, Cpu, Activity, 
+  Wrench, X, Hash, Terminal,
+  ChevronRight, ArrowUpRight, ShieldCheck, LucideIcon
 } from "lucide-react";
 
-const assetTypes: Record<string, any> = {
+interface AssetTypeConfig {
+  icon: LucideIcon;
+  color: string;
+  bg: string;
+  border: string;
+}
+
+const assetTypes: Record<string, AssetTypeConfig> = {
   laptop: { icon: Laptop, color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", border: "border-[#00D4FF]/20" },
   workstation: { icon: Monitor, color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", border: "border-[#A855F7]/20" },
   server: { icon: Server, color: "text-[#FF4444]", bg: "bg-[#FF4444]/10", border: "border-[#FF4444]/20" },
@@ -15,7 +22,23 @@ const assetTypes: Record<string, any> = {
   network: { icon: Network, color: "text-[#00E676]", bg: "bg-[#00E676]/10", border: "border-[#00E676]/20" },
 };
 
-const mockAssets = [
+interface Asset {
+  id: string;
+  name: string;
+  type: string;
+  user: string;
+  serial: string;
+  os: string;
+  status: string;
+  lastSeen: string;
+  warranty: string;
+  cpu: string;
+  ram: string;
+  disk: string;
+  health: number;
+}
+
+const mockAssets: Asset[] = [
   { id: "AST-001", name: "MacBook Pro 14\" M3", type: "laptop", user: "Sarah Johnson", serial: "C02X1234", os: "macOS 14.4", status: "healthy", lastSeen: "2 min ago", warranty: "Oct 2027", cpu: "M3 Max", ram: "32GB", disk: "1TB SSD", health: 98 },
   { id: "AST-002", name: "Dell OptiPlex 7010", type: "workstation", user: "Marcus Rivera", serial: "4X9K782", os: "Windows 11 Pro", status: "healthy", lastSeen: "5 min ago", warranty: "Mar 2026", cpu: "i7-13700", ram: "16GB", disk: "512GB SSD", health: 94 },
   { id: "AST-003", name: "HP LaserJet Pro 4001dn", type: "printer", user: "Shared (Floor 2)", serial: "TH83VQ2", os: "Firmware 2.12", status: "warning", lastSeen: "1h ago", warranty: "Expired", cpu: "Integrated", ram: "512MB", disk: "N/A", health: 65 },
@@ -27,8 +50,8 @@ const mockAssets = [
 
 export default function AssetsPage() {
   const [search, setSearch] = useState("");
-  const [selectedAsset, setSelectedAsset] = useState<any>(null);
-  const [assets, setAssets] = useState<any[]>(mockAssets); // Default to mock for initial paint
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [assets] = useState<Asset[]>(mockAssets); // Default to mock for initial paint
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {

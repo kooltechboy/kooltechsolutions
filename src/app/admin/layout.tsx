@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   LayoutDashboard, Users, Ticket, BarChart3, DollarSign,
   PenSquare, Plug, Bot, Monitor, Shield, Zap, Settings, Database,
-  LogOut, Bell, User, ChevronDown, Menu, X,
+  LogOut, Bell, ChevronDown, Menu, X,
 } from "lucide-react";
 
 const navGroups = [

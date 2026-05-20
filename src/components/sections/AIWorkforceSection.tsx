@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, Shield, Zap, ArrowRight, MessageSquare, Bot, Users, Globe } from "lucide-react";
+import { Sparkles, Shield, Zap, ArrowRight, Bot } from "lucide-react";
 import Link from "next/link";
 
 const agents = [

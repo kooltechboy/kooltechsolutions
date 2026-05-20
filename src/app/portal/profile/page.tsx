@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { 
   User, Building, Mail, Phone, Globe, Save, Loader2, CheckCircle2,
   Shield, Key, Bell, CreditCard, ChevronRight, ArrowUpRight,
@@ -7,28 +7,41 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
+interface ProfileData {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  email?: string;
+  role?: string;
+}
+
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  async function fetchProfile() {
+  const fetchProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    if (data) setProfile(data);
+    if (data) setProfile(data as ProfileData);
     setLoading(false);
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchProfile();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchProfile]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (!profile) return;
     setSaving(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -134,7 +147,7 @@ export default function ProfilePage() {
                 <input 
                   className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all font-medium"
                   value={profile?.first_name || ""} 
-                  onChange={e => setProfile({...profile, first_name: e.target.value})}
+                  onChange={e => profile && setProfile({...profile, first_name: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
@@ -142,7 +155,7 @@ export default function ProfilePage() {
                 <input 
                   className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all font-medium"
                   value={profile?.last_name || ""} 
-                  onChange={e => setProfile({...profile, last_name: e.target.value})}
+                  onChange={e => profile && setProfile({...profile, last_name: e.target.value})}
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
@@ -152,7 +165,7 @@ export default function ProfilePage() {
                   <input 
                     className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all font-medium"
                     value={profile?.company_name || ""} 
-                    onChange={e => setProfile({...profile, company_name: e.target.value})}
+                    onChange={e => profile && setProfile({...profile, company_name: e.target.value})}
                   />
                 </div>
               </div>

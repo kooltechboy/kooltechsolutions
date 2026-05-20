@@ -154,7 +154,7 @@ export default function ServicesPage() {
                 The KoolTech <span className="gradient-text">Engineering Blueprint</span>
               </h2>
               <p style={{ color: "var(--color-neutral-400)", maxWidth: "600px", margin: "0 auto" }}>
-                We don't just fix IT; we architect business resilience through a disciplined three-phase deployment framework.
+                We don&apos;t just fix IT; we architect business resilience through a disciplined three-phase deployment framework.
               </p>
             </div>
 

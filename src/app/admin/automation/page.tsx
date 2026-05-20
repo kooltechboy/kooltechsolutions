@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Zap, Play, Pause, Clock, AlertTriangle } from "lucide-react";
+import { Zap, Play, Pause } from "lucide-react";
 
 export const metadata: Metadata = { title: "Admin — Automation" };
 

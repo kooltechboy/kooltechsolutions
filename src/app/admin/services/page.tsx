@@ -1,11 +1,10 @@
 "use client";
 import { useState } from "react";
-import { serviceCatalog, ServiceCategory, Service } from "@/data/services";
+import { serviceCatalog } from "@/data/services";
 import * as Icons from "lucide-react";
-import { Search, ChevronRight, Plus, Info } from "lucide-react";
+import { Search, ChevronRight, Plus } from "lucide-react";
 
 export default function ServicesPage() {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const filteredCatalog = serviceCatalog.map(cat => ({
@@ -49,7 +48,7 @@ export default function ServicesPage() {
       {/* Categories Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "2rem" }}>
         {filteredCatalog.map((category) => {
-          const IconComponent = (Icons as any)[category.icon] || Icons.HelpCircle;
+          const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[category.icon] || Icons.HelpCircle;
           
           return (
             <div key={category.name} className="glass-card" style={{ 

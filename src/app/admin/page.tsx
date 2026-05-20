@@ -14,9 +14,24 @@ const statusColor: Record<string, string> = {
   open: "#00D4FF", in_progress: "#FFB300", resolved: "#00E676", closed: "#64748B", waiting_on_client: "#A855F7",
 };
 
+interface ClientDetails {
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+}
+
+interface Ticket {
+  id: string;
+  client?: ClientDetails | ClientDetails[] | null;
+  subject: string;
+  priority: string;
+  status: string;
+  created_at: string;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ leads: 0, clients: 0, openTickets: 0, aiConversations: 0 });
-  const [recentTickets, setRecentTickets] = useState<any[]>([]);
+  const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
   const maxRevenue = Math.max(...revenueData);
@@ -30,18 +45,18 @@ export default function AdminDashboard() {
         supabase.from("agent_logs").select("id", { count: "exact" }),
       ]);
 
-      const allTickets = ticketsRes.data || [];
+      const allTickets = (ticketsRes.data || []) as Ticket[];
       setStats({
         leads: leadsRes.count || 0,
         clients: clientsRes.count || 0,
-        openTickets: allTickets.filter((t: any) => t.status === "open" || t.status === "in_progress").length,
+        openTickets: allTickets.filter((t) => t.status === "open" || t.status === "in_progress").length,
         aiConversations: logsRes.count || 0,
       });
       setRecentTickets(allTickets.slice(0, 5));
       setLoading(false);
     }
     fetchData();
-  }, []);
+  }, [supabase]);
 
   const kpis = [
     { icon: DollarSign, label: "MRR", value: "$47,850", change: "+12%", up: true, color: "#00E676", note: "Projected" },
@@ -165,14 +180,17 @@ export default function AdminDashboard() {
               <tbody>
                 {recentTickets.length === 0 ? (
                   <tr><td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "var(--color-neutral-500)" }}>No tickets yet.</td></tr>
-                ) : recentTickets.map(t => (
-                  <tr key={t.id} style={{ borderBottom: "1px solid rgba(75,132,200,0.07)" }}>
-                    <td style={{ padding: "0.875rem 0.75rem", color: "white", fontSize: "0.8125rem" }}>{t.client?.company_name || `${t.client?.first_name || ''} ${t.client?.last_name || ''}`.trim() || '—'}</td>
-                    <td style={{ padding: "0.875rem 0.75rem" }}>
-                      <Link href={`/admin/tickets/${t.id}`} style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", textDecoration: "none" }}>
-                        {t.subject}
-                      </Link>
-                    </td>
+                ) : recentTickets.map(t => {
+                  const clientObj = Array.isArray(t.client) ? t.client[0] : t.client;
+                  const clientName = clientObj?.company_name || `${clientObj?.first_name || ''} ${clientObj?.last_name || ''}`.trim() || '—';
+                  return (
+                    <tr key={t.id} style={{ borderBottom: "1px solid rgba(75,132,200,0.07)" }}>
+                      <td style={{ padding: "0.875rem 0.75rem", color: "white", fontSize: "0.8125rem" }}>{clientName}</td>
+                      <td style={{ padding: "0.875rem 0.75rem" }}>
+                        <Link href={`/admin/tickets/${t.id}`} style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", textDecoration: "none" }}>
+                          {t.subject}
+                        </Link>
+                      </td>
                     <td style={{ padding: "0.875rem 0.75rem" }}>
                       <span style={{ color: priorityColor[t.priority] || "#94A3B8", fontSize: "0.78rem", fontWeight: 600, textTransform: "uppercase" }}>{t.priority}</span>
                     </td>
@@ -180,8 +198,9 @@ export default function AdminDashboard() {
                       <span style={{ color: statusColor[t.status] || "#94A3B8", fontSize: "0.78rem", textTransform: "capitalize" }}>{t.status?.replace("_", " ")}</span>
                     </td>
                     <td style={{ padding: "0.875rem 0.75rem", color: "var(--color-neutral-400)", fontSize: "0.78rem" }}>{new Date(t.created_at).toLocaleDateString()}</td>
-                  </tr>
-                ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

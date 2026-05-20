@@ -1,42 +1,58 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Send, User, Bot, Clock, ShieldCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, User, Bot, Clock, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+
+interface Assignee {
+  first_name?: string;
+  last_name?: string;
+}
+
+interface PortalTicket {
+  id: string;
+  subject: string;
+  description: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  updated_at: string;
+  assigned_to?: Assignee | Assignee[] | null;
+}
+
+interface MessageSender {
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+}
+
+interface PortalTicketMessage {
+  id: string;
+  ticket_id: string;
+  sender_id: string;
+  message: string;
+  is_internal_note: boolean;
+  created_at: string;
+  sender?: MessageSender | MessageSender[] | null;
+}
+
+interface PostgresChangesPayload {
+  new: PortalTicketMessage;
+}
 
 export default function TicketDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [ticket, setTicket] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [ticket, setTicket] = useState<PortalTicket | null>(null);
+  const [messages, setMessages] = useState<PortalTicketMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchTicketData();
-    
-    // Subscribe to new messages
-    const channel = (supabase as any)
-      .channel(`ticket-${id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${id}` }, (payload: any) => {
-        setMessages(prev => [...prev, payload.new]);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [id]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  async function fetchTicketData() {
+  const fetchTicketData = useCallback(async () => {
     const { data: ticketData } = await supabase
       .from('tickets')
       .select('*, assigned_to(first_name, last_name)')
@@ -44,7 +60,7 @@ export default function TicketDetailPage() {
       .single();
     
     if (ticketData) {
-      setTicket(ticketData);
+      setTicket(ticketData as PortalTicket);
       
       const { data: msgs } = await supabase
         .from('ticket_messages')
@@ -52,10 +68,35 @@ export default function TicketDetailPage() {
         .eq('ticket_id', id)
         .order('created_at', { ascending: true });
       
-      if (msgs) setMessages(msgs);
+      if (msgs) setMessages(msgs as PortalTicketMessage[]);
     }
     setLoading(false);
-  }
+  }, [id, supabase]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchTicketData();
+    }, 0);
+    
+    // Subscribe to new messages
+    const channel = supabase
+      .channel(`ticket-${id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${id}` }, (payload: PostgresChangesPayload) => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+
+    return () => {
+      clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [id, supabase, fetchTicketData]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   async function handleSendMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -132,7 +173,8 @@ export default function TicketDetailPage() {
 
             {/* Message Thread */}
             {messages.map((msg, idx) => {
-              const isAdmin = msg.sender?.role === 'admin' || msg.sender?.role === 'agent';
+              const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
+              const isAdmin = senderObj?.role === 'admin' || senderObj?.role === 'agent';
               return (
                 <div key={idx} style={{ display: "flex", gap: "1rem" }}>
                   <div style={{ 
@@ -145,7 +187,7 @@ export default function TicketDetailPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
                       <span style={{ color: isAdmin ? "var(--color-accent-500)" : "white", fontWeight: 600, fontSize: "0.875rem" }}>
-                        {isAdmin ? `${msg.sender?.first_name} (KoolTech Support)` : 'You'}
+                        {isAdmin ? `${senderObj?.first_name || ''} (KoolTech Support)` : 'You'}
                       </span>
                       <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{new Date(msg.created_at).toLocaleTimeString()}</span>
                     </div>
@@ -203,9 +245,12 @@ export default function TicketDetailPage() {
               <div>
                 <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginBottom: "0.25rem" }}>Assigned Engineer</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "white", fontWeight: 500, fontSize: "0.875rem" }}>
-                  {ticket.assigned_to ? (
-                    <><ShieldCheck size={14} color="var(--color-accent-500)" /> {ticket.assigned_to.first_name} {ticket.assigned_to.last_name}</>
-                  ) : 'Unassigned'}
+                  {(() => {
+                    const assigneeObj = Array.isArray(ticket.assigned_to) ? ticket.assigned_to[0] : ticket.assigned_to;
+                    return assigneeObj ? (
+                      <><ShieldCheck size={14} color="var(--color-accent-500)" /> {assigneeObj.first_name || ''} {assigneeObj.last_name || ''}</>
+                    ) : 'Unassigned';
+                  })()}
                 </div>
               </div>
               <div>
@@ -228,8 +273,4 @@ export default function TicketDetailPage() {
       </div>
     </div>
   );
-}
-
-function AlertCircle({ size, className }: { size: number, className?: string }) {
-  return <ShieldCheck size={size} className={className} />; // Temporary icon mapping
 }

@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
     // Proxy request to RMM platform (e.g. Tactical RMM, Syncro, etc.)
     const RMM_API_KEY = process.env.RMM_API_KEY;
-    const RMM_API_URL = process.env.RMM_API_URL || "https://api.rmm.example.com";
+    // const RMM_API_URL = process.env.RMM_API_URL || "https://api.rmm.example.com";
 
     if (!RMM_API_KEY) {
       // Return mock data if not configured
@@ -38,8 +38,9 @@ export async function GET(request: Request) {
     */
 
     return NextResponse.json({ error: "Not implemented" }, { status: 501 });
-  } catch (err: any) {
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     console.error("RMM API Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

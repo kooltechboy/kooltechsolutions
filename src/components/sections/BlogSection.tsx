@@ -4,8 +4,20 @@ import Link from "next/link";
 import { ArrowRight, Calendar, Clock } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
+interface Post {
+  id: string;
+  title: string;
+  excerpt: string;
+  slug: string;
+  category: string;
+  read_time: string;
+  image_url?: string;
+  created_at: string;
+  status: string;
+}
+
 export default function BlogSection() {
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
@@ -17,10 +29,10 @@ export default function BlogSection() {
         .order("created_at", { ascending: false })
         .limit(3);
       
-      if (data) setPosts(data);
+      if (data) setPosts(data as Post[]);
     };
     fetchLatestPosts();
-  }, []);
+  }, [supabase]);
 
   const getCategoryColor = (category: string) => {
     switch (category) {

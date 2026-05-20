@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Ticket, DollarSign, Server, Activity, ArrowRight, CheckCircle, AlertTriangle, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
@@ -11,18 +11,29 @@ const statusMap: Record<string, { color: string; icon: typeof CheckCircle }> = {
   "closed": { color: "var(--color-neutral-500)", icon: CheckCircle },
 };
 
+interface UserProfile {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  role?: string;
+}
+
+interface Ticket {
+  id: string;
+  subject: string;
+  status: string;
+  created_at: string;
+}
+
 export default function PortalDashboard() {
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState({ openTickets: 0, activeServices: 0, outstanding: 0, uptime: "99.99%" });
-  const [recentTickets, setRecentTickets] = useState<any[]>([]);
+  const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  async function fetchDashboardData() {
+  const fetchDashboardData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -38,7 +49,7 @@ export default function PortalDashboard() {
       .order('created_at', { ascending: false });
 
     if (ticketsData) {
-      setRecentTickets(ticketsData.slice(0, 3));
+      setRecentTickets(ticketsData.slice(0, 3) as Ticket[]);
       setStats(prev => ({
         ...prev,
         openTickets: ticketsData.filter(t => t.status !== 'closed' && t.status !== 'resolved').length
@@ -46,7 +57,14 @@ export default function PortalDashboard() {
     }
 
     setLoading(false);
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchDashboardData();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchDashboardData]);
 
   if (loading) {
     return (

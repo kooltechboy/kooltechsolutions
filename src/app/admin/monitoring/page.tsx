@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Server, Activity, HardDrive, Wifi, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { Server, Activity, HardDrive, Wifi, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export const metadata: Metadata = { title: "Admin — Monitoring" };
 

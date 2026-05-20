@@ -1,14 +1,51 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Send, User, Bot, Clock, ShieldCheck, Loader2, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
+interface ClientInfo {
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+}
+
+interface TicketInfo {
+  id: string;
+  subject: string;
+  description: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  updated_at: string;
+  client?: ClientInfo | ClientInfo[] | null;
+}
+
+interface MessageSender {
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+}
+
+interface TicketMessageInfo {
+  id: string;
+  ticket_id: string;
+  sender_id: string;
+  message: string;
+  is_internal_note: boolean;
+  created_at: string;
+  sender?: MessageSender | MessageSender[] | null;
+}
+
+interface PostgresChangesPayload {
+  new: TicketMessageInfo;
+}
+
 export default function AdminTicketDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [ticket, setTicket] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [ticket, setTicket] = useState<TicketInfo | null>(null);
+  const [messages, setMessages] = useState<TicketMessageInfo[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -18,50 +55,7 @@ export default function AdminTicketDetailPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchTicketData();
-    
-    const channel = (supabase as any)
-      .channel(`admin-ticket-${id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${id}` }, (payload: any) => {
-        setMessages(prev => [...prev, payload.new]);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [id]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  async function fetchTicketData() {
-    const { data: ticketData } = await supabase
-      .from('tickets')
-      .select('*, client:client_id(first_name, last_name, company_name)')
-      .eq('id', id)
-      .single();
-    
-    if (ticketData) {
-      setTicket(ticketData);
-      
-      const { data: msgs } = await supabase
-        .from('ticket_messages')
-        .select('*, sender:sender_id(first_name, last_name, role)')
-        .eq('ticket_id', id)
-        .order('created_at', { ascending: true });
-      
-      if (msgs) setMessages(msgs);
-
-      // Fetch AI summary after data loads
-      if (ticketData) fetchAiSummary(ticketData, msgs || []);
-    }
-    setLoading(false);
-  }
-
-  async function fetchAiSummary(ticketData: any, msgs: any[]) {
+  const fetchAiSummary = useCallback(async (ticketData: TicketInfo, msgs: TicketMessageInfo[]) => {
     setAiLoading(true);
     try {
       const res = await fetch('/api/ai-workforce/summarize', {
@@ -76,7 +70,55 @@ export default function AdminTicketDetailPage() {
     } finally {
       setAiLoading(false);
     }
-  }
+  }, []);
+
+  const fetchTicketData = useCallback(async () => {
+    const { data: ticketData } = await supabase
+      .from('tickets')
+      .select('*, client:client_id(first_name, last_name, company_name)')
+      .eq('id', id)
+      .single();
+    
+    if (ticketData) {
+      setTicket(ticketData as TicketInfo);
+      
+      const { data: msgs } = await supabase
+        .from('ticket_messages')
+        .select('*, sender:sender_id(first_name, last_name, role)')
+        .eq('ticket_id', id)
+        .order('created_at', { ascending: true });
+      
+      if (msgs) setMessages(msgs as TicketMessageInfo[]);
+ 
+      // Fetch AI summary after data loads
+      if (ticketData) fetchAiSummary(ticketData as TicketInfo, (msgs || []) as TicketMessageInfo[]);
+    }
+    setLoading(false);
+  }, [id, supabase, fetchAiSummary]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchTicketData();
+    }, 0);
+    
+    const channel = supabase
+      .channel(`admin-ticket-${id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${id}` }, (payload: PostgresChangesPayload) => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+
+    return () => {
+      clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [id, supabase, fetchTicketData]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   async function handleSendMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -102,7 +144,7 @@ export default function AdminTicketDetailPage() {
 
   async function updateStatus(status: string) {
     const { error } = await supabase.from('tickets').update({ status }).eq('id', id);
-    if (!error) setTicket({ ...ticket, status });
+    if (!error) setTicket(prev => prev ? { ...prev, status } : null);
   }
 
   if (loading) {
@@ -114,6 +156,8 @@ export default function AdminTicketDetailPage() {
   }
 
   if (!ticket) return <div>Ticket not found.</div>;
+
+  const clientObj = Array.isArray(ticket.client) ? ticket.client[0] : ticket.client;
 
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100vh - 120px)" }}>
@@ -129,7 +173,7 @@ export default function AdminTicketDetailPage() {
               <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)" }}>#{ticket.id.slice(0, 8)}</span>
             </div>
             <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-              Client: <span style={{ color: "var(--color-accent-500)", fontWeight: 600 }}>{ticket.client?.company_name || `${ticket.client?.first_name} ${ticket.client?.last_name}`}</span>
+              Client: <span style={{ color: "var(--color-accent-500)", fontWeight: 600 }}>{clientObj?.company_name || `${clientObj?.first_name || ''} ${clientObj?.last_name || ''}`.trim() || 'Unknown'}</span>
             </p>
           </div>
         </div>
@@ -167,7 +211,8 @@ export default function AdminTicketDetailPage() {
             </div>
 
             {messages.map((msg, idx) => {
-              const isAdmin = msg.sender?.role === 'admin' || msg.sender?.role === 'agent';
+              const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
+              const isAdmin = senderObj?.role === 'admin' || senderObj?.role === 'agent';
               return (
                 <div key={idx} style={{ 
                   display: "flex", gap: "1rem", 
@@ -186,7 +231,7 @@ export default function AdminTicketDetailPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
                       <span style={{ color: isAdmin ? "var(--color-accent-500)" : "white", fontWeight: 600, fontSize: "0.875rem" }}>
-                        {isAdmin ? `${msg.sender?.first_name} (Team)` : `${ticket.client?.first_name} (Client)`}
+                        {isAdmin ? `${senderObj?.first_name || ''} (Team)` : `${clientObj?.first_name || ''} (Client)`}
                         {msg.is_internal_note && <span style={{ marginLeft: "0.5rem", color: "#FFB300", fontSize: "0.7rem", textTransform: "uppercase" }}>Internal Note</span>}
                       </span>
                       <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{new Date(msg.created_at).toLocaleTimeString()}</span>
@@ -261,8 +306,8 @@ export default function AdminTicketDetailPage() {
               <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.05)" }} />
               <div>
                 <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginBottom: "0.5rem" }}>Client Contact</div>
-                <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600 }}>{ticket.client?.first_name} {ticket.client?.last_name}</div>
-                <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>{ticket.client?.company_name}</div>
+                <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600 }}>{clientObj?.first_name || ''} {clientObj?.last_name || ''}</div>
+                <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>{clientObj?.company_name}</div>
               </div>
             </div>
           </div>

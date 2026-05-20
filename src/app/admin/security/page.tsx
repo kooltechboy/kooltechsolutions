@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ShieldAlert, ShieldCheck, Lock, Eye, AlertOctagon } from "lucide-react";
+import { ShieldCheck, Lock, Eye, AlertOctagon } from "lucide-react";
 
 export const metadata: Metadata = { title: "Admin — Security Operations" };
 

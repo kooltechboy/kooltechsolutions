@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { 
   Server, Shield, Zap, Globe, Cpu, Clock, AlertTriangle, Plus, Loader2,
   ChevronRight, ArrowUpRight, CheckCircle2, ShieldCheck, Activity,
@@ -7,16 +7,22 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
+interface ClientService {
+  id: string;
+  client_id: string;
+  service_name: string;
+  service_sku: string;
+  status: string;
+  price: number;
+  next_billing_date: string;
+}
+
 export default function MyServicesPage() {
-  const [services, setServices] = useState<any[]>([]);
+  const [services, setServices] = useState<ClientService[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchServices();
-  }, []);
-
-  async function fetchServices() {
+  const fetchServices = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -25,9 +31,16 @@ export default function MyServicesPage() {
       .select('*')
       .eq('client_id', user.id);
     
-    if (data) setServices(data);
+    if (data) setServices(data as ClientService[]);
     setLoading(false);
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchServices();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchServices]);
 
   if (loading) {
     return (

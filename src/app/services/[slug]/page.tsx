@@ -1,13 +1,28 @@
 "use client";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { Shield, Cloud, Network, Monitor, Headphones, Award, CheckCircle2, ArrowRight, Zap, Lock, Globe, Server } from "lucide-react";
+import { Shield, Cloud, Network, Monitor, Headphones, Award, CheckCircle2, Zap, Lock, Globe, Server } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
 import BookingModal from "@/components/shared/BookingModal";
 
-const serviceData: Record<string, any> = {
+interface FeatureDetail {
+  title: string;
+  desc: string;
+  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; style?: React.CSSProperties }>;
+}
+
+interface ServiceDetail {
+  title: string;
+  subtitle: string;
+  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; style?: React.CSSProperties }>;
+  description: string;
+  features: FeatureDetail[];
+  details: string;
+}
+
+const serviceData: Record<string, ServiceDetail> = {
   "cybersecurity": {
     title: "Enterprise Cybersecurity",
     subtitle: "Advanced Threat Intelligence & SOC as a Service",
@@ -137,7 +152,7 @@ export default function ServiceDetailPage() {
             gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", 
             gap: "2rem" 
           }}>
-            {data.features.map((feature: any, idx: number) => {
+            {data.features.map((feature, idx) => {
               const FeatIcon = feature.icon;
               return (
                 <div key={idx} className="glass-card" style={{ padding: "2.5rem", borderRadius: "24px" }}>

@@ -1,5 +1,5 @@
 "use client";
-import { X, Download, Printer, CreditCard, Building2, MapPin, Mail, Phone, Calendar, Clock } from "lucide-react";
+import { X, Download, Printer, CreditCard, MapPin, Mail, Phone } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -12,8 +12,25 @@ const formatDate = (dateStr: string) => {
   });
 };
 
+interface InvoiceLineItem {
+  description: string;
+  quantity: number;
+  price: number;
+}
+
+interface InvoiceData {
+  invoice_number: string;
+  status: string;
+  issue_date: string;
+  due_date: string;
+  client_name?: string;
+  client_id?: string;
+  amount: number;
+  line_items?: InvoiceLineItem[];
+}
+
 interface InvoiceDetailProps {
-  invoice: any;
+  invoice: InvoiceData;
   onClose: () => void;
   onPay: () => void;
 }
@@ -56,7 +73,7 @@ export default function InvoiceDetail({ invoice, onClose, onPay }: InvoiceDetail
   };
 
   const lineItems = invoice.line_items || [];
-  const subtotal = lineItems.reduce((acc: number, item: any) => acc + (item.quantity * item.price), 0);
+  const subtotal = lineItems.reduce((acc: number, item: InvoiceLineItem) => acc + (item.quantity * item.price), 0);
   const tax = subtotal * 0.18; // 18% ITBIS (DR)
   const total = subtotal + tax;
 
@@ -155,7 +172,7 @@ export default function InvoiceDetail({ invoice, onClose, onPay }: InvoiceDetail
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  {lineItems.length > 0 ? lineItems.map((item: any, idx: number) => (
+                  {lineItems.length > 0 ? lineItems.map((item, idx) => (
                     <tr key={idx} className="text-sm">
                       <td className="py-6 font-medium">{item.description}</td>
                       <td className="py-6 text-center">{item.quantity}</td>

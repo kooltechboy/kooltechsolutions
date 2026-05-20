@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Sparkles, Zap, Upload, Clock } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Sparkles, Clock } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
@@ -45,32 +45,28 @@ export default function EditBlogPostPage() {
     }
   };
 
-  // Calculate dynamic read time
-  useEffect(() => {
-    const words = formData.content.split(/\s+/).filter(w => w.length > 0).length;
-    const minutes = Math.max(1, Math.ceil(words / 200));
-    setFormData(prev => ({ ...prev, read_time: `${minutes} min` }));
-  }, [formData.content]);
-
-  const fetchPost = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("posts")
-      .select("*")
-      .eq("id", params.id)
-      .single();
-
-    if (error) {
-      setError("Could not load post: " + error.message);
-    } else if (data) {
-      setFormData(data);
-    }
-    setLoading(false);
-  };
+  // Compute dynamic read time on the fly
+  const words = formData.content?.split(/\s+/).filter(w => w.length > 0).length || 0;
+  const dynamicReadTime = `${Math.max(1, Math.ceil(words / 200))} min`;
 
   useEffect(() => {
+    const fetchPost = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", params.id)
+        .single();
+
+      if (error) {
+        setError("Could not load post: " + error.message);
+      } else if (data) {
+        setFormData(data);
+      }
+      setLoading(false);
+    };
     fetchPost();
-  }, [params.id]);
+  }, [params.id, supabase]);
 
   const handleAIRefine = async () => {
     if (!formData.content) return;
@@ -93,8 +89,8 @@ export default function EditBlogPostPage() {
       } else {
         throw new Error(data.error || "Failed to refine content");
       }
-    } catch (err: any) {
-      setError("AI Refine Error: " + err.message);
+    } catch (err) {
+      setError("AI Refine Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setAiRefining(false);
     }
@@ -125,6 +121,7 @@ export default function EditBlogPostPage() {
 
     let finalData = { 
       ...formData,
+      read_time: dynamicReadTime,
       author_name: "Daniel Joseph Williams" // Enforce Standard Author
     };
 
@@ -151,7 +148,7 @@ export default function EditBlogPostPage() {
             image_url: formData.image_url || `https://source.unsplash.com/featured/1200x630?technology,${data.metadata.category || 'tech'}`
           };
         }
-      } catch (err) {
+      } catch {
         console.warn("AI metadata completion failed during update.");
       }
     }
@@ -242,7 +239,7 @@ export default function EditBlogPostPage() {
           <div style={{ flex: "1 1 100px" }}>
             <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Read Time</label>
             <div className="input-field" style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.2)", cursor: "default" }}>
-              <Clock size={14} style={{ marginRight: "0.5rem", color: "var(--color-accent-400)" }} /> {formData.read_time}
+              <Clock size={14} style={{ marginRight: "0.5rem", color: "var(--color-accent-400)" }} /> {dynamicReadTime}
             </div>
           </div>
           <div style={{ flex: "1 1 150px" }}>

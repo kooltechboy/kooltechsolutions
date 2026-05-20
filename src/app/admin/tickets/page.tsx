@@ -14,26 +14,46 @@ const getStatusColor = (status: string) => {
   }
 };
 
+interface ClientDetails {
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+}
+
+interface AssigneeDetails {
+  first_name?: string;
+  last_name?: string;
+}
+
+interface Ticket {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  client?: ClientDetails | ClientDetails[] | null;
+  assignee?: AssigneeDetails | AssigneeDetails[] | null;
+}
+
 export default function AdminTicketsPage() {
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    fetchTickets();
-  }, []);
-
-  async function fetchTickets() {
-    const { data, error } = await supabase
-      .from('tickets')
-      .select('*, client:client_id(first_name, last_name, company_name), assignee:assigned_to(first_name, last_name)')
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setTickets(data);
+    async function fetchTickets() {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*, client:client_id(first_name, last_name, company_name), assignee:assigned_to(first_name, last_name)')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setTickets(data);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  }
+    fetchTickets();
+  }, [supabase]);
 
   if (loading) {
     return (
@@ -58,7 +78,10 @@ export default function AdminTicketsPage() {
         {[
           { label: "Open Tickets", value: tickets.filter(t => t.status === 'open').length.toString(), trend: "Real-time" },
           { label: "Critical Issues", value: tickets.filter(t => t.priority === 'critical' && t.status !== 'closed').length.toString(), trend: "Needs immediate action", alert: tickets.some(t => t.priority === 'critical' && t.status !== 'closed') },
-          { label: "Assigned to Kira", value: tickets.filter(t => t.assignee?.first_name === 'Kira').length.toString(), trend: "Agent workload" },
+          { label: "Assigned to Kira", value: tickets.filter(t => {
+            const a = Array.isArray(t.assignee) ? t.assignee[0] : t.assignee;
+            return a?.first_name === 'Kira';
+          }).length.toString(), trend: "Agent workload" },
           { label: "Total Tickets", value: tickets.length.toString(), trend: "Lifetime count" }
         ].map((metric, i) => (
           <div key={i} className="glass-card" style={{ padding: "1.5rem", borderLeft: metric.alert ? "4px solid #ef4444" : "4px solid var(--color-accent-500)" }}>
@@ -103,6 +126,9 @@ export default function AdminTicketsPage() {
               </tr>
             ) : tickets.map(ticket => {
               const statusStyle = getStatusColor(ticket.status);
+              const clientObj = Array.isArray(ticket.client) ? ticket.client[0] : ticket.client;
+              const assigneeObj = Array.isArray(ticket.assignee) ? ticket.assignee[0] : ticket.assignee;
+              
               return (
                 <tr key={ticket.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", transition: "background 0.2s", cursor: "pointer" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.03)")}
@@ -113,7 +139,7 @@ export default function AdminTicketsPage() {
                     <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", fontWeight: 500, fontFamily: "JetBrains Mono, monospace" }}>{ticket.id.slice(0, 8)}...</div>
                   </td>
                   <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "var(--color-neutral-300)", fontWeight: 500 }}>
-                    {ticket.client?.company_name || `${ticket.client?.first_name} ${ticket.client?.last_name}` || 'Unknown'}
+                    {clientObj?.company_name || `${clientObj?.first_name || ''} ${clientObj?.last_name || ''}`.trim() || 'Unknown'}
                   </td>
                   <td style={{ padding: "1rem 1.5rem" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.35rem 0.75rem", borderRadius: "999px", background: statusStyle.bg, color: statusStyle.text, fontSize: "0.75rem", fontWeight: 600, textTransform: "capitalize" }}>
@@ -130,12 +156,12 @@ export default function AdminTicketsPage() {
                   </td>
                   <td style={{ padding: "1rem 1.5rem", fontSize: "0.875rem", color: "var(--color-neutral-500)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      {ticket.assignee ? (
+                      {assigneeObj ? (
                         <>
                           <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--color-accent-500)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: "bold" }}>
-                            {ticket.assignee.first_name?.charAt(0)}
+                            {assigneeObj.first_name?.charAt(0)}
                           </div>
-                          {ticket.assignee.first_name}
+                          {assigneeObj.first_name}
                         </>
                       ) : 'Unassigned'}
                     </div>

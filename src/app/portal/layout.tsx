@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import {
   LayoutDashboard, Ticket, FileText, Server, BarChart3,
-  HardDrive, FolderOpen, Bot, User, LogOut, Bell, ChevronDown,
+  HardDrive, FolderOpen, Bot, User, LogOut, ChevronDown,
   Menu, X,
 } from "lucide-react";
 import NotificationHub from "@/components/shared/NotificationHub";
@@ -23,10 +23,17 @@ const navItems = [
   { icon: User, label: "My Profile", href: "/portal/profile" },
 ];
 
+interface PortalProfile {
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  email?: string;
+}
+
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<PortalProfile | null>(null);
   const pathname = usePathname();
   const router = useRouter();
 

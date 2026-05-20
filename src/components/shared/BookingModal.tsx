@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2, Phone, MessageSquare, Briefcase } from "lucide-react";
 
 export default function BookingModal({ 
@@ -31,18 +31,23 @@ export default function BookingModal({
     message: initialMessage
   });
 
-  // Update form if initial values change (e.g. after profile loads or custom package changes)
-  useEffect(() => {
-    if (initialName || initialEmail || initialService || initialMessage) {
-      setForm(prev => ({
-        ...prev,
-        name: prev.name || initialName,
-        email: prev.email || initialEmail,
-        service: initialService || prev.service,
-        message: initialMessage || prev.message
-      }));
-    }
-  }, [initialName, initialEmail, initialService, initialMessage]);
+  // Update form if initial values change (e.g. after profile loads or custom package changes) using render-phase synchronization to avoid set-state-in-effect warnings
+  const [prevProps, setPrevProps] = useState({ initialName, initialEmail, initialService, initialMessage });
+  if (
+    initialName !== prevProps.initialName ||
+    initialEmail !== prevProps.initialEmail ||
+    initialService !== prevProps.initialService ||
+    initialMessage !== prevProps.initialMessage
+  ) {
+    setPrevProps({ initialName, initialEmail, initialService, initialMessage });
+    setForm(prev => ({
+      ...prev,
+      name: prev.name || initialName,
+      email: prev.email || initialEmail,
+      service: initialService || prev.service,
+      message: initialMessage || prev.message
+    }));
+  }
 
   if (!isOpen) return null;
 
@@ -96,7 +101,7 @@ export default function BookingModal({
     const dateMatch = selectedDate.match(/(\w+), (\w+) (\d+)/);
     if (!dateMatch) return "";
     
-    const [, dayName, monthName, dayNum] = dateMatch;
+    const [, , monthName, dayNum] = dateMatch;
     const year = new Date().getFullYear();
     const monthMap: Record<string, string> = {
       'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
@@ -109,7 +114,7 @@ export default function BookingModal({
     const timeMatch = selectedTime.match(/(\d+):(\d+) (\w+)/);
     if (!timeMatch) return "";
     
-    let [, hour, minute, ampm] = timeMatch;
+    const [, hour, minute, ampm] = timeMatch;
     let h = parseInt(hour);
     if (ampm === 'PM' && h < 12) h += 12;
     if (ampm === 'AM' && h === 12) h = 0;
@@ -150,7 +155,7 @@ export default function BookingModal({
     const timeMatch = selectedTime.match(/(\d+):(\d+) (\w+)/);
     if (!timeMatch) return "";
     
-    let [, hour, minute, ampm] = timeMatch;
+    const [, hour, minute, ampm] = timeMatch;
     let h = parseInt(hour);
     if (ampm === 'PM' && h < 12) h += 12;
     if (ampm === 'AM' && h === 12) h = 0;
@@ -347,7 +352,7 @@ export default function BookingModal({
           {step === 3 && (
             <div style={{ textAlign: "center", padding: "2rem 0", animation: "slideUp 0.3s ease" }}>
               <CheckCircle size={64} color="var(--color-success)" style={{ margin: "0 auto 1.5rem" }} />
-              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "white", marginBottom: "0.75rem" }}>You're All Set!</h3>
+              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "white", marginBottom: "0.75rem" }}>You&apos;re All Set!</h3>
               <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", lineHeight: 1.6, marginBottom: "2rem" }}>
                 Your demo is confirmed for <strong>{selectedDate}</strong> at <strong>{selectedTime}</strong>. A confirmation email has been sent to <strong>{form.email}</strong>.
               </p>
