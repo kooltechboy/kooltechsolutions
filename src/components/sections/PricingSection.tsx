@@ -1,60 +1,62 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
-import { Check, Star, Zap, ArrowRight } from "lucide-react";
+import { Check, Star, ArrowRight } from "lucide-react";
 import BookingModal from "@/components/shared/BookingModal";
-
-const tiers = [
-  {
-    name: "Bronze",
-    price: 299,
-    color: "#CD7F32",
-    desc: "Essential IT management for small teams",
-    popular: false,
-    features: [
-      "Up to 10 endpoints", "Business hours support (8-6 PM)", "Basic antivirus & patching",
-      "Monthly health reports", "Remote helpdesk", "Email support",
-    ],
-  },
-  {
-    name: "Silver",
-    price: 599,
-    color: "#00D4FF",
-    desc: "Full-service IT management for growing businesses",
-    popular: true,
-    features: [
-      "Up to 30 endpoints", "24/7 monitoring & alerts", "Advanced EDR security",
-      "Weekly health reports", "Priority helpdesk", "Phone & email support",
-      "Cloud backup management", "Quarterly IT reviews",
-    ],
-  },
-  {
-    name: "Gold",
-    price: 999,
-    color: "#FFB300",
-    desc: "Enterprise-grade IT with AI-powered automation",
-    popular: false,
-    features: [
-      "Unlimited endpoints", "24/7 SOC monitoring", "Full cybersecurity stack",
-      "Daily reports & dashboards", "Dedicated account manager", "On-site support",
-      "Compliance management", "AI helpdesk assistant",
-      "Custom SLA agreements", "Strategic IT roadmap",
-    ],
-  },
-];
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 export default function PricingSection() {
+  const { t } = useLanguage();
   const [bookingOpen, setBookingOpen] = useState(false);
+
+  const tiers = [
+    {
+      name: t("pricing.bronze.name"),
+      price: 299,
+      color: "#CD7F32",
+      desc: t("pricing.bronze.desc"),
+      popular: false,
+      features: [
+        t("pricing.bronze.f1"), t("pricing.bronze.f2"), t("pricing.bronze.f3"),
+        t("pricing.bronze.f4"), t("pricing.bronze.f5"), t("pricing.bronze.f6"),
+      ],
+    },
+    {
+      name: t("pricing.silver.name"),
+      price: 599,
+      color: "#00D4FF",
+      desc: t("pricing.silver.desc"),
+      popular: true,
+      features: [
+        t("pricing.silver.f1"), t("pricing.silver.f2"), t("pricing.silver.f3"),
+        t("pricing.silver.f4"), t("pricing.silver.f5"), t("pricing.silver.f6"),
+        t("pricing.silver.f7"), t("pricing.silver.f8"),
+      ],
+    },
+    {
+      name: t("pricing.gold.name"),
+      price: 999,
+      color: "#FFB300",
+      desc: t("pricing.gold.desc"),
+      popular: false,
+      features: [
+        t("pricing.gold.f1"), t("pricing.gold.f2"), t("pricing.gold.f3"),
+        t("pricing.gold.f4"), t("pricing.gold.f5"), t("pricing.gold.f6"),
+        t("pricing.gold.f7"), t("pricing.gold.f8"), t("pricing.gold.f9"),
+        t("pricing.gold.f10"),
+      ],
+    },
+  ];
+
   return (
     <section className="section" style={{ background: "rgba(10,22,40,0.4)" }}>
       <div className="container">
         <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-          <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>Transparent Pricing</div>
+          <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("pricing.badge")}</div>
           <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.75rem, 4vw, 2.75rem)", color: "white", marginBottom: "1rem" }}>
-            Service Plans <span className="gradient-text">Built for You</span>
+            {t("pricing.titleStart")} <span className="gradient-text">{t("pricing.titleGradient")}</span>
           </h2>
           <p style={{ color: "var(--color-neutral-400)", maxWidth: "520px", margin: "0 auto" }}>
-            Flat-rate monthly pricing. No hidden fees. Scale up or down as your business evolves.
+            {t("pricing.subtitle")}
           </p>
         </div>
 
@@ -80,7 +82,7 @@ export default function PricingSection() {
                   fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.05em",
                   whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "0.35rem",
                 }}>
-                  <Star size={12} fill="#0A1628" /> MOST POPULAR
+                  <Star size={12} fill="#0A1628" /> {t("pricing.popular")}
                 </div>
               )}
               <div style={{ marginBottom: "1.5rem" }}>
@@ -91,7 +93,7 @@ export default function PricingSection() {
                 <div style={{ display: "flex", alignItems: "baseline", gap: "0.25rem", marginBottom: "0.5rem" }}>
                   <span style={{ fontSize: "1.25rem", color: "var(--color-neutral-400)" }}>$</span>
                   <span style={{ fontFamily: "Syne, sans-serif", fontSize: "3rem", fontWeight: 800, color: "white" }}>{tier.price}</span>
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>/month</span>
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>{t("pricing.monthly")}</span>
                 </div>
                 <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>{tier.desc}</p>
               </div>
@@ -115,14 +117,14 @@ export default function PricingSection() {
                   transition: "all 0.2s ease", cursor: "pointer"
                 }}
               >
-                Get Started <ArrowRight size={16} />
+                {t("pricing.getStarted")} <ArrowRight size={16} />
               </button>
             </div>
           ))}
         </div>
 
         <p style={{ textAlign: "center", color: "var(--color-neutral-500)", fontSize: "0.8125rem", marginTop: "2rem" }}>
-          * All plans billed monthly. Annual plans available with 15% discount. Custom enterprise pricing available.
+          {t("pricing.footnote")}
         </p>
       </div>
       <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />

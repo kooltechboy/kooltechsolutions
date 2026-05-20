@@ -64,10 +64,18 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Server-side admin role check
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
     const userEmail = user.email?.toLowerCase() ?? ''
-    const isAdmin = ADMIN_EMAILS.length > 0
-      ? ADMIN_EMAILS.includes(userEmail)
-      : false // If no ADMIN_EMAILS configured, deny all admin access
+    const isAdmin = profile?.role === 'admin' || (
+      ADMIN_EMAILS.length > 0
+        ? ADMIN_EMAILS.includes(userEmail)
+        : false
+    )
 
     if (!isAdmin) {
       // Authenticated but not an admin — redirect to portal, not login

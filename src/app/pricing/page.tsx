@@ -7,29 +7,69 @@ import BookingModal from "@/components/shared/BookingModal";
 import { ArrowRight, HelpCircle, ShoppingCart, Check } from "lucide-react";
 import { serviceCatalog, Service } from "@/data/services";
 import * as Icons from "lucide-react";
-
-const faqs = [
-  {
-    q: "Do you require long-term contracts?",
-    a: "We offer flexible month-to-month agreements for our standard tiers. Annual contracts are available with a 15% discount for long-term partnerships."
-  },
-  {
-    q: "How does onboarding work?",
-    a: "Our onboarding process typically takes 14-30 days. We deploy our agents, map your network, audit your security, and document everything without disrupting your daily operations."
-  },
-  {
-    q: "Can I customize a package?",
-    a: "Absolutely. Our Bronze, Silver, and Gold tiers cover most businesses, but we can tailor a specific combination of services to match your exact compliance and operational requirements."
-  },
-  {
-    q: "What is included in 'unlimited endpoints'?",
-    a: "Our Gold tier includes management and security for all company-owned devices (workstations, laptops, servers, and mobile devices) under your primary domain."
-  }
-];
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 export default function PricingPage() {
+  const { t, language } = useLanguage();
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+
+  const faqs = [
+    { q: t("pricing.faq1Q"), a: t("pricing.faq1A") },
+    { q: t("pricing.faq2Q"), a: t("pricing.faq2A") },
+    { q: t("pricing.faq3Q"), a: t("pricing.faq3A") },
+    { q: t("pricing.faq4Q"), a: t("pricing.faq4A") }
+  ];
+
+  const getCategoryTranslation = (name: string, defaultDesc: string) => {
+    if (language === "es") {
+      switch (name) {
+        case "Managed IT & Security Bundles":
+          return {
+            name: "Paquetes de TI y Seguridad Gestionados",
+            desc: "Pilas de gestión y seguridad de TI de nivel empresarial para empresas modernas."
+          };
+        case "Add-On Managed Services":
+          return {
+            name: "Servicios Gestionados Adicionales",
+            desc: "Complementos especializados de seguridad y gestión para proteger su infraestructura."
+          };
+        case "NOC as a Service":
+          return {
+            name: "NOC como Servicio",
+            desc: "Centro de Operaciones de Red 24/7 que ofrece garantías de tiempo de inactividad de infraestructura."
+          };
+        case "SOC as a Service":
+          return {
+            name: "SOC como Servicio",
+            desc: "Centro de Operaciones de Seguridad con despliegue de SIEM y cobertura de analistas humanos."
+          };
+        case "Compliance as a Service":
+          return {
+            name: "Cumplimiento como Servicio",
+            desc: "Gestión de cumplimiento continuo para HIPAA, PCI-DSS, SOC2 y más."
+          };
+        case "AI as a Service (AIaaS) & Digital Web":
+          return {
+            name: "IA como Servicio (AIaaS) y Web Digital",
+            desc: "Empleados de IA personalizados, agentes autónomos y plataformas web de alto rendimiento."
+          };
+        case "Cloud Licensing & SaaS":
+          return {
+            name: "Licencias de Nube y SaaS",
+            desc: "Licenciamiento oficial y administración profesional para M365 y Google Workspace."
+          };
+        case "Secure Cloud Communications":
+          return {
+            name: "Comunicaciones Seguras en la Nube",
+            desc: "Soluciones VoIP empresariales y plataformas de comunicaciones unificadas."
+          };
+        default:
+          return { name, desc: defaultDesc };
+      }
+    }
+    return { name, desc: defaultDesc };
+  };
 
   const toggleService = (service: Service) => {
     setSelectedServices(prev => {
@@ -44,8 +84,10 @@ export default function PricingPage() {
   const customMessage = useMemo(() => {
     if (selectedServices.length === 0) return "";
     const list = selectedServices.map(s => `- ${s.name} (${s.code})`).join("\n");
-    return `I am interested in a custom package including the following services:\n\n${list}`;
-  }, [selectedServices]);
+    return language === "es"
+      ? `Estoy interesado en un paquete personalizado que incluya los siguientes servicios:\n\n${list}`
+      : `I am interested in a custom package including the following services:\n\n${list}`;
+  }, [selectedServices, language]);
 
   const customPriceInfo = useMemo(() => {
     let hasCustom = false;
@@ -73,13 +115,13 @@ export default function PricingPage() {
         {/* Hero Section */}
         <section style={{ padding: "5rem 0 3rem", background: "linear-gradient(180deg, rgba(15,32,68,0.5) 0%, transparent 100%)", textAlign: "center" }}>
           <div className="container">
-            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>Plans & Pricing</div>
+            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("pricing.pageBadge")}</div>
             <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3.5rem)", color: "white", marginBottom: "1.5rem", lineHeight: 1.1 }}>
-              Transparent Pricing.<br />
-              <span className="gradient-text">No Surprises.</span>
+              {t("pricing.titleStart")}<br />
+              <span className="gradient-text">{t("pricing.titleGradient")}</span>
             </h1>
             <p style={{ color: "var(--color-neutral-400)", maxWidth: "600px", margin: "0 auto", fontSize: "1.125rem", lineHeight: 1.6 }}>
-              Choose a bundled combo package for comprehensive coverage, or build your own stack with our individual service offerings.
+              {t("pricing.subtitle")}
             </p>
           </div>
         </section>
@@ -92,16 +134,17 @@ export default function PricingPage() {
           <div className="container">
             <div style={{ textAlign: "center", marginBottom: "4rem" }}>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.75rem, 4vw, 2.5rem)", color: "white", marginBottom: "1rem" }}>
-                Build Your Custom Stack
+                {t("pricing.customTitle")}
               </h2>
               <p style={{ color: "var(--color-neutral-400)", maxWidth: "700px", margin: "0 auto", fontSize: "1.0625rem", lineHeight: 1.6 }}>
-                Need something specific? Browse our comprehensive catalog below and select the services you need to build a custom package. We&apos;ll give you a tailored quote.
+                {t("pricing.customSubtitle")}
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>
               {serviceCatalog.map((category) => {
                 const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; color?: string }>>)[category.icon] || Icons.HelpCircle;
+                const translated = getCategoryTranslation(category.name, category.description);
                 
                 return (
                   <div key={category.name}>
@@ -111,10 +154,10 @@ export default function PricingPage() {
                       </div>
                       <div>
                         <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.5rem", margin: 0 }}>
-                          {category.name}
+                          {translated.name}
                         </h3>
                         <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", margin: "0.25rem 0 0 0" }}>
-                          {category.description}
+                          {translated.desc}
                         </p>
                       </div>
                     </div>
@@ -144,7 +187,9 @@ export default function PricingPage() {
                                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                                   <h4 style={{ color: "white", fontSize: "1rem", fontWeight: 600, margin: 0 }}>{service.name}</h4>
                                   {service.priority === "High" && (
-                                    <span style={{ fontSize: "0.6rem", background: "rgba(255,68,68,0.1)", color: "#ff4444", padding: "0.15rem 0.4rem", borderRadius: "4px", fontWeight: 700, textTransform: "uppercase" }}>Critical</span>
+                                    <span style={{ fontSize: "0.6rem", background: "rgba(255,68,68,0.1)", color: "#ff4444", padding: "0.15rem 0.4rem", borderRadius: "4px", fontWeight: 700, textTransform: "uppercase" }}>
+                                      {language === "es" ? "Crítico" : "Critical"}
+                                    </span>
                                   )}
                                 </div>
                                 <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginTop: "0.25rem" }}>{service.code}</div>
@@ -167,10 +212,13 @@ export default function PricingPage() {
 
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                               <div style={{ color: "var(--color-accent-500)", fontSize: "1.125rem", fontWeight: 700 }}>
-                                {service.price}
+                                {service.price === "Custom" && language === "es" ? "A medida" : service.price}
                               </div>
                               <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 600 }}>
-                                {service.priceType}
+                                {language === "es" 
+                                  ? (service.priceType === "Monthly" ? "Mensual" : service.priceType === "One-time" ? "Única vez" : "Ad Hoc")
+                                  : service.priceType
+                                }
                               </div>
                             </div>
                           </div>
@@ -188,9 +236,9 @@ export default function PricingPage() {
         <section className="section" style={{ background: "rgba(10,22,40,0.4)" }}>
           <div className="container" style={{ maxWidth: "800px" }}>
             <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>FAQ</div>
+              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("pricing.faqBadge")}</div>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.75rem, 4vw, 2.5rem)", color: "white" }}>
-                Common Questions
+                {t("pricing.faqTitle")}
               </h2>
             </div>
 
@@ -215,17 +263,17 @@ export default function PricingPage() {
           <div className="container">
             <div className="glass-card" style={{ padding: "4rem 2rem", borderRadius: "24px", textAlign: "center", background: "linear-gradient(135deg, rgba(0,212,255,0.05), rgba(30,77,140,0.1))" }}>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "2rem", color: "white", marginBottom: "1rem" }}>
-                Need a Custom Solution?
+                {t("pricing.needCustom")}
               </h2>
               <p style={{ color: "var(--color-neutral-400)", maxWidth: "500px", margin: "0 auto 2rem" }}>
-                Let our engineering team build a pricing model tailored specifically to your exact infrastructure requirements.
+                {t("pricing.needCustomDesc")}
               </p>
               <button 
                 onClick={() => setBookingOpen(true)}
                 className="btn-primary" 
                 style={{ margin: "0 auto", padding: "1rem 2rem", fontSize: "1rem" }}
               >
-                Schedule Consultation <ArrowRight size={18} />
+                {t("pricing.scheduleConsultation")} <ArrowRight size={18} />
               </button>
             </div>
           </div>
@@ -249,16 +297,18 @@ export default function PricingPage() {
                   <ShoppingCart size={20} />
                 </div>
                 <div>
-                  <div style={{ color: "white", fontWeight: 700, fontSize: "1rem" }}>{selectedServices.length} Services Selected</div>
-                  <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>Custom Package Builder</div>
+                  <div style={{ color: "white", fontWeight: 700, fontSize: "1rem" }}>
+                    {t("pricing.servicesSelected").replace("{num}", selectedServices.length.toString())}
+                  </div>
+                  <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>{t("pricing.customBuilder")}</div>
                 </div>
               </div>
               
               <div style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: "1.5rem", marginLeft: "0.5rem" }}>
-                <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>Est. Monthly Total</div>
+                <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>{t("pricing.estMonthly")}</div>
                 <div style={{ color: "var(--color-accent-500)", fontWeight: 800, fontSize: "1.25rem", display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
                   ${customPriceInfo.totalMonthly.toFixed(2)}
-                  {customPriceInfo.hasCustom && <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", fontWeight: 500 }}>+ Custom Pricing</span>}
+                  {customPriceInfo.hasCustom && <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", fontWeight: 500 }}> {t("pricing.plusCustom")}</span>}
                 </div>
               </div>
             </div>
@@ -268,14 +318,14 @@ export default function PricingPage() {
                 onClick={() => setSelectedServices([])}
                 style={{ background: "none", border: "none", color: "var(--color-neutral-400)", fontSize: "0.875rem", cursor: "pointer", fontWeight: 600 }}
               >
-                Clear Cart
+                {t("pricing.clearCart")}
               </button>
               <button 
                 onClick={() => setBookingOpen(true)}
                 className="btn-primary" 
                 style={{ padding: "0.75rem 1.5rem" }}
               >
-                Request Quote
+                {t("pricing.requestQuote")}
               </button>
             </div>
           </div>

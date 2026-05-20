@@ -2,34 +2,44 @@
 
 import Link from "next/link";
 import { Mail, Phone, MapPin, Twitter, Linkedin, Github, Globe } from "@/components/shared/SocialIcons";
-
-const footerLinks = {
-  Services: [
-    { name: "Cybersecurity", href: "/services/cybersecurity" },
-    { name: "Cloud Services", href: "/services/cloud" },
-    { name: "Network Management", href: "/services/network" },
-    { name: "24/7 Monitoring", href: "/services/monitoring" },
-    { name: "Help Desk", href: "/services/support" },
-    { name: "IT Compliance", href: "/services/compliance" },
-  ],
-  Company: [
-    { name: "About Us", href: "/about" },
-    { name: "Pricing", href: "/pricing" },
-    { name: "Blog & Insights", href: "/blog" },
-    { name: "Careers", href: "/careers" },
-    { name: "Contact", href: "/contact" },
-  ],
-  Portal: [
-    { name: "Client Login", href: "/portal" },
-    { name: "Submit a Ticket", href: "/portal/tickets" },
-    { name: "View Invoices", href: "/portal/invoices" },
-    { name: "Privacy Policy", href: "/privacy" },
-    { name: "Terms of Service", href: "/terms" },
-  ],
-};
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 export default function Footer() {
+  const { t } = useLanguage();
   const year = new Date().getFullYear();
+
+  const footerCategories = [
+    {
+      title: t("footer.solutions"),
+      links: [
+        { name: t("services.cybersecurity"), href: "/services/cybersecurity" },
+        { name: t("services.cloud"), href: "/services/cloud" },
+        { name: t("services.network"), href: "/services/network" },
+        { name: t("services.monitoring"), href: "/services/monitoring" },
+        { name: t("services.support"), href: "/services/support" },
+        { name: t("services.compliance"), href: "/services/compliance" },
+      ]
+    },
+    {
+      title: t("footer.company"),
+      links: [
+        { name: t("footer.about"), href: "/about" },
+        { name: t("nav.pricing"), href: "/pricing" },
+        { name: t("nav.blog"), href: "/blog" },
+        { name: t("footer.careers"), href: "/careers" },
+        { name: t("footer.contact"), href: "/contact" },
+      ]
+    },
+    {
+      title: t("footer.legal"),
+      links: [
+        { name: t("nav.clientPortal"), href: "/portal" },
+        { name: t("footer.privacy"), href: "/privacy" },
+        { name: t("footer.terms"), href: "/terms" },
+      ]
+    }
+  ];
+
   return (
     <footer style={{
       background: "var(--color-primary-950)",
@@ -61,12 +71,12 @@ export default function Footer() {
               </div>
             </div>
             <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", lineHeight: 1.7, marginBottom: "1.5rem", maxWidth: "300px" }}>
-              Enterprise-grade IT Managed Services for the Dominican Republic, USA, Canada, and the Caribbean. Technology that works as hard as you do.
+              {t("footer.desc")}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <ContactItem icon={Phone} text="+1 (829) 720-1611" />
               <ContactItem icon={Mail} text="danieljwilliams@kooltechsolutions.com" />
-              <ContactItem icon={MapPin} text="Santiago, Dominican Republic" />
+              <ContactItem icon={MapPin} text={t("footer.location")} />
             </div>
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
               {[Twitter, Linkedin, Github, Globe].map((Icon, i) => (
@@ -95,18 +105,18 @@ export default function Footer() {
           </div>
 
           {/* Links */}
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
+          {footerCategories.map(cat => (
+            <div key={cat.title}>
               <h4 style={{
                 color: "#fff", fontFamily: "Syne, sans-serif",
                 fontWeight: 700, fontSize: "0.875rem",
                 letterSpacing: "0.05em", textTransform: "uppercase",
                 marginBottom: "1rem",
               }}>
-                {category}
+                {cat.title}
               </h4>
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {links.map(link => (
+                {cat.links.map(link => (
                   <li key={link.name}>
                     <Link href={link.href} style={{
                       color: "var(--color-neutral-500)", textDecoration: "none",
@@ -130,12 +140,12 @@ export default function Footer() {
           padding: "1.5rem 0", flexWrap: "wrap", gap: "1rem",
         }}>
           <p style={{ color: "var(--color-neutral-600, #475569)", fontSize: "0.8125rem" }}>
-            © {year} Kool Tech Solutions. All rights reserved. Built with ❤️ in the Dominican Republic.
+            © {year} Kool Tech Solutions. {t("footer.rights")} Built with ❤️ in the Dominican Republic.
           </p>
           <div style={{ display: "flex", gap: "1rem" }}>
             <span className="badge badge-success">
               <span className="status-dot status-online pulse-online" />
-              All Systems Operational
+              {t("footer.operational")}
             </span>
           </div>
         </div>
@@ -147,7 +157,7 @@ export default function Footer() {
 function ContactItem({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-      <Icon size={14} color="var(--color-accent-500)" />
+      <Icon size={14} color="var(--color-accent-500)" style={{ flexShrink: 0 }} />
       <span style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>{text}</span>
     </div>
   );

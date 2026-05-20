@@ -2,9 +2,12 @@
 import { useState } from "react";
 import { Phone, Calendar } from "lucide-react";
 import BookingModal from "@/components/shared/BookingModal";
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 export default function CTASection() {
+  const { t } = useLanguage();
   const [bookingOpen, setBookingOpen] = useState(false);
+
   return (
     <section className="section" style={{ position: "relative", overflow: "hidden" }}>
       <div style={{
@@ -20,31 +23,31 @@ export default function CTASection() {
         pointerEvents: "none",
       }} />
       <div className="container" style={{ position: "relative", textAlign: "center" }}>
-        <div className="badge badge-cyan" style={{ marginBottom: "1.25rem" }}>Start Today</div>
+        <div className="badge badge-cyan" style={{ marginBottom: "1.25rem" }}>{t("cta.badge")}</div>
         <h2 style={{
           fontFamily: "Syne, sans-serif", fontWeight: 800,
           fontSize: "clamp(2rem, 5vw, 3.5rem)", color: "white",
           lineHeight: 1.15, marginBottom: "1.25rem",
         }}>
-          Ready to Transform<br />
-          <span className="gradient-text">Your IT Infrastructure?</span>
+          {t("cta.titleStart")}<br />
+          <span className="gradient-text">{t("cta.titleGradient")}</span>
         </h2>
         <p style={{ color: "var(--color-neutral-400)", maxWidth: "520px", margin: "0 auto 2.5rem", lineHeight: 1.7, fontSize: "1.0625rem" }}>
-          Get a free, no-obligation IT assessment from our senior engineers. We&apos;ll identify risks, opportunities, and craft a custom roadmap for your business.
+          {t("cta.subtitle")}
         </p>
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
           <button onClick={() => setBookingOpen(true)} className="btn-primary" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
-            <Calendar size={18} /> Schedule Free Assessment
+            <Calendar size={18} /> {t("cta.schedule")}
           </button>
           <a href="tel:+18297201611" className="btn-ghost" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
-            <Phone size={18} /> Call Us Now
+            <Phone size={18} /> {t("cta.callUs")}
           </a>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "2rem", marginTop: "3rem", flexWrap: "wrap" }}>
-          {["No contracts required", "Response in under 1 hour", "Serving DR · USA · Canada · Caribbean"].map(t => (
-            <div key={t} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>
+          {[t("cta.noContracts"), t("cta.response"), t("cta.reach")].map(text => (
+            <div key={text} style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent-500)" }} />
-              {t}
+              {text}
             </div>
           ))}
         </div>

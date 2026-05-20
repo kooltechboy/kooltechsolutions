@@ -8,6 +8,7 @@ import {
   PenSquare, Plug, Bot, Monitor, Shield, Zap, Settings, Database,
   LogOut, Bell, ChevronDown, Menu, X,
 } from "lucide-react";
+import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 
 const navGroups = [
   {
@@ -167,6 +168,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <LanguageSwitcher />
             <button style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer", position: "relative" }}>
               <Bell size={20} />
               <div style={{ position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />

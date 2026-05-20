@@ -1,31 +1,30 @@
-import type { Metadata } from "next";
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CTASection from "@/components/sections/CTASection";
 import { MapPin, Heart, Zap, Users, Globe, ArrowRight, Mail } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Careers | Kool Tech Solutions",
-  description: "Join the Kool Tech Solutions team — careers in IT, cybersecurity, AI, cloud, and operations across the Caribbean and USA.",
-};
-
-const benefits = [
-  { icon: Globe, title: "Remote-First Culture", desc: "Work from anywhere in the Caribbean or USA with flexible hours." },
-  { icon: Zap, title: "Cutting-Edge Stack", desc: "Work with the latest AI, cloud, and cybersecurity technologies." },
-  { icon: Heart, title: "Health & Wellness", desc: "Full medical, dental, and vision coverage for you and dependents." },
-  { icon: Users, title: "Growth Opportunities", desc: "Paid certifications: CISSP, AWS, Azure, ITIL, and more." },
-];
-
-const openRoles = [
-  { title: "Senior Cybersecurity Analyst", dept: "Security Operations", loc: "Santo Domingo, DR / Remote", type: "Full-time", badge: "SOC", color: "#A855F7" },
-  { title: "NOC Engineer (L2)", dept: "Network Operations", loc: "Santo Domingo, DR", type: "Full-time", badge: "NOC", color: "#00D4FF" },
-  { title: "AI Solutions Engineer", dept: "AI & Automation", loc: "Remote (LATAM/USA)", type: "Full-time", badge: "AI", color: "#00E676" },
-  { title: "Cloud Infrastructure Architect", dept: "Cloud Services", loc: "Remote (LATAM/USA)", type: "Full-time", badge: "Cloud", color: "#FFB300" },
-  { title: "Help Desk Technician (L1)", dept: "Client Services", loc: "Santiago, DR", type: "Full-time", badge: "HDS", color: "#4B84C8" },
-  { title: "Compliance & Risk Analyst", dept: "Compliance", loc: "Remote", type: "Contract", badge: "GRC", color: "#FF6B35" },
-];
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 export default function CareersPage() {
+  const { t } = useLanguage();
+
+  const benefits = [
+    { icon: Globe, title: t("careers.b1Title"), desc: t("careers.b1Desc") },
+    { icon: Zap, title: t("careers.b2Title"), desc: t("careers.b2Desc") },
+    { icon: Heart, title: t("careers.b3Title"), desc: t("careers.b3Desc") },
+    { icon: Users, title: t("careers.b4Title"), desc: t("careers.b4Desc") },
+  ];
+
+  const openRoles = [
+    { title: "Senior Cybersecurity Analyst", dept: "Security Operations", loc: "Santo Domingo, DR / Remote", type: "Full-time", badge: "SOC", color: "#A855F7" },
+    { title: "NOC Engineer (L2)", dept: "Network Operations", loc: "Santo Domingo, DR", type: "Full-time", badge: "NOC", color: "#00D4FF" },
+    { title: "AI Solutions Engineer", dept: "AI & Automation", loc: "Remote (LATAM/USA)", type: "Full-time", badge: "AI", color: "#00E676" },
+    { title: "Cloud Infrastructure Architect", dept: "Cloud Services", loc: "Remote (LATAM/USA)", type: "Full-time", badge: "Cloud", color: "#FFB300" },
+    { title: "Help Desk Technician (L1)", dept: "Client Services", loc: "Santiago, DR", type: "Full-time", badge: "HDS", color: "#4B84C8" },
+    { title: "Compliance & Risk Analyst", dept: "Compliance", loc: "Remote", type: "Contract", badge: "GRC", color: "#FF6B35" },
+  ];
+
   return (
     <>
       <Navbar />
@@ -33,26 +32,26 @@ export default function CareersPage() {
         {/* Hero */}
         <section style={{ padding: "5rem 0 4rem", background: "linear-gradient(180deg, rgba(15,32,68,0.5) 0%, transparent 100%)" }}>
           <div className="container" style={{ textAlign: "center" }}>
-            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>We&apos;re Hiring</div>
+            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("careers.badge")}</div>
             <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3.5rem)", color: "white", marginBottom: "1rem" }}>
-              Build the Future of<br /><span className="gradient-text">Caribbean IT</span>
+              {t("careers.titleStart")}<br /><span className="gradient-text">{t("careers.titleGradient")}</span>
             </h1>
             <p style={{ color: "var(--color-neutral-400)", maxWidth: "560px", margin: "0 auto 2rem", lineHeight: 1.8, fontSize: "1.0625rem" }}>
-              Join a world-class team of engineers, security analysts, and AI specialists who are transforming how businesses operate across the Dominican Republic, USA, Canada, and the Caribbean.
+              {t("careers.subtitle")}
             </p>
             <a href="#roles" className="btn-primary" style={{ display: "inline-flex", textDecoration: "none" }}>
-              View Open Positions <ArrowRight size={16} />
+              {t("careers.viewPositions")} <ArrowRight size={16} />
             </a>
           </div>
         </section>
- 
+
         {/* Benefits */}
         <section className="section">
           <div className="container">
             <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>Why KTS</div>
+              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("careers.benefitsBadge")}</div>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.5rem, 3vw, 2.25rem)", color: "white" }}>
-                More Than a Job, <span className="gradient-text">A Mission</span>
+                {t("careers.benefitsTitle")} <span className="gradient-text">{t("careers.benefitsGradient")}</span>
               </h2>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem" }}>
@@ -68,14 +67,14 @@ export default function CareersPage() {
             </div>
           </div>
         </section>
- 
+
         {/* Open Roles */}
         <section id="roles" className="section" style={{ background: "rgba(10,22,40,0.4)" }}>
           <div className="container">
             <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>Open Positions</div>
+              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("careers.rolesBadge")}</div>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.5rem, 3vw, 2.25rem)", color: "white" }}>
-                {openRoles.length} <span className="gradient-text">Roles Available</span>
+                {openRoles.length} <span className="gradient-text">{t("careers.rolesGradient")}</span>
               </h2>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -95,21 +94,21 @@ export default function CareersPage() {
                     </div>
                   </div>
                   <a href={`mailto:careers@kooltech.solutions?subject=Application: ${role.title}`} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.625rem 1.25rem", borderRadius: "8px", border: `1px solid ${role.color}40`, background: `${role.color}10`, color: role.color, fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
-                    Apply Now <ArrowRight size={14} />
+                    {t("careers.applyNow")} <ArrowRight size={14} />
                   </a>
                 </div>
               ))}
             </div>
- 
+
             {/* General Application */}
             <div className="glass-card" style={{ padding: "2rem", borderRadius: "16px", textAlign: "center", marginTop: "2rem", background: "linear-gradient(135deg, rgba(0,212,255,0.05), rgba(168,85,247,0.05))" }}>
               <Mail size={32} color="var(--color-accent-500)" style={{ marginBottom: "1rem" }} />
-              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.25rem", marginBottom: "0.75rem" }}>Don&apos;t See Your Role?</h3>
+              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.25rem", marginBottom: "0.75rem" }}>{t("careers.noRoleTitle")}</h3>
               <p style={{ color: "var(--color-neutral-400)", maxWidth: "480px", margin: "0 auto 1.5rem", lineHeight: 1.7 }}>
-                We&apos;re always looking for exceptional talent. Send us your resume and tell us how you&apos;d add value to the KTS team.
+                {t("careers.noRoleDesc")}
               </p>
               <a href="mailto:careers@kooltech.solutions" className="btn-primary" style={{ display: "inline-flex", textDecoration: "none" }}>
-                Send General Application <ArrowRight size={16} />
+                {t("careers.generalApp")} <ArrowRight size={16} />
               </a>
             </div>
           </div>

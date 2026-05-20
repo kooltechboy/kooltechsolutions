@@ -3,17 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, ChevronDown, Shield, Cloud, Network, Monitor, Headphones, Award, Phone, MessageCircle, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
-const services = [
-  { name: "Cybersecurity", href: "/services/cybersecurity", icon: Shield, desc: "Advanced threat protection" },
-  { name: "Cloud Services", href: "/services/cloud", icon: Cloud, desc: "Scalable cloud infrastructure" },
-  { name: "Network Management", href: "/services/network", icon: Network, desc: "Enterprise networking" },
-  { name: "24/7 Monitoring", href: "/services/monitoring", icon: Monitor, desc: "Always-on surveillance" },
-  { name: "Help Desk", href: "/services/support", icon: Headphones, desc: "Expert technical support" },
-  { name: "Compliance", href: "/services/compliance", icon: Award, desc: "Regulatory compliance" },
+const servicesKeys = [
+  { nameKey: "services.cybersecurity", href: "/services/cybersecurity", icon: Shield, descKey: "services.cybersecurityDesc" },
+  { nameKey: "services.cloud", href: "/services/cloud", icon: Cloud, descKey: "services.cloudDesc" },
+  { nameKey: "services.network", href: "/services/network", icon: Network, descKey: "services.networkDesc" },
+  { nameKey: "services.monitoring", href: "/services/monitoring", icon: Monitor, descKey: "services.monitoringDesc" },
+  { nameKey: "services.support", href: "/services/support", icon: Headphones, descKey: "services.supportDesc" },
+  { nameKey: "services.compliance", href: "/services/compliance", icon: Award, descKey: "services.complianceDesc" },
 ];
 
 export default function Navbar() {
+  const { language, setLanguage, t } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -62,7 +64,7 @@ export default function Navbar() {
               <a href="https://wa.me/18297201611" style={{ color: "var(--color-neutral-300)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-300)"}>WhatsApp: 829-720-1611</a>
             </span>
             <Link href="/portal" style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-accent-500)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-accent-500)"}>
-              Client Portal <ArrowRight size={12} />
+              {t("nav.clientPortal")} <ArrowRight size={12} />
             </Link>
           </div>
         </div>
@@ -94,8 +96,8 @@ export default function Navbar() {
 
           {/* Desktop Nav */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }} className="desktop-nav">
-            <NavLink href="/">Home</NavLink>
-            <NavLink href="/about">About</NavLink>
+            <NavLink href="/">{t("nav.home")}</NavLink>
+            <NavLink href="/about">{t("nav.about")}</NavLink>
 
             <div
               style={{ position: "relative" }}
@@ -115,7 +117,7 @@ export default function Navbar() {
                 onMouseEnter={e => (e.currentTarget.style.color = "white")}
                 onMouseLeave={e => (e.currentTarget.style.color = "var(--color-neutral-400)")}
               >
-                Services/Solutions <ChevronDown size={14} />
+                {t("nav.services")} <ChevronDown size={14} />
               </Link>
               {servicesOpen && (
                 <div style={{
@@ -126,8 +128,8 @@ export default function Navbar() {
                   display: "grid", gridTemplateColumns: "1fr 1fr",
                   gap: "0.5rem", boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
                 }}>
-                  {services.map(s => (
-                    <Link key={s.name} href={s.href} style={{
+                  {servicesKeys.map(s => (
+                    <Link key={s.nameKey} href={s.href} style={{
                       display: "flex", alignItems: "center", gap: "0.75rem",
                       padding: "0.75rem", borderRadius: "10px", textDecoration: "none",
                       transition: "background 0.2s ease",
@@ -143,8 +145,8 @@ export default function Navbar() {
                         <s.icon size={16} color="var(--color-accent-500)" />
                       </div>
                       <div>
-                        <div style={{ color: "#fff", fontSize: "0.8125rem", fontWeight: 600 }}>{s.name}</div>
-                        <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{s.desc}</div>
+                        <div style={{ color: "#fff", fontSize: "0.8125rem", fontWeight: 600 }}>{t(s.nameKey)}</div>
+                        <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{t(s.descKey)}</div>
                       </div>
                     </Link>
                   ))}
@@ -157,23 +159,53 @@ export default function Navbar() {
                       background: "rgba(0,212,255,0.06)",
                       transition: "background 0.2s ease",
                     }}>
-                      View All Services →
+                      {t("services.readMore")} →
                     </Link>
                   </div>
                 </div>
               )}
             </div>
 
-            <NavLink href="/pricing">Pricing</NavLink>
-            <NavLink href="/blog">Blog/Insights</NavLink>
-            <NavLink href="/contact">Contact</NavLink>
+            <NavLink href="/pricing">{t("nav.pricing")}</NavLink>
+            <NavLink href="/blog">{t("nav.blog")}</NavLink>
+            <NavLink href="/contact">{t("nav.contact")}</NavLink>
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons & Language Switcher */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }} className="desktop-nav">
             <Link href="/contact?book=true" className="btn-primary" style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}>
-              Get Free Assessment
+              {t("hero.ctaAssessment")}
             </Link>
+
+            {/* Language Selection Toggle */}
+            <div style={{ 
+              display: "flex", gap: "0.25rem", padding: "0.25rem", 
+              background: "rgba(255,255,255,0.05)", borderRadius: "8px", 
+              border: "1px solid rgba(0,212,255,0.15)", marginLeft: "0.5rem" 
+            }}>
+              <button 
+                onClick={() => setLanguage("en")} 
+                style={{
+                  background: language === "en" ? "var(--color-accent-500)" : "transparent",
+                  color: language === "en" ? "white" : "var(--color-neutral-400)",
+                  border: "none", padding: "0.25rem 0.5rem", borderRadius: "6px", 
+                  fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
+                }}
+              >
+                EN
+              </button>
+              <button 
+                onClick={() => setLanguage("es")} 
+                style={{
+                  background: language === "es" ? "var(--color-accent-500)" : "transparent",
+                  color: language === "es" ? "white" : "var(--color-neutral-400)",
+                  border: "none", padding: "0.25rem 0.5rem", borderRadius: "6px", 
+                  fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
+                }}
+              >
+                ES
+              </button>
+            </div>
           </div>
 
           {/* Mobile hamburger */}
@@ -198,12 +230,12 @@ export default function Navbar() {
             padding: "1.5rem 1rem", display: "flex", flexDirection: "column", gap: "0.5rem",
           }}>
             {[
-              { label: "Home", href: "/" },
-              { label: "About", href: "/about" },
-              { label: "Services/Solutions", href: "/services" },
-              { label: "Pricing", href: "/pricing" },
-              { label: "Blog/Insights", href: "/blog" },
-              { label: "Contact", href: "/contact" }
+              { label: t("nav.home"), href: "/" },
+              { label: t("nav.about"), href: "/about" },
+              { label: t("nav.services"), href: "/services" },
+              { label: t("nav.pricing"), href: "/pricing" },
+              { label: t("nav.blog"), href: "/blog" },
+              { label: t("nav.contact"), href: "/contact" }
             ].map(item => (
               <Link
                 key={item.label}
@@ -222,11 +254,44 @@ export default function Navbar() {
               padding: "0.75rem 1rem", borderRadius: "8px",
               color: "var(--color-neutral-400)", textDecoration: "none", fontSize: "1rem",
             }}>
-              Client Portal
+              {t("nav.clientPortal")}
             </Link>
             <Link href="/contact?book=true" onClick={() => setMobileOpen(false)} className="btn-primary" style={{ justifyContent: "center", marginTop: "0.5rem" }}>
-              Get Free Assessment
+              {t("hero.ctaAssessment")}
             </Link>
+
+            {/* Mobile Language Switcher */}
+            <div style={{ 
+              display: "flex", gap: "0.5rem", padding: "0.5rem", 
+              background: "rgba(255,255,255,0.05)", borderRadius: "8px", 
+              border: "1px solid rgba(0,212,255,0.1)", marginTop: "1rem",
+              justifyContent: "center"
+            }}>
+              <button 
+                onClick={() => { setLanguage("en"); setMobileOpen(false); }} 
+                style={{
+                  flex: 1,
+                  background: language === "en" ? "var(--color-accent-500)" : "transparent",
+                  color: language === "en" ? "white" : "var(--color-neutral-400)",
+                  border: "none", padding: "0.5rem", borderRadius: "6px", 
+                  fontSize: "0.875rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
+                }}
+              >
+                English
+              </button>
+              <button 
+                onClick={() => { setLanguage("es"); setMobileOpen(false); }} 
+                style={{
+                  flex: 1,
+                  background: language === "es" ? "var(--color-accent-500)" : "transparent",
+                  color: language === "es" ? "white" : "var(--color-neutral-400)",
+                  border: "none", padding: "0.5rem", borderRadius: "6px", 
+                  fontSize: "0.875rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
+                }}
+              >
+                Español
+              </button>
+            </div>
           </div>
         )}
       </nav>

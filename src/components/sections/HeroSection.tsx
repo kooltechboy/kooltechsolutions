@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Shield, Zap } from "lucide-react";
 import BookingModal from "@/components/shared/BookingModal";
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 export default function HeroSection() {
+  const { t } = useLanguage();
   const [bookingOpen, setBookingOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -75,7 +77,7 @@ export default function HeroSection() {
       <div className="container" style={{ position: "relative", zIndex: 1, paddingTop: "8rem", paddingBottom: "6rem" }}>
         <div style={{ maxWidth: "800px" }}>
           <div className="badge badge-cyan" style={{ marginBottom: "1.5rem" }}>
-            <Zap size={12} /> Enterprise IT · MSP · AI-Powered
+            <Zap size={12} /> {t("hero.badge")}
           </div>
 
           <h1 style={{
@@ -84,9 +86,9 @@ export default function HeroSection() {
             lineHeight: 1.1, marginBottom: "1.5rem",
             color: "white",
           }}>
-            Enterprise IT.{" "}
-            <span className="gradient-text">Managed</span>{" "}
-            <br />Perfectly.
+            {t("hero.titleStart")}{" "}
+            <span className="gradient-text">{t("hero.titleGradient")}</span>{" "}
+            <br />{t("hero.titleEnd")}
           </h1>
 
           <p style={{
@@ -94,15 +96,15 @@ export default function HeroSection() {
             color: "var(--color-neutral-400)", lineHeight: 1.7,
             marginBottom: "2.5rem", maxWidth: "560px",
           }}>
-            AI-powered managed IT services for businesses across the Dominican Republic, USA, Canada & Caribbean. 24/7 cybersecurity, cloud, and expert support.
+            {t("hero.subtitle")}
           </p>
 
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
             <button onClick={() => setBookingOpen(true)} className="btn-primary">
-              Get Free IT Assessment <ArrowRight size={16} />
+              {t("hero.ctaAssessment")} <ArrowRight size={16} />
             </button>
             <Link href="/services" className="btn-ghost">
-              Explore Services
+              {t("hero.ctaExplore")}
             </Link>
           </div>
 
@@ -111,10 +113,10 @@ export default function HeroSection() {
             flexWrap: "wrap",
           }}>
             {[
-              { val: "99.9%", label: "Uptime SLA" },
-              { val: "< 1hr", label: "Avg Response" },
-              { val: "150+", label: "Clients Served" },
-              { val: "10+", label: "Years Experience" },
+              { val: "99.9%", label: t("hero.uptime") },
+              { val: "< 1hr", label: t("hero.response") },
+              { val: "150+", label: t("hero.clients") },
+              { val: "10+", label: t("hero.experience") },
             ].map(stat => (
               <div key={stat.label}>
                 <div style={{
@@ -141,14 +143,14 @@ export default function HeroSection() {
               <Shield size={18} color="var(--color-success)" />
             </div>
             <div>
-              <div style={{ color: "white", fontWeight: 600, fontSize: "0.8125rem" }}>Security Status</div>
-              <div style={{ color: "var(--color-success)", fontSize: "0.7rem" }}>All systems secure</div>
+              <div style={{ color: "white", fontWeight: 600, fontSize: "0.8125rem" }}>{t("hero.securityStatus")}</div>
+              <div style={{ color: "var(--color-success)", fontSize: "0.7rem" }}>{t("hero.systemsSecure")}</div>
             </div>
           </div>
-          {["Firewall Active", "Threats Blocked: 847", "Last Scan: 2min ago"].map(t => (
-            <div key={t} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0" }}>
+          {[t("hero.firewall"), t("hero.threats"), t("hero.scan")].map(text => (
+            <div key={text} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0" }}>
               <span className="status-dot status-online" />
-              <span style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>{t}</span>
+              <span style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>{text}</span>
             </div>
           ))}
         </div>

@@ -1,35 +1,34 @@
-import type { Metadata } from "next";
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CTASection from "@/components/sections/CTASection";
-import { Globe, Target, Heart, Users, Award, Zap, Shield } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "About Us",
-  description: "Learn about Kool Tech Solutions — our story, mission, values, and the expert team delivering enterprise IT across the Dominican Republic, USA, Canada & Caribbean.",
-};
-
-const team = [
-  { name: "Daniel J Williams", title: "CEO & Founder", emoji: "👨‍💼", bio: "15+ years in enterprise IT. Former IT Director at a Fortune 500 company. Built KTS to bring world-class IT to Caribbean businesses." },
-];
-
-const values = [
-  { icon: Target, title: "Mission", color: "#00D4FF", desc: "To empower Caribbean and global businesses with enterprise-grade IT solutions that were previously only accessible to large corporations." },
-  { icon: Globe, title: "Vision", color: "#00E676", desc: "To become the most trusted IT Managed Service Provider in the Caribbean region, known for innovation, reliability, and exceptional client outcomes." },
-  { icon: Heart, title: "Values", color: "#FF4444", desc: "Integrity first. Client obsession. Continuous improvement. Accountability in every interaction, every ticket, every deployment." },
-];
-
-const milestones = [
-  { year: "2014", event: "Founded in Santiago, Dominican Republic" },
-  { year: "2016", event: "Expanded to 50+ clients" },
-  { year: "2018", event: "Launched Cybersecurity practice" },
-  { year: "2020", event: "Opened USA operations" },
-  { year: "2022", event: "Achieved 99.9% uptime SLA" },
-  { year: "2024", event: "Launched AI Workforce platform" },
-  { year: "2026", event: "150+ clients across 4 countries" },
-];
+import { Globe, Target, Heart } from "lucide-react";
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 export default function AboutPage() {
+  const { t } = useLanguage();
+
+  const values = [
+    { icon: Target, title: t("about.missionTitle"), color: "#00D4FF", desc: t("about.missionDesc") },
+    { icon: Globe, title: t("about.visionTitle"), color: "#00E676", desc: t("about.visionDesc") },
+    { icon: Heart, title: t("about.valuesTitle"), color: "#FF4444", desc: t("about.valuesDesc") },
+  ];
+
+  const milestones = [
+    { year: "2014", event: t("about.m2014") },
+    { year: "2016", event: t("about.m2016") },
+    { year: "2018", event: t("about.m2018") },
+    { year: "2020", event: t("about.m2020") },
+    { year: "2022", event: t("about.m2022") },
+    { year: "2024", event: t("about.m2024") },
+    { year: "2026", event: t("about.m2026") },
+  ];
+
+  const team = [
+    { name: "Daniel J Williams", title: "CEO & Founder", emoji: "👨‍💼", bio: t("about.teamBio") },
+  ];
+
   return (
     <>
       <Navbar />
@@ -37,12 +36,12 @@ export default function AboutPage() {
         {/* Hero */}
         <section style={{ padding: "5rem 0 4rem", background: "linear-gradient(180deg, rgba(15,32,68,0.5) 0%, transparent 100%)" }}>
           <div className="container" style={{ textAlign: "center" }}>
-            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>Our Story</div>
+            <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("about.storyBadge")}</div>
             <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3.5rem)", color: "white", marginBottom: "1rem" }}>
-              Built for the <span className="gradient-text">Caribbean. Built for the World.</span>
+              {t("about.titleStart")} <span className="gradient-text">{t("about.titleGradient")}</span>
             </h1>
             <p style={{ color: "var(--color-neutral-400)", maxWidth: "600px", margin: "0 auto", lineHeight: 1.8, fontSize: "1.0625rem" }}>
-              Kool Tech Solutions was founded with a simple but powerful belief: businesses in the Dominican Republic and the Caribbean deserve the same enterprise-grade IT infrastructure as companies in Silicon Valley.
+              {t("about.subtitle")}
             </p>
           </div>
         </section>
@@ -68,9 +67,9 @@ export default function AboutPage() {
         <section className="section" style={{ background: "rgba(10,22,40,0.4)" }}>
           <div className="container">
             <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>The Team</div>
+              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("about.teamBadge")}</div>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.5rem, 3vw, 2.25rem)", color: "white" }}>
-                Expert Engineers, <span className="gradient-text">Real Humans</span>
+                {t("about.teamTitle")} <span className="gradient-text">{t("about.teamGradient")}</span>
               </h2>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem" }}>
@@ -92,9 +91,9 @@ export default function AboutPage() {
         <section className="section">
           <div className="container">
             <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>Our Journey</div>
+              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("about.journeyBadge")}</div>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.5rem, 3vw, 2.25rem)", color: "white" }}>
-                A Decade of <span className="gradient-text">Growth</span>
+                {t("about.journeyTitle")} <span className="gradient-text">{t("about.journeyGradient")}</span>
               </h2>
             </div>
             <div className="timeline-container" style={{ position: "relative", maxWidth: "640px", margin: "0 auto" }}>

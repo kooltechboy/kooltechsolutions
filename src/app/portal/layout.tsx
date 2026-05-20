@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import NotificationHub from "@/components/shared/NotificationHub";
 import BookingModal from "@/components/shared/BookingModal";
+import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/portal" },
@@ -160,6 +161,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   <span style={{ color: "var(--color-neutral-300, #CBD5E1)", fontSize: "0.875rem" }}>{displayName}</span>
                   <ChevronDown size={14} color="var(--color-neutral-500)" />
                 </Link>
+                <LanguageSwitcher />
                 <button 
                   type="button"
                   onClick={(e) => {

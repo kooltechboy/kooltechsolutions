@@ -38,17 +38,31 @@ function LoginForm() {
     setLoading(true);
     setError(null);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     });
 
-    if (authError) {
+    if (authError || !data?.user) {
       // Return a generic message — do not leak whether the email exists
       setError("Invalid email or password. Please try again.");
       setLoading(false);
     } else {
-      router.push(redirect);
+      // Fetch user profile to determine role
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      // If no explicit redirect parameter was provided, route by role
+      let targetRoute = redirect;
+      const rawRedirect = searchParams.get("redirect");
+      if (!rawRedirect) {
+        targetRoute = profile?.role === "admin" ? "/admin" : "/portal";
+      }
+
+      router.push(targetRoute);
       router.refresh();
     }
   };
