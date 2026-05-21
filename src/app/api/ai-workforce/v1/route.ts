@@ -1,12 +1,10 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { google } from "@ai-sdk/google";
+import { streamText, tool } from "ai";
 import { createClient } from "@/utils/supabase/server";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { aiChatSchema } from "@/lib/validation";
-import {
-  validationError,
-  serverError,
-  rateLimitError,
-} from "@/lib/errors";
+import { validationError, serverError, rateLimitError } from "@/lib/errors";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -24,14 +22,10 @@ export async function POST(req: Request) {
 
     const { messages, agentName, agentRole, context } = parsed.data;
 
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    if (!apiKey) {
-      return serverError(new Error("AI API key not configured"), "ai-chat");
-    }
-
     // ── Portal/Admin agent auth check ──────────────────────────────────────────
-    // Cortex (portal) and Nexus (admin) agents require authentication.
     const restrictedAgents = ["Cortex", "Nexus"];
+    let userContext = null;
+    
     if (agentName && restrictedAgents.includes(agentName)) {
       const supabase = await createClient();
       const {
@@ -42,80 +36,155 @@ export async function POST(req: Request) {
         const { NextResponse } = await import("next/server");
         return NextResponse.json({ error: "Authentication required" }, { status: 401 });
       }
+      userContext = user;
     }
 
-    const systemInstruction = `You are ${agentName ?? "Kira"}, the ${agentRole ?? "AI Workforce"} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
+    // ── Persona & System Prompts ───────────────────────────────────────────────
+    let systemInstruction = `You are ${agentName ?? "Kira"}, the ${agentRole ?? "AI Workforce"} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
 Current page context: ${JSON.stringify(context ?? {})}
 
-PERSONALITY:
+CORE BEHAVIORS:
+1. Multilingual Support: You fluently understand and speak English and Spanish. Detect the user's language and respond naturally in the same language. If they switch, you switch.
+2. Guardrails: You ONLY provide support and scheduling for approved services (Managed IT, Cybersecurity, Cloud, Network Design, VoIP, IT Consulting). If asked about unrelated topics or non-supported tech, politely decline and steer the conversation back to our core offerings. Do not hallucinate capabilities.
+
+`;
+
+    if (agentName === "Aria") {
+      systemInstruction += `PERSONALITY:
+- Warm, hyper-organized, proactive. Upbeat professional female.
+- You are Aria, the Strategic Coordinator.
+
+CORE MISSION:
+- Your ONLY goal is to qualify the visitor and schedule a live demo.
+- Ask ONE question at a time. Do not write long paragraphs.
+- Gather their name, email, phone (optional), and what service they need.
+- Once you have enough info, you MUST verbally summarize the details and ask for explicit confirmation from the user ("Does this sound correct?") BEFORE executing the \`bookDemo\` tool.`;
+    } else if (agentName === "Cortex") {
+      systemInstruction += `PERSONALITY:
+- Analytical, precise, reassuring. Calm, authoritative male.
+- You are Cortex, L3 Support Engineer.
+
+CORE MISSION:
+- Help authenticated users troubleshoot issues.
+- Ask for error codes or symptoms. Be concise.
+- If the issue is complex or unresolvable immediately, use the \`createTicket\` tool to escalate to human engineers. Never guess a technical fix if unsure.`;
+    } else if (agentName === "Max") {
+      systemInstruction += `PERSONALITY:
+- Confident, highly technical, solution-oriented.
+- You are Max, Senior Solutions Architect.
+
+CORE MISSION:
+- Answer complex technical questions about cybersecurity, cloud, networking, and infrastructure.
+- Always recommend best-in-class enterprise solutions. Offer to connect them to a human engineer via \`bookDemo\` if they want to proceed.`;
+    } else {
+      systemInstruction += `PERSONALITY:
 - Professional, warm, and engaging — never robotic.
 - Use at most one subtle emoji per response.
 - Be proactive: ask clarifying questions to understand the visitor's needs.
 
-CORE MISSIONS:
-- Kira (Concierge): Greet visitors, understand their IT needs, capture lead info (name, email, company, interest).
-- Max (Architect): Answer complex technical questions about cybersecurity, cloud, networking, and infrastructure.
-- Aria (Coordinator): Help schedule consultations and demos, set appointments.
+CORE MISSION:
+- Greet visitors, understand their IT needs.
+- If they want to schedule a demo, use the \`bookDemo\` tool to book it for them.
+- Services we offer: Managed IT, Cybersecurity, Cloud, Network Design, VoIP, IT Consulting.`;
+    }
 
-SERVICES YOU OFFER:
-- Managed IT Services & 24/7 Help Desk
-- Cybersecurity (SIEM, SOC, Penetration Testing, Compliance)
-- Cloud Solutions (Microsoft 365, Azure, AWS, Google Workspace)
-- Network Design & Management
-- VoIP & Unified Communications
-- IT Consulting & Virtual CTO
-
-Always offer to connect the visitor with a KoolTech engineer for a free consultation. If they provide contact details, acknowledge that a team member will reach out.`;
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-flash-latest",
-      systemInstruction,
-      generationConfig: {
-        maxOutputTokens: 800,
-        temperature: 0.75,
-      },
-    });
-
-    // Build history (all messages except the last user message)
-    const history = messages
-      .slice(0, -1)
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .map((m) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }],
-      }));
-
-    const currentMessage = messages[messages.length - 1].content;
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessageStream(currentMessage);
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder();
-        try {
-          for await (const chunk of result.stream) {
-            const text = chunk.text();
-            if (text) {
-              controller.enqueue(encoder.encode(`0:${JSON.stringify(text)}\n`));
-            }
+    // ── Generate Response with Function Calling ────────────────────────────────
+    const result = streamText({
+      model: google("gemini-1.5-flash"),
+      system: systemInstruction,
+      messages,
+      maxSteps: 5, // allows the AI to call tools and respond with the result in the same stream
+      tools: {
+        bookDemo: tool({
+          description: "Schedule a live demo or consultation for a potential client.",
+          parameters: z.object({
+            name: z.string().describe("The client's full name"),
+            email: z.string().email().describe("The client's email address"),
+            phone: z.string().optional().describe("The client's phone number"),
+            service: z.string().describe("The service they are interested in (e.g., 'Cybersecurity', 'Live Demo')"),
+            date: z.string().describe("The date for the demo (e.g., 'Oct 15', 'Tomorrow')"),
+            time: z.string().describe("The time for the demo (e.g., '10:00 AM')"),
+            message: z.string().optional().describe("Any additional notes from the client"),
+          }),
+          execute: async (params) => {
+            const supabase = await createClient();
+            const first_name = params.name.split(" ")[0] || "Unknown";
+            const last_name = params.name.split(" ").slice(1).join(" ") || "-";
+            const bookingNote = `LIVE DEMO SCHEDULED: ${params.date} at ${params.time}`;
+            
+            const { data, error } = await supabase.from("leads").insert({
+              first_name,
+              last_name,
+              email: params.email,
+              phone: params.phone || null,
+              service_interest: params.service,
+              notes: `${bookingNote}\n\nClient Message: ${params.message || "None"}`,
+              status: "qualified"
+            }).select("id").single();
+            
+            if (error) return { success: false, error: error.message };
+            return { success: true, bookingId: data.id, message: "Demo booked successfully. Please inform the client." };
           }
-          controller.enqueue(encoder.encode(`d:{"finishReason":"stop"}\n`));
-          controller.close();
-        } catch (e: unknown) {
-          const message = e instanceof Error ? e.message : "Stream error";
-          console.error("[AI Chat] Stream error:", message);
-          controller.error(e);
-        }
-      },
+        }),
+        createTicket: tool({
+          description: "Create a support ticket for an authenticated user's issue.",
+          parameters: z.object({
+            subject: z.string().describe("A brief summary of the issue"),
+            description: z.string().describe("Detailed description of the problem"),
+            priority: z.enum(["low", "normal", "high", "critical"]).describe("The priority level of the ticket")
+          }),
+          execute: async (params) => {
+            if (!userContext) {
+              return { success: false, error: "User is not authenticated. Cannot create ticket." };
+            }
+            const supabase = await createClient();
+            const { data: clientRecord } = await supabase.from("clients").select("id").eq("user_id", userContext.id).single();
+            const client_id = clientRecord?.id ?? null;
+            
+            const { data, error } = await supabase.from("tickets").insert({
+              subject: params.subject,
+              description: params.description,
+              priority: params.priority,
+              client_id,
+              status: "open"
+            }).select("id").single();
+            
+            if (error) return { success: false, error: error.message };
+            return { success: true, ticketId: data.id, message: `Ticket created successfully with ID ${data.id}. Provide this ID to the user.` };
+          }
+        }),
+        checkAvailability: tool({
+          description: "Check if a specific date has any booked slots.",
+          parameters: z.object({
+            date: z.string().describe("The date to check (e.g., 'Oct 15')")
+          }),
+          execute: async ({ date }) => {
+            const supabase = await createClient();
+            const { data, error } = await supabase.from("leads").select("notes").ilike("notes", `%LIVE DEMO SCHEDULED: ${date}%`);
+            if (error) return { bookedSlots: [] };
+            const bookedSlots = data.map((lead) => {
+              const match = lead.notes?.match(/at\s+(.+)$/m);
+              return match ? match[1].trim() : null;
+            }).filter(Boolean);
+            return { bookedSlots };
+          }
+        }),
+        checkTicketStatus: tool({
+          description: "Check the status of an existing support ticket by ID.",
+          parameters: z.object({
+            ticketId: z.string().describe("The ticket ID to lookup")
+          }),
+          execute: async ({ ticketId }) => {
+            const supabase = await createClient();
+            const { data, error } = await supabase.from("tickets").select("status, subject").eq("id", ticketId).single();
+            if (error) return { success: false, error: "Ticket not found or error occurred: " + error.message };
+            return { success: true, status: data.status, subject: data.subject };
+          }
+        })
+      }
     });
 
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "X-Vercel-AI-Data-Stream": "v1",
-      },
-    });
+    return result.toDataStreamResponse();
   } catch (err) {
     return serverError(err, "ai-chat");
   }

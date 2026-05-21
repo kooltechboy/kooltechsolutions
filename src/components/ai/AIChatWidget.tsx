@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Mic, MicOff, Send, Bot, ChevronDown, Sparkles, RotateCcw, Shield, Zap, Calendar, Activity, TrendingUp } from "lucide-react";
+import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles, RotateCcw, Shield, Zap, Calendar, Activity, TrendingUp, Phone, PhoneOff } from "lucide-react";
 import { useChat } from '@ai-sdk/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// LiveKit Imports
+import { LiveKitRoom, RoomAudioRenderer, VoiceAssistantControlBar, BarVisualizer, useVoiceAssistant } from '@livekit/components-react';
+import "@livekit/components-styles";
 
 const AGENTS = {
   home: { 
@@ -58,6 +62,35 @@ const AGENTS = {
   },
 };
 
+// Voice Assistant Internal UI
+function VoiceAssistantUI({ agentColor }: { agentColor: string }) {
+  const { state, audioTrack } = useVoiceAssistant();
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-6 space-y-8 bg-slate-900/60 rounded-2xl">
+      <div className="text-center space-y-2">
+        <h3 className="text-xl font-bold text-white tracking-tight">Voice Connection Active</h3>
+        <p className="text-sm text-slate-400">Speak naturally. The agent will listen and respond.</p>
+      </div>
+      
+      <div className="h-32 w-full max-w-[200px] flex items-center justify-center bg-black/20 rounded-3xl border border-white/5 shadow-inner">
+        <BarVisualizer 
+          state={state}
+          barCount={7}
+          trackRef={audioTrack}
+          options={{ minHeight: 10 }}
+          style={{ width: '100%', height: '80%' }}
+        />
+      </div>
+
+      <div className="text-xs uppercase tracking-widest font-black" style={{ color: agentColor }}>
+        {state === 'listening' ? 'Listening...' : state === 'speaking' ? 'Agent Speaking...' : 'Connected'}
+      </div>
+      
+      <VoiceAssistantControlBar />
+    </div>
+  );
+}
+
 export default function AIChatWidget() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -65,6 +98,11 @@ export default function AIChatWidget() {
   const [hasProactivelyOpened, setHasProactivelyOpened] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // Voice Mode State
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [livekitToken, setLivekitToken] = useState("");
+  const [isConnectingVoice, setIsConnectingVoice] = useState(false);
+
   const [sessionId] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem("kts_ai_session_id") || crypto.randomUUID();
@@ -76,7 +114,6 @@ export default function AIChatWidget() {
     if (sessionId) localStorage.setItem("kts_ai_session_id", sessionId);
   }, [sessionId]);
 
-  // Determine current agent based on route
   const getAgent = () => {
     if (pathname.includes('/admin')) return AGENTS.admin;
     if (pathname.includes('/portal')) return AGENTS.portal;
@@ -104,12 +141,9 @@ export default function AIChatWidget() {
       console.error('Neural Handshake Error:', err);
     },
     onFinish: (message) => {
-      // Save to persistence
       localStorage.setItem(`kts_messages_${sessionId}`, JSON.stringify([...messages, message]));
     }
   });
-
-  // isLoading is directly provided by useChat
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -123,7 +157,6 @@ export default function AIChatWidget() {
     setInput("");
   };
 
-  // Load persistence
   useEffect(() => {
     const saved = localStorage.getItem(`kts_messages_${sessionId}`);
     if (saved) {
@@ -138,12 +171,9 @@ export default function AIChatWidget() {
     }
   }, [sessionId, setMessages]);
 
-  // Proactive Engagement
   useEffect(() => {
     if (!hasProactivelyOpened) {
-      console.log('Neural Gateway: Initializing 20s proactive countdown...');
       const timer = setTimeout(() => {
-        console.log('Neural Gateway: Proactive engagement triggered.');
         setOpen(true);
         setHasProactivelyOpened(true);
       }, 20000); 
@@ -151,67 +181,41 @@ export default function AIChatWidget() {
     }
   }, [hasProactivelyOpened]);
 
-  // Voice Recognition
-  interface SpeechRecognitionEvent {
-    results: {
-      [index: number]: {
-        [index: number]: {
-          transcript: string;
-        };
-      };
-    };
-  }
-
-  interface SpeechRecognitionInstance {
-    continuous: boolean;
-    interimResults: boolean;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
-    onerror: (() => void) | null;
-    onend: (() => void) | null;
-    start: () => void;
-    stop: () => void;
-  }
-
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      const SpeechRecognitionConstructor = (window as unknown as Record<string, new () => SpeechRecognitionInstance>).SpeechRecognition || 
-                                           (window as unknown as Record<string, new () => SpeechRecognitionInstance>).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognitionConstructor();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-
-      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onerror = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    }
-  }, []);
-
-  const toggleVoice = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-    } else {
-      setIsListening(true);
-      recognitionRef.current?.start();
-    }
-  };
-
-  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Handle Voice Connection
+  const toggleVoiceMode = async () => {
+    if (voiceMode) {
+      setVoiceMode(false);
+      setLivekitToken("");
+    } else {
+      setIsConnectingVoice(true);
+      try {
+        const res = await fetch('/api/livekit/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            roomName: `room-${sessionId}`, 
+            participantName: 'Visitor',
+            agentName: agent.name
+          })
+        });
+        const data = await res.json();
+        if (data.token) {
+          setLivekitToken(data.token);
+          setVoiceMode(true);
+        } else {
+          console.error("Failed to get token:", data.error);
+        }
+      } catch (e) {
+        console.error("Voice connect error:", e);
+      } finally {
+        setIsConnectingVoice(false);
+      }
+    }
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end pointer-events-none">
@@ -246,6 +250,13 @@ export default function AIChatWidget() {
               </div>
               <div className="flex items-center gap-1">
                 <button 
+                  onClick={toggleVoiceMode}
+                  className={`p-2 transition-all rounded-lg ${voiceMode ? 'text-blue-400 bg-blue-400/10' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                  title={voiceMode ? "Switch to Text" : "Switch to Voice"}
+                >
+                  {isConnectingVoice ? <Activity className="animate-spin" size={16} /> : voiceMode ? <PhoneOff size={16} /> : <Phone size={16} />}
+                </button>
+                <button 
                   onClick={() => {
                     localStorage.removeItem(`kts_messages_${sessionId}`);
                     setMessages([{ id: 'initial', role: 'assistant', content: agent.greeting }]);
@@ -264,8 +275,22 @@ export default function AIChatWidget() {
               </div>
             </div>
 
-            {/* Messages Area */}
-            {!minimized && (
+            {/* Voice or Text Area */}
+            {!minimized && voiceMode && livekitToken ? (
+              <div className="flex-1 p-5 bg-slate-900/40 relative">
+                <LiveKitRoom
+                  serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+                  token={livekitToken}
+                  connect={true}
+                  audio={true}
+                  video={false}
+                  className="h-full w-full"
+                >
+                  <VoiceAssistantUI agentColor={agent.color} />
+                  <RoomAudioRenderer />
+                </LiveKitRoom>
+              </div>
+            ) : !minimized && (
               <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar bg-slate-900/40">
                 {messages.map((m) => (
                   <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -302,25 +327,24 @@ export default function AIChatWidget() {
               </div>
             )}
 
-            {/* Input Area */}
-            {!minimized && (
+            {/* Input Area (Text Mode Only) */}
+            {!minimized && !voiceMode && (
               <div className="p-5 border-t border-white/10 bg-white/5">
                 <form onSubmit={handleSubmit} className="relative flex gap-2">
                   <div className="relative flex-1">
                     <input
                       value={input}
                       onChange={handleInputChange}
-                      placeholder={isListening ? "Listening..." : "Message our workforce..."}
+                      placeholder="Message our workforce..."
                       className="w-full bg-slate-900/80 border border-white/10 rounded-2xl py-3.5 pl-5 pr-12 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all placeholder:text-slate-500 shadow-inner"
                     />
                     <button
                       type="button"
-                      onClick={toggleVoice}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all ${
-                        isListening ? 'text-red-400 bg-red-400/10' : 'text-slate-400 hover:text-blue-400'
-                      }`}
+                      onClick={toggleVoiceMode}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all text-slate-400 hover:text-blue-400`}
+                      title="Switch to Voice Mode"
                     >
-                      {isListening ? <MicOff size={18} className="animate-pulse" /> : <Mic size={18} />}
+                      <Mic size={18} />
                     </button>
                   </div>
                   <button
@@ -364,3 +388,4 @@ export default function AIChatWidget() {
     </div>
   );
 }
+
