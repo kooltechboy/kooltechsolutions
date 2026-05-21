@@ -1,19 +1,79 @@
 "use client";
-import { useState } from "react";
-import { serviceCatalog } from "@/data/services";
+import { useState, useEffect, useCallback } from "react";
 import * as Icons from "lucide-react";
-import { Search, ChevronRight, Plus } from "lucide-react";
+import { Search, ChevronRight, Plus, Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+
+interface ServiceItem {
+  id: string;
+  name: string;
+  code: string;
+  price: string;
+  priceType: string;
+  priority: string;
+  description: string;
+}
+
+interface ServiceCategory {
+  name: string;
+  description: string;
+  icon: string;
+  services: ServiceItem[];
+}
 
 export default function ServicesPage() {
   const [search, setSearch] = useState("");
+  const [catalog, setCatalog] = useState<ServiceCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  const filteredCatalog = serviceCatalog.map(cat => ({
+  const fetchCatalog = useCallback(async () => {
+    const { data } = await supabase.from("service_catalog").select("*").order("category");
+    if (data) {
+      const grouped = data.reduce((acc: Record<string, ServiceCategory>, item) => {
+        if (!acc[item.category]) {
+          acc[item.category] = {
+            name: item.category,
+            description: item.category_description || "",
+            icon: item.category_icon || "HelpCircle",
+            services: []
+          };
+        }
+        acc[item.category].services.push({
+          id: item.id,
+          name: item.name,
+          code: item.code || "",
+          price: item.price || "",
+          priceType: item.price_type || "per month",
+          priority: item.priority || "Normal",
+          description: item.description || ""
+        });
+        return acc;
+      }, {});
+      setCatalog(Object.values(grouped));
+    }
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchCatalog();
+  }, [fetchCatalog]);
+
+  const filteredCatalog = catalog.map(cat => ({
     ...cat,
     services: cat.services.filter(s => 
       s.name.toLowerCase().includes(search.toLowerCase()) || 
       cat.name.toLowerCase().includes(search.toLowerCase())
     )
   })).filter(cat => cat.services.length > 0);
+
+  if (loading) {
+    return (
+      <div style={{ height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -37,10 +97,10 @@ export default function ServicesPage() {
             className="input-field"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ paddingLeft: "3rem", borderRadius: "12px" }}
+            style={{ paddingLeft: "3rem", borderRadius: "12px", width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", color: "white", outline: "none", padding: "0.75rem 1rem 0.75rem 3rem" }}
           />
         </div>
-        <button className="btn-primary" style={{ padding: "0 1.5rem", borderRadius: "12px" }}>
+        <button className="btn-primary" style={{ padding: "0 1.5rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700 }}>
           <Plus size={18} /> New Service
         </button>
       </div>
@@ -123,10 +183,10 @@ export default function ServicesPage() {
               </div>
 
               <div style={{ marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1rem", display: "flex", gap: "0.75rem" }}>
-                <button className="btn-secondary" style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", fontSize: "0.75rem" }}>
+                <button className="btn-secondary" style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", fontSize: "0.75rem", background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.1)" }}>
                   Manage Category
                 </button>
-                <button className="btn-primary" style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", fontSize: "0.75rem" }}>
+                <button className="btn-primary" style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", fontSize: "0.75rem", border: "none", color: "white" }}>
                   Add Service
                 </button>
               </div>
