@@ -1,4 +1,5 @@
 import { WorkerOptions, cli, defineAgent, llm } from '@livekit/agents';
+// @ts-ignore
 import { multimodal } from '@livekit/agents-plugin-google';
 import * as dotenv from 'dotenv';
 import path from 'path';
@@ -74,7 +75,46 @@ export default defineAgent({
     await ctx.connect();
     console.log(`[Agent] Connected to room: ${ctx.room.name}`);
 
-    const systemInstruction = `You are the AI Voice Workforce for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean. 
+    // Wait briefly for the remote participant's metadata to sync if needed
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Extract agentName from the participant who requested the token
+    let agentName = 'Kira';
+    for (const p of ctx.room.remoteParticipants.values()) {
+      if (p.metadata) {
+        try {
+          const meta = JSON.parse(p.metadata);
+          if (meta.agentName) agentName = meta.agentName;
+        } catch (e) {}
+      }
+    }
+
+    console.log(`[Agent] Booting persona: ${agentName}`);
+
+    // Map personas to voices and specific roles
+    let voiceName = 'Aoede'; // Default female
+    let agentRole = 'AI Workforce';
+    let roleInstructions = '';
+
+    if (agentName === 'Aria') {
+      voiceName = 'Kore'; // Warm female voice
+      agentRole = 'Strategic Coordinator';
+      roleInstructions = `Your ONLY goal is to qualify the visitor and schedule a live demo. Ask ONE question at a time. Do not write long paragraphs. Gather their name, email, phone (optional), and what service they need.`;
+    } else if (agentName === 'Cortex') {
+      voiceName = 'Puck'; // Confident male voice
+      agentRole = 'L3 Support Engineer';
+      roleInstructions = `Help authenticated users troubleshoot issues. Ask for error codes or symptoms. Be concise. If the issue is complex, use the createTicket tool to escalate to human engineers. Never guess a technical fix if unsure.`;
+    } else if (agentName === 'Max') {
+      voiceName = 'Charon'; // Deep authoritative male voice
+      agentRole = 'Senior Solutions Architect';
+      roleInstructions = `Answer complex technical questions about cybersecurity, cloud, networking, and infrastructure. Always recommend best-in-class enterprise solutions. Offer to connect them to a human engineer via bookDemo.`;
+    } else {
+      voiceName = 'Aoede'; // Bright female voice
+      agentRole = 'Executive Concierge';
+      roleInstructions = `Greet visitors and understand their IT needs. If they want to schedule a demo, use the bookDemo tool to book it for them.`;
+    }
+
+    const systemInstruction = `You are ${agentName}, the ${agentRole} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean. 
 
 CORE BEHAVIORS:
 1. Multilingual Support: You fluently understand and speak English and Spanish. Detect the user's language and respond naturally in the same language. If they switch, you switch.
@@ -82,7 +122,8 @@ CORE BEHAVIORS:
 3. Tool Confirmation (R03 Mitigation): BEFORE executing the bookDemo tool, you MUST verbally summarize the details (Name, Service, Date, Time) and ask the user to explicitly confirm ("Does this sound correct?").
 4. Conversational Voice: You are speaking aloud, not typing. Do not use markdown, bullet points, or long lists. Keep sentences brief. Pause naturally.
 
-Your goal is to converse naturally with the user, answer technical questions, and schedule live demos using your tools.`;
+ROLE SPECIFIC INSTRUCTIONS:
+${roleInstructions}`;
     
     // Start the Gemini Live API multimodal agent
     const agent = new multimodal.MultimodalAgent({
@@ -90,8 +131,15 @@ Your goal is to converse naturally with the user, answer technical questions, an
       fncCtx: new AgentTools(),
     });
 
-    // We can update the system prompt through session options if instructions aren't provided directly
-    // agent.updateSessionOptions({ systemInstruction });
+    // We can update the system prompt and voice config dynamically
+    agent.updateSessionOptions({ 
+      systemInstruction,
+      voice: {
+        prebuiltVoiceConfig: {
+          voiceName: voiceName
+        }
+      }
+    });
 
     agent.on('user_started_speaking', () => {
       console.log('[Agent] User started speaking');
