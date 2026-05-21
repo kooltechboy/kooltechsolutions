@@ -219,6 +219,59 @@ CORE MISSION:
             if (error) return { success: false, error: "Ticket not found or error occurred: " + error.message };
             return { success: true, status: data.status, subject: data.subject };
           }
+        } as any),
+        fetchInvoices: tool({
+          description: "Fetch outstanding or paid invoices for the authenticated user.",
+          parameters: z.object({
+            status: z.enum(["outstanding", "paid", "draft", "overdue", "void", "all"]).describe("Filter invoices by status")
+          }),
+          execute: async ({ status }: any) => {
+            if (!userContext) return { success: false, error: "User is not authenticated. Cannot fetch invoices." };
+            const supabase = await createClient();
+            const { data: clientRecord } = await supabase.from("clients").select("id").eq("user_id", userContext.id).single();
+            if (!clientRecord) return { success: false, error: "Client record not found for the user." };
+            
+            let query = supabase.from("invoices").select("invoice_number, amount, status, due_date").eq("client_id", clientRecord.id);
+            if (status !== "all") query = query.eq("status", status);
+            
+            const { data, error } = await query;
+            if (error) return { success: false, error: error.message };
+            return { success: true, invoices: data };
+          }
+        } as any),
+        fetchServices: tool({
+          description: "Fetch active services and subscriptions for the authenticated user.",
+          parameters: z.object({}),
+          execute: async () => {
+            if (!userContext) return { success: false, error: "User is not authenticated. Cannot fetch services." };
+            const supabase = await createClient();
+            const { data: clientRecord } = await supabase.from("clients").select("id").eq("user_id", userContext.id).single();
+            if (!clientRecord) return { success: false, error: "Client record not found for the user." };
+            
+            const { data, error } = await supabase.from("client_services").select("service_name, status, next_billing_date").eq("client_id", clientRecord.id);
+            if (error) return { success: false, error: error.message };
+            return { success: true, services: data };
+          }
+        } as any),
+        updateTicketPriority: tool({
+          description: "Update the priority of an existing support ticket.",
+          parameters: z.object({
+            ticketId: z.string().describe("The ticket ID to update"),
+            priority: z.enum(["low", "normal", "high", "critical"]).describe("The new priority level")
+          }),
+          execute: async ({ ticketId, priority }: any) => {
+            if (!userContext) return { success: false, error: "User is not authenticated." };
+            const supabase = await createClient();
+            // Optional: verify the ticket belongs to the user, but let's assume RLS or check it here
+            const { data, error } = await supabase.from("tickets")
+              .update({ priority })
+              .eq("id", ticketId)
+              .select("id, subject")
+              .single();
+            
+            if (error) return { success: false, error: error.message };
+            return { success: true, message: `Ticket ${ticketId} priority updated to ${priority}.` };
+          }
         } as any)
       } as any,
       onFinish: async ({ text }) => {

@@ -1,117 +1,712 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Search, Bot, User, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Search,
+  Bot,
+  User,
+  Clock,
+  MessageSquare,
+  BarChart3,
+  CalendarCheck,
+  Ticket,
+  Activity,
+  RefreshCcw,
+  ChevronRight,
+  Sparkles,
+  Phone,
+} from "lucide-react";
 
-const MOCK_SESSIONS = [
-  { id: 'sess_9f8a', date: 'Today, 2:45 PM', status: 'resolved', messageCount: 8, summary: 'Inquired about Gold Managed IT pricing.' },
-  { id: 'sess_2b4c', date: 'Today, 11:20 AM', status: 'escalated', messageCount: 4, summary: 'Requested help with a downed firewall.' },
-  { id: 'sess_7c11', date: 'Yesterday, 4:15 PM', status: 'resolved', messageCount: 6, summary: 'Asked about cybersecurity compliance for healthcare.' },
-  { id: 'sess_1a99', date: 'Yesterday, 9:00 AM', status: 'abandoned', messageCount: 2, summary: 'Dropped off after greeting.' },
-];
+interface SessionInfo {
+  id: string;
+  agent: string;
+  messageCount: number;
+  firstMessage: string;
+  lastMessage: string;
+  lastContent: string;
+  firstUserMessage: string;
+}
 
-const MOCK_CONVERSATION = [
-  { role: 'agent', content: 'Hi! I\'m Kira, your AI assistant at Kool Tech Solutions. How can I help you today?', time: '2:45 PM' },
-  { role: 'user', content: 'We are a small medical clinic looking for IT support. Do you handle compliance?', time: '2:46 PM' },
-  { role: 'agent', content: 'Yes, we specialize in healthcare IT and full HIPAA compliance. Our cybersecurity stack includes 24/7 monitoring, secure data backups, and endpoint protection. Would you like to see our pricing tiers?', time: '2:46 PM' },
-  { role: 'user', content: 'Yes, what does the Gold plan include?', time: '2:48 PM' },
-  { role: 'agent', content: 'Our Gold Plan ($999/mo) is our most comprehensive tier. It includes 24/7 Helpdesk, Advanced Wazuh Threat Monitoring, automated patching, quarterly vCIO strategy meetings, and full compliance auditing. Should I have a specialist call you to discuss your specific clinic\'s needs?', time: '2:48 PM' },
-];
+interface TranscriptEntry {
+  role: "user" | "agent";
+  content: string;
+  agent_name: string;
+  created_at: string;
+}
 
-export default function AILogsPage() {
-  const [activeSession, setActiveSession] = useState(MOCK_SESSIONS[0]);
+interface Analytics {
+  totalSessions: number;
+  totalMessages: number;
+  todaySessions: number;
+  todayMessages: number;
+  bookingsTriggered: number;
+  ticketsCreated: number;
+  avgMessagesPerSession: number;
+  messagesPerAgent: Array<{
+    agent: string;
+    totalMessages: number;
+    sessions: number;
+  }>;
+}
 
+function formatTime(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHrs / 24);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatFullTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+const AGENT_COLORS: Record<string, string> = {
+  Kira: "#00D4FF",
+  Aria: "#FFB300",
+  Max: "#00E676",
+  Cortex: "#00D4FF",
+  Nexus: "#a855f7",
+};
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  accent: string;
+}) {
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 64px)", background: "#f8fafc" }}>
-      
-      {/* Left Sidebar: Sessions List */}
-      <div style={{ width: "380px", background: "rgba(10,22,40,0.8)", borderRight: "1px solid var(--color-neutral-200)", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "white", fontFamily: "Syne, sans-serif" }}>AI Agent Logs</h1>
-          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem", marginTop: "0.25rem", marginBottom: "1.25rem" }}>Monitor Kira&apos;s conversations with leads.</p>
-          
-          <div style={{ position: "relative" }}>
-            <Search size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-neutral-400)" }} />
-            <input 
-              type="text" 
-              placeholder="Search conversations..." 
-              style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.5rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", outline: "none", fontSize: "0.875rem" }}
-            />
-          </div>
+    <div
+      style={{
+        background: "rgba(10,22,40,0.6)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: "16px",
+        padding: "1.25rem",
+        display: "flex",
+        alignItems: "center",
+        gap: "1rem",
+        flex: 1,
+        minWidth: "160px",
+      }}
+    >
+      <div
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: "12px",
+          background: `${accent}15`,
+          border: `1px solid ${accent}30`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Icon size={20} color={accent} />
+      </div>
+      <div>
+        <div
+          style={{
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            color: "white",
+            lineHeight: 1,
+            fontFamily: "Syne, sans-serif",
+          }}
+        >
+          {value}
         </div>
-
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {MOCK_SESSIONS.map(session => (
-            <div 
-              key={session.id}
-              onClick={() => setActiveSession(session)}
-              style={{ 
-                padding: "1.25rem", 
-                borderBottom: "1px solid rgba(0,212,255,0.05)", 
-                cursor: "pointer",
-                background: activeSession.id === session.id ? "rgba(0,212,255,0.05)" : "transparent",
-                borderLeft: activeSession.id === session.id ? "3px solid var(--color-accent-500)" : "3px solid transparent",
-                transition: "background 0.2s"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-                <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "white" }}>Session {session.id}</span>
-                <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", display: "flex", alignItems: "center", gap: "0.25rem" }}><Clock size={12}/> {session.date}</span>
-              </div>
-              <div style={{ fontSize: "0.8125rem", color: "var(--color-neutral-400)", lineHeight: 1.4, marginBottom: "0.75rem" }}>
-                {session.summary}
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "0.7rem", color: "var(--color-neutral-500)", background: "rgba(0,212,255,0.1)", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
-                  {session.messageCount} messages
-                </span>
-                {session.status === 'resolved' && <span style={{ color: "#10b981", display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", fontWeight: 600 }}><CheckCircle2 size={12} /> Resolved</span>}
-                {session.status === 'escalated' && <span style={{ color: "#ef4444", display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", fontWeight: 600 }}><AlertCircle size={12} /> Escalated</span>}
-              </div>
-            </div>
-          ))}
+        <div
+          style={{
+            fontSize: "0.7rem",
+            color: "rgba(148,163,184,0.8)",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            fontWeight: 700,
+            marginTop: "0.25rem",
+          }}
+        >
+          {label}
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Right Content: Conversation Viewer */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(0,212,255,0.1)", background: "rgba(10,22,40,0.8)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "white" }}>Transcript: {activeSession.id}</h2>
-            <div style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>Recorded {activeSession.date}</div>
+export default function AILogsPage() {
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [activeSession, setActiveSession] = useState<string | null>(null);
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadingTranscript, setLoadingTranscript] = useState(false);
+
+  const fetchSessions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+      const res = await fetch(`/api/admin/ai-sessions?limit=100${searchParam}`);
+      const data = await res.json();
+      if (data.sessions) setSessions(data.sessions);
+    } catch (e) {
+      console.error("Failed to fetch sessions:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [search]);
+
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/ai-analytics");
+      const data = await res.json();
+      if (!data.error) setAnalytics(data);
+    } catch (e) {
+      console.error("Failed to fetch analytics:", e);
+    }
+  }, []);
+
+  const fetchTranscript = useCallback(async (sessionId: string) => {
+    setLoadingTranscript(true);
+    setActiveSession(sessionId);
+    try {
+      const res = await fetch(
+        `/api/admin/ai-sessions?sessionId=${encodeURIComponent(sessionId)}`
+      );
+      const data = await res.json();
+      if (data.transcript) setTranscript(data.transcript);
+    } catch (e) {
+      console.error("Failed to fetch transcript:", e);
+    } finally {
+      setLoadingTranscript(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSessions();
+    fetchAnalytics();
+  }, [fetchSessions, fetchAnalytics]);
+
+  // Auto-select first session
+  useEffect(() => {
+    if (sessions.length > 0 && !activeSession) {
+      fetchTranscript(sessions[0].id);
+    }
+  }, [sessions, activeSession, fetchTranscript]);
+
+  const activeSessionData = sessions.find((s) => s.id === activeSession);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 64px)",
+        background: "#070f1e",
+      }}
+    >
+      {/* Stats Row */}
+      <div
+        style={{
+          padding: "1.25rem 1.5rem",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          display: "flex",
+          gap: "0.75rem",
+          overflowX: "auto",
+        }}
+      >
+        <StatCard
+          icon={MessageSquare}
+          label="Sessions Today"
+          value={analytics?.todaySessions ?? "—"}
+          accent="#00D4FF"
+        />
+        <StatCard
+          icon={Activity}
+          label="Messages Today"
+          value={analytics?.todayMessages ?? "—"}
+          accent="#00E676"
+        />
+        <StatCard
+          icon={BarChart3}
+          label="Total Sessions"
+          value={analytics?.totalSessions ?? "—"}
+          accent="#a855f7"
+        />
+        <StatCard
+          icon={CalendarCheck}
+          label="Demos Booked"
+          value={analytics?.bookingsTriggered ?? "—"}
+          accent="#FFB300"
+        />
+        <StatCard
+          icon={Ticket}
+          label="Tickets Created"
+          value={analytics?.ticketsCreated ?? "—"}
+          accent="#ef4444"
+        />
+        <StatCard
+          icon={Sparkles}
+          label="Avg Msgs/Session"
+          value={analytics?.avgMessagesPerSession ?? "—"}
+          accent="#06b6d4"
+        />
+      </div>
+
+      {/* Main Content */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        {/* Left Sidebar: Sessions List */}
+        <div
+          style={{
+            width: "380px",
+            background: "rgba(10,22,40,0.5)",
+            borderRight: "1px solid rgba(255,255,255,0.06)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              padding: "1.25rem",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+            }}
+          >
+            <div style={{ position: "relative", flex: 1 }}>
+              <Search
+                size={15}
+                style={{
+                  position: "absolute",
+                  left: "0.85rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "rgba(148,163,184,0.5)",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search sessions..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && fetchSessions()}
+                style={{
+                  width: "100%",
+                  padding: "0.6rem 1rem 0.6rem 2.4rem",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(0,0,0,0.3)",
+                  outline: "none",
+                  fontSize: "0.8125rem",
+                  color: "white",
+                }}
+              />
+            </div>
+            <button
+              onClick={() => {
+                fetchSessions();
+                fetchAnalytics();
+              }}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "12px",
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(0,0,0,0.3)",
+                color: "rgba(148,163,184,0.7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+              title="Refresh"
+            >
+              <RefreshCcw size={15} />
+            </button>
           </div>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--color-neutral-300)", background: "rgba(10,22,40,0.8)", color: "white", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}>Export Log</button>
-            <button className="btn-primary" style={{ padding: "0.5rem 1rem", fontSize: "0.875rem" }}>Takeover Chat</button>
+
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {loading ? (
+              <div
+                style={{
+                  padding: "3rem",
+                  textAlign: "center",
+                  color: "rgba(148,163,184,0.5)",
+                  fontSize: "0.875rem",
+                }}
+              >
+                Loading sessions...
+              </div>
+            ) : sessions.length === 0 ? (
+              <div
+                style={{
+                  padding: "3rem",
+                  textAlign: "center",
+                  color: "rgba(148,163,184,0.5)",
+                  fontSize: "0.875rem",
+                }}
+              >
+                No sessions found.
+                <br />
+                <span style={{ fontSize: "0.75rem" }}>
+                  AI conversations will appear here once visitors start chatting.
+                </span>
+              </div>
+            ) : (
+              sessions.map((session) => (
+                <div
+                  key={session.id}
+                  onClick={() => fetchTranscript(session.id)}
+                  style={{
+                    padding: "1rem 1.25rem",
+                    borderBottom: "1px solid rgba(255,255,255,0.03)",
+                    cursor: "pointer",
+                    background:
+                      activeSession === session.id
+                        ? "rgba(0,212,255,0.06)"
+                        : "transparent",
+                    borderLeft:
+                      activeSession === session.id
+                        ? `3px solid ${AGENT_COLORS[session.agent] || "#00D4FF"}`
+                        : "3px solid transparent",
+                    transition: "background 0.15s",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "0.4rem",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span
+                        style={{
+                          fontSize: "0.65rem",
+                          fontWeight: 800,
+                          color: AGENT_COLORS[session.agent] || "#00D4FF",
+                          background: `${AGENT_COLORS[session.agent] || "#00D4FF"}15`,
+                          padding: "0.15rem 0.5rem",
+                          borderRadius: "6px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        {session.agent}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          color: "rgba(255,255,255,0.7)",
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {session.id.substring(0, 8)}…
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "rgba(148,163,184,0.5)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem",
+                      }}
+                    >
+                      <Clock size={10} />
+                      {formatTime(session.lastMessage)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.8rem",
+                      color: "rgba(148,163,184,0.7)",
+                      lineHeight: 1.4,
+                      marginBottom: "0.4rem",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {session.firstUserMessage || session.lastContent || "No messages"}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.65rem",
+                        color: "rgba(148,163,184,0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                      }}
+                    >
+                      <MessageSquare size={10} />
+                      {session.messageCount} messages
+                    </span>
+                    <ChevronRight size={12} color="rgba(148,163,184,0.3)" />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "2rem", background: "#f8fafc", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          {MOCK_CONVERSATION.map((msg, i) => (
-            <div key={i} style={{ display: "flex", gap: "1rem", flexDirection: msg.role === 'user' ? "row-reverse" : "row" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: msg.role === 'user' ? "var(--color-neutral-200)" : "rgba(0,212,255,0.1)", border: msg.role === 'agent' ? "1px solid rgba(0,212,255,0.3)" : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {msg.role === 'user' ? <User size={18} color="var(--color-neutral-600)" /> : <Bot size={18} color="var(--color-accent-600)" />}
+        {/* Right Content: Transcript Viewer */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            background: "#0a1628",
+          }}
+        >
+          {activeSession && activeSessionData ? (
+            <>
+              {/* Transcript Header */}
+              <div
+                style={{
+                  padding: "1rem 1.5rem",
+                  borderBottom: "1px solid rgba(255,255,255,0.06)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  background: "rgba(10,22,40,0.4)",
+                }}
+              >
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      color: "white",
+                      fontFamily: "Syne, sans-serif",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <Bot
+                      size={18}
+                      color={AGENT_COLORS[activeSessionData.agent] || "#00D4FF"}
+                    />
+                    {activeSessionData.agent} — Session Transcript
+                  </h2>
+                  <div
+                    style={{
+                      color: "rgba(148,163,184,0.5)",
+                      fontSize: "0.75rem",
+                      marginTop: "0.2rem",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {activeSessionData.id} · {activeSessionData.messageCount}{" "}
+                    messages · Started{" "}
+                    {new Date(activeSessionData.firstMessage).toLocaleDateString()}{" "}
+                    {formatFullTime(activeSessionData.firstMessage)}
+                  </div>
+                </div>
+                {activeSessionData.agent === "Aria" && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      color: "#FFB300",
+                      background: "rgba(255,179,0,0.1)",
+                      padding: "0.35rem 0.75rem",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255,179,0,0.2)",
+                    }}
+                  >
+                    <Phone size={12} />
+                    APPOINTMENT SETTER
+                  </div>
+                )}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: msg.role === 'user' ? "flex-end" : "flex-start" }}>
-                <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)", marginBottom: "0.25rem", fontWeight: 600 }}>
-                  {msg.role === 'user' ? 'Website Visitor' : 'Kira (AI Agent)'} <span style={{ fontWeight: 400, marginLeft: "0.5rem" }}>{msg.time}</span>
-                </div>
-                <div style={{ 
-                  maxWidth: "600px", 
-                  padding: "1rem", 
-                  borderRadius: msg.role === 'user' ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
-                  background: msg.role === 'user' ? "linear-gradient(135deg, #00D4FF, #0099CC)" : "white",
-                  color: msg.role === 'user' ? "#0A1628" : "var(--color-primary-900)",
-                  border: msg.role === 'user' ? "none" : "1px solid var(--color-neutral-200)",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.6,
-                  boxShadow: msg.role === 'agent' ? "0 2px 8px rgba(0,0,0,0.02)" : "none"
-                }}>
-                  {msg.content}
-                </div>
+
+              {/* Transcript Body */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: "auto",
+                  padding: "1.5rem 2rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1.25rem",
+                }}
+              >
+                {loadingTranscript ? (
+                  <div
+                    style={{
+                      padding: "3rem",
+                      textAlign: "center",
+                      color: "rgba(148,163,184,0.5)",
+                    }}
+                  >
+                    Loading transcript...
+                  </div>
+                ) : transcript.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "3rem",
+                      textAlign: "center",
+                      color: "rgba(148,163,184,0.5)",
+                    }}
+                  >
+                    No messages in this session.
+                  </div>
+                ) : (
+                  transcript.map((msg, i) => {
+                    // Skip internal system logs
+                    if (msg.content.startsWith("[Voice session")) return null;
+
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          gap: "0.75rem",
+                          flexDirection:
+                            msg.role === "user" ? "row-reverse" : "row",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "10px",
+                            background:
+                              msg.role === "user"
+                                ? "rgba(59,130,246,0.15)"
+                                : `${AGENT_COLORS[msg.agent_name] || "#00D4FF"}15`,
+                            border:
+                              msg.role === "agent"
+                                ? `1px solid ${AGENT_COLORS[msg.agent_name] || "#00D4FF"}30`
+                                : "1px solid rgba(59,130,246,0.2)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {msg.role === "user" ? (
+                            <User size={14} color="#60a5fa" />
+                          ) : (
+                            <Bot
+                              size={14}
+                              color={
+                                AGENT_COLORS[msg.agent_name] || "#00D4FF"
+                              }
+                            />
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems:
+                              msg.role === "user" ? "flex-end" : "flex-start",
+                            maxWidth: "70%",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: "0.65rem",
+                              color: "rgba(148,163,184,0.4)",
+                              marginBottom: "0.2rem",
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.08em",
+                            }}
+                          >
+                            {msg.role === "user"
+                              ? "Visitor"
+                              : msg.agent_name}{" "}
+                            <span style={{ fontWeight: 400, marginLeft: "0.35rem" }}>
+                              {formatFullTime(msg.created_at)}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              padding: "0.75rem 1rem",
+                              borderRadius:
+                                msg.role === "user"
+                                  ? "14px 4px 14px 14px"
+                                  : "4px 14px 14px 14px",
+                              background:
+                                msg.role === "user"
+                                  ? "linear-gradient(135deg, #3b82f6, #2563eb)"
+                                  : "rgba(255,255,255,0.04)",
+                              color:
+                                msg.role === "user"
+                                  ? "white"
+                                  : "rgba(226,232,240,0.9)",
+                              border:
+                                msg.role === "user"
+                                  ? "none"
+                                  : "1px solid rgba(255,255,255,0.06)",
+                              fontSize: "0.8125rem",
+                              lineHeight: 1.6,
+                            }}
+                          >
+                            {msg.content}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "column",
+                gap: "1rem",
+                color: "rgba(148,163,184,0.3)",
+              }}
+            >
+              <Bot size={48} />
+              <div style={{ fontSize: "1rem", fontWeight: 600 }}>
+                Select a session to view
+              </div>
+              <div style={{ fontSize: "0.8rem" }}>
+                Choose a conversation from the sidebar
               </div>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

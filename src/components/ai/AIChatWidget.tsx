@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles, RotateCcw, Shield, Zap, Calendar, Activity, TrendingUp, Phone, PhoneOff } from "lucide-react";
+import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles, RotateCcw, Shield, Zap, Calendar, Activity, TrendingUp, Phone, PhoneOff, Copy, Check, RefreshCw } from "lucide-react";
 import { useChat } from '@ai-sdk/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // LiveKit Imports
 import { LiveKitRoom, RoomAudioRenderer, VoiceAssistantControlBar, BarVisualizer, useVoiceAssistant } from '@livekit/components-react';
@@ -60,6 +62,36 @@ const AGENTS = {
     icon: Zap,
     greeting: "Hello! How can the KoolTech AI workforce assist you today?" 
   },
+};
+
+const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
+  const [copied, setCopied] = useState(false);
+  const match = /language-(\w+)/.exec(className || '');
+  const isInline = inline || !match;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(String(children).replace(/\n$/, ''));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (isInline) {
+    return <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs text-blue-300" {...props}>{children}</code>;
+  }
+
+  return (
+    <div className="relative group rounded-xl overflow-hidden my-3 border border-white/10 shadow-lg">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-black/60 border-b border-white/5">
+        <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">{match[1]}</span>
+        <button onClick={handleCopy} className="p-1.5 text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-md">
+          {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+        </button>
+      </div>
+      <pre className="p-4 bg-black/40 overflow-x-auto text-xs font-mono text-slate-300">
+        <code className={className} {...props}>{children}</code>
+      </pre>
+    </div>
+  );
 };
 
 // Voice Assistant Internal UI
@@ -128,7 +160,7 @@ export default function AIChatWidget() {
 
   const [input, setInput] = useState("");
 
-  const { messages, setMessages, append, isLoading, error } = useChat({
+  const { messages, setMessages, append, isLoading, error, reload } = useChat({
     api: '/api/ai-workforce/v1',
     id: sessionId,
     initialMessages: [{ id: 'initial', role: 'assistant', content: agent.greeting }],
@@ -300,8 +332,34 @@ export default function AIChatWidget() {
                         ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-xl shadow-blue-600/10 rounded-tr-none' 
                         : 'bg-white/5 text-slate-200 backdrop-blur-sm rounded-tl-none border border-white/5 shadow-inner'
                     }`}>
-                      {m.content}
+                      {m.content && (
+                        <div className="markdown-body">
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              code: CodeBlock
+                            }}
+                          >
+                            {m.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
+                      
+                      {m.toolInvocations?.map((tool) => (
+                        <div key={tool.toolCallId} className="mt-2 text-[11px] bg-black/20 text-slate-300 p-2 rounded-lg border border-white/5 flex items-center gap-2">
+                          <Activity size={12} className={tool.state === 'result' ? 'text-green-400' : 'text-blue-400 animate-pulse'} />
+                          <span className="font-mono">
+                            {tool.state === 'result' ? `Completed: ${tool.toolName}` : `Running: ${tool.toolName}...`}
+                          </span>
+                        </div>
+                      ))}
                     </div>
+                    {/* Timestamp */}
+                    {m.createdAt && (
+                      <div className="w-full text-[9px] text-slate-500 mt-1 px-1 opacity-70">
+                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {isLoading && (
@@ -318,9 +376,16 @@ export default function AIChatWidget() {
                 )}
                 {error && (
                   <div className="flex justify-center p-2">
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-[11px] text-red-400 flex items-center gap-2">
-                      <Shield size={12} />
-                      Neural Handshake Failed. Please try again.
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-[11px] text-red-400 flex flex-col items-center gap-2 text-center max-w-[85%] shadow-lg">
+                      <div className="flex items-center gap-2 font-bold">
+                        <Shield size={14} />
+                        Neural Handshake Failed
+                      </div>
+                      <span className="text-[10px] text-red-400/80">Connection lost or timeout. Please check your network.</span>
+                      <button onClick={() => reload()} className="mt-1 px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-white rounded-lg flex items-center gap-1.5 transition-colors">
+                        <RefreshCw size={10} />
+                        Retry
+                      </button>
                     </div>
                   </div>
                 )}
