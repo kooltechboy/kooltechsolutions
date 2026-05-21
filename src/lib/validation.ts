@@ -84,6 +84,7 @@ export const aiChatSchema = z.object({
       pathname: z.string().max(200).optional(),
     })
     .optional(),
+  sessionId: z.string().max(200).optional(),
 });
 
 export type AIChatInput = z.infer<typeof aiChatSchema>;

@@ -135,7 +135,8 @@ export default function AIChatWidget() {
     body: {
       agentName: agent.name,
       agentRole: agent.role,
-      context: { pathname }
+      context: { pathname },
+      sessionId,
     },
     onError: (err) => {
       console.error('Neural Handshake Error:', err);

@@ -9,8 +9,23 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''; 
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// ── Telemetry helper ──────────────────────────────────────────────────────────
+async function logToSupabase(sessionId: string, role: 'user' | 'agent', content: string, agentName: string) {
+  if (!supabaseUrl || !supabaseKey) return;
+  try {
+    await supabase.from('agent_logs').insert({
+      session_id: sessionId,
+      role,
+      content: content.trim(),
+      agent_name: agentName,
+    });
+  } catch (err) {
+    console.error('[Agent] Failed to log to Supabase:', err);
+  }
+}
 
 class AgentTools extends llm.FunctionContext {
   @llm.aiCallable({
@@ -75,6 +90,9 @@ export default defineAgent({
     await ctx.connect();
     console.log(`[Agent] Connected to room: ${ctx.room.name}`);
 
+    // Extract sessionId from room name (format: "room-<sessionId>")
+    const sessionId = ctx.room.name.replace(/^room-/, '') || ctx.room.name;
+
     // Wait briefly for the remote participant's metadata to sync if needed
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -89,7 +107,7 @@ export default defineAgent({
       }
     }
 
-    console.log(`[Agent] Booting persona: ${agentName}`);
+    console.log(`[Agent] Booting persona: ${agentName} | Session: ${sessionId}`);
 
     // Map personas to voices and specific roles
     let voiceName = 'Aoede'; // Default female
@@ -108,6 +126,10 @@ export default defineAgent({
       voiceName = 'Charon'; // Deep authoritative male voice
       agentRole = 'Senior Solutions Architect';
       roleInstructions = `Answer complex technical questions about cybersecurity, cloud, networking, and infrastructure. Always recommend best-in-class enterprise solutions. Offer to connect them to a human engineer via bookDemo.`;
+    } else if (agentName === 'Nexus') {
+      voiceName = 'Fenrir'; // Strategic intelligence voice
+      agentRole = 'Growth Intelligence';
+      roleInstructions = `Analyze sales velocity and lead quality. Provide growth insights, lead qualification guidance, and strategic recommendations for the admin team.`;
     } else {
       voiceName = 'Aoede'; // Bright female voice
       agentRole = 'Executive Concierge';
@@ -141,15 +163,59 @@ ${roleInstructions}`;
       }
     });
 
+    // ── Telemetry: capture user and agent speech transcripts ─────────────────
+    // Buffer partial transcripts before persisting
+    let userSpeechBuffer = '';
+    let agentSpeechBuffer = '';
+
     agent.on('user_started_speaking', () => {
       console.log('[Agent] User started speaking');
+      userSpeechBuffer = '';
+    });
+
+    agent.on('user_stopped_speaking', () => {
+      console.log('[Agent] User stopped speaking');
+      // Log accumulated user speech
+      if (userSpeechBuffer.trim()) {
+        logToSupabase(sessionId, 'user', userSpeechBuffer, agentName);
+        userSpeechBuffer = '';
+      }
     });
 
     agent.on('agent_started_speaking', () => {
       console.log('[Agent] Agent started speaking');
+      agentSpeechBuffer = '';
+    });
+
+    agent.on('agent_stopped_speaking', () => {
+      console.log('[Agent] Agent stopped speaking');
+      // Log accumulated agent speech
+      if (agentSpeechBuffer.trim()) {
+        logToSupabase(sessionId, 'agent', agentSpeechBuffer, agentName);
+        agentSpeechBuffer = '';
+      }
+    });
+
+    // Capture transcript chunks for more accurate text logging
+    agent.on('input_speech_transcription_completed', (transcription: any) => {
+      const text = transcription?.transcript || transcription || '';
+      console.log(`[Agent] User transcript: ${text}`);
+      if (text) {
+        logToSupabase(sessionId, 'user', text, agentName);
+      }
+    });
+
+    agent.on('response_output_added', (output: any) => {
+      const text = output?.text || output?.content || '';
+      if (text) {
+        agentSpeechBuffer += (agentSpeechBuffer ? ' ' : '') + text;
+      }
     });
 
     agent.start(ctx.room);
+
+    // Log that the session started
+    logToSupabase(sessionId, 'agent', `[Voice session started. Agent: ${agentName}]`, agentName);
   },
 });
 

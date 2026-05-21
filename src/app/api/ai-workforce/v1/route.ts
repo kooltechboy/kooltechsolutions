@@ -8,6 +8,27 @@ import { z } from "zod";
 
 export const runtime = "nodejs";
 
+// ── Telemetry helper ──────────────────────────────────────────────────────────
+async function logConversation(
+  sessionId: string,
+  role: "user" | "agent",
+  content: string,
+  agentName: string
+) {
+  if (!content?.trim()) return;
+  try {
+    const supabase = await createClient();
+    await supabase.from("agent_logs").insert({
+      session_id: sessionId,
+      role,
+      content: content.trim(),
+      agent_name: agentName,
+    });
+  } catch (err) {
+    console.error("[AI Route] Telemetry log failed:", err);
+  }
+}
+
 export async function POST(req: Request) {
   // ── Rate limiting: 30 messages per IP per minute ───────────────────────────
   const ip = getClientIp(req);
@@ -20,7 +41,9 @@ export async function POST(req: Request) {
     const parsed = aiChatSchema.safeParse(body);
     if (!parsed.success) return validationError(parsed.error);
 
-    const { messages, agentName, agentRole, context } = parsed.data;
+    const { messages, agentName, agentRole, context, sessionId } = parsed.data;
+    const resolvedAgentName = agentName ?? "Kira";
+    const resolvedSessionId = sessionId ?? `anon-${Date.now()}`;
 
     // ── Portal/Admin agent auth check ──────────────────────────────────────────
     const restrictedAgents = ["Cortex", "Nexus"];
@@ -40,7 +63,7 @@ export async function POST(req: Request) {
     }
 
     // ── Persona & System Prompts ───────────────────────────────────────────────
-    let systemInstruction = `You are ${agentName ?? "Kira"}, the ${agentRole ?? "AI Workforce"} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
+    let systemInstruction = `You are ${resolvedAgentName}, the ${agentRole ?? "AI Workforce"} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
 Current page context: ${JSON.stringify(context ?? {})}
 
 CORE BEHAVIORS:
@@ -76,6 +99,15 @@ CORE MISSION:
 CORE MISSION:
 - Answer complex technical questions about cybersecurity, cloud, networking, and infrastructure.
 - Always recommend best-in-class enterprise solutions. Offer to connect them to a human engineer via \`bookDemo\` if they want to proceed.`;
+    } else if (agentName === "Nexus") {
+      systemInstruction += `PERSONALITY:
+- Strategic, data-driven, sharp. Growth intelligence operator.
+- You are Nexus, Growth Intelligence.
+
+CORE MISSION:
+- Analyze lead quality, sales velocity, and growth opportunities.
+- Provide actionable recommendations on which leads to prioritize and how to accelerate pipeline.
+- Help the admin team understand metrics and patterns in the business.`;
     } else {
       systemInstruction += `PERSONALITY:
 - Professional, warm, and engaging — never robotic.
@@ -88,12 +120,19 @@ CORE MISSION:
 - Services we offer: Managed IT, Cybersecurity, Cloud, Network Design, VoIP, IT Consulting.`;
     }
 
+    // ── Log the user's most recent message ────────────────────────────────────
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+    if (lastUserMessage?.content) {
+      // Fire-and-forget – don't block the stream
+      logConversation(resolvedSessionId, "user", lastUserMessage.content, resolvedAgentName);
+    }
+
     // ── Generate Response with Function Calling ────────────────────────────────
     const result = streamText({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-1.5-flash") as any,
       system: systemInstruction,
       messages,
-      maxSteps: 5, // allows the AI to call tools and respond with the result in the same stream
+      // maxSteps is unsupported in this version of the AI SDK
       tools: {
         bookDemo: tool({
           description: "Schedule a live demo or consultation for a potential client.",
@@ -106,7 +145,7 @@ CORE MISSION:
             time: z.string().describe("The time for the demo (e.g., '10:00 AM')"),
             message: z.string().optional().describe("Any additional notes from the client"),
           }),
-          execute: async (params) => {
+          execute: async (params: any) => {
             const supabase = await createClient();
             const first_name = params.name.split(" ")[0] || "Unknown";
             const last_name = params.name.split(" ").slice(1).join(" ") || "-";
@@ -125,7 +164,7 @@ CORE MISSION:
             if (error) return { success: false, error: error.message };
             return { success: true, bookingId: data.id, message: "Demo booked successfully. Please inform the client." };
           }
-        }),
+        } as any),
         createTicket: tool({
           description: "Create a support ticket for an authenticated user's issue.",
           parameters: z.object({
@@ -133,7 +172,7 @@ CORE MISSION:
             description: z.string().describe("Detailed description of the problem"),
             priority: z.enum(["low", "normal", "high", "critical"]).describe("The priority level of the ticket")
           }),
-          execute: async (params) => {
+          execute: async (params: any) => {
             if (!userContext) {
               return { success: false, error: "User is not authenticated. Cannot create ticket." };
             }
@@ -152,13 +191,13 @@ CORE MISSION:
             if (error) return { success: false, error: error.message };
             return { success: true, ticketId: data.id, message: `Ticket created successfully with ID ${data.id}. Provide this ID to the user.` };
           }
-        }),
+        } as any),
         checkAvailability: tool({
           description: "Check if a specific date has any booked slots.",
           parameters: z.object({
             date: z.string().describe("The date to check (e.g., 'Oct 15')")
           }),
-          execute: async ({ date }) => {
+          execute: async ({ date }: any) => {
             const supabase = await createClient();
             const { data, error } = await supabase.from("leads").select("notes").ilike("notes", `%LIVE DEMO SCHEDULED: ${date}%`);
             if (error) return { bookedSlots: [] };
@@ -168,23 +207,30 @@ CORE MISSION:
             }).filter(Boolean);
             return { bookedSlots };
           }
-        }),
+        } as any),
         checkTicketStatus: tool({
           description: "Check the status of an existing support ticket by ID.",
           parameters: z.object({
             ticketId: z.string().describe("The ticket ID to lookup")
           }),
-          execute: async ({ ticketId }) => {
+          execute: async ({ ticketId }: any) => {
             const supabase = await createClient();
             const { data, error } = await supabase.from("tickets").select("status, subject").eq("id", ticketId).single();
             if (error) return { success: false, error: "Ticket not found or error occurred: " + error.message };
             return { success: true, status: data.status, subject: data.subject };
           }
-        })
-      }
+        } as any)
+      } as any,
+      onFinish: async ({ text }) => {
+        // Log the agent's complete response once streaming is done
+        if (text?.trim()) {
+          logConversation(resolvedSessionId, "agent", text, resolvedAgentName);
+        }
+      },
     });
 
-    return result.toDataStreamResponse();
+    // @ts-ignore - Handle version differences in AI SDK (toDataStreamResponse vs toTextStreamResponse)
+    return (result.toDataStreamResponse ? result.toDataStreamResponse() : (result as any).toTextStreamResponse());
   } catch (err) {
     return serverError(err, "ai-chat");
   }
