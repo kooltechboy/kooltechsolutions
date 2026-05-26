@@ -69,11 +69,11 @@ export async function createTicket(
     .from("tickets")
     .insert([
       {
-        user_id: user.id,
+        client_id: user.id,
         subject: safeSubject,
         description: safeDescription,
         priority: safePriority,
-        status: "Open",
+        status: "open",
       },
     ])
     .select();

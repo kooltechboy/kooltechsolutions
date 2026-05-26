@@ -177,8 +177,7 @@ CORE MISSION:
               return { success: false, error: "User is not authenticated. Cannot create ticket." };
             }
             const supabase = await createClient();
-            const { data: clientRecord } = await supabase.from("clients").select("id").eq("user_id", userContext.id).single();
-            const client_id = clientRecord?.id ?? null;
+            const client_id = userContext.id;
             
             const { data, error } = await supabase.from("tickets").insert({
               subject: params.subject,
@@ -228,10 +227,8 @@ CORE MISSION:
           execute: async ({ status }: any) => {
             if (!userContext) return { success: false, error: "User is not authenticated. Cannot fetch invoices." };
             const supabase = await createClient();
-            const { data: clientRecord } = await supabase.from("clients").select("id").eq("user_id", userContext.id).single();
-            if (!clientRecord) return { success: false, error: "Client record not found for the user." };
             
-            let query = supabase.from("invoices").select("invoice_number, amount, status, due_date").eq("client_id", clientRecord.id);
+            let query = supabase.from("invoices").select("invoice_number, amount, status, due_date").eq("client_id", userContext.id);
             if (status !== "all") query = query.eq("status", status);
             
             const { data, error } = await query;
@@ -245,10 +242,8 @@ CORE MISSION:
           execute: async () => {
             if (!userContext) return { success: false, error: "User is not authenticated. Cannot fetch services." };
             const supabase = await createClient();
-            const { data: clientRecord } = await supabase.from("clients").select("id").eq("user_id", userContext.id).single();
-            if (!clientRecord) return { success: false, error: "Client record not found for the user." };
             
-            const { data, error } = await supabase.from("client_services").select("service_name, status, next_billing_date").eq("client_id", clientRecord.id);
+            const { data, error } = await supabase.from("client_services").select("service_name, status, next_billing_date").eq("client_id", userContext.id);
             if (error) return { success: false, error: error.message };
             return { success: true, services: data };
           }

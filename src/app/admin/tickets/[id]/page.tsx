@@ -59,6 +59,21 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function mapMessageToNote(msg: any): TicketNote {
+  const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
+  const author_name = senderObj 
+    ? `${senderObj.first_name || ''} ${senderObj.last_name || ''}`.trim() || senderObj.role || 'Support'
+    : 'System';
+  return {
+    id: msg.id,
+    ticket_id: msg.ticket_id,
+    body: msg.message,
+    author_name,
+    is_internal: msg.is_internal_note || false,
+    created_at: msg.created_at
+  };
+}
+
 export default function TicketDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -84,8 +99,8 @@ export default function TicketDetailPage() {
           .eq("id", id)
           .single(),
         supabase
-          .from("ticket_notes")
-          .select("*")
+          .from("ticket_messages")
+          .select("*, sender:sender_id(first_name, last_name, role)")
           .eq("ticket_id", id)
           .order("created_at", { ascending: true }),
       ]);
@@ -96,7 +111,7 @@ export default function TicketDetailPage() {
         const assigneeRaw = Array.isArray(t.assignee) ? t.assignee[0] : t.assignee;
         setTicket({ ...t, client: clientRaw, assignee: assigneeRaw });
       }
-      if (notesRes.data) setNotes(notesRes.data);
+      if (notesRes.data) setNotes(notesRes.data.map(mapMessageToNote));
       setLoading(false);
     }
     load();
@@ -109,19 +124,24 @@ export default function TicketDetailPage() {
   const handleSendNote = async () => {
     if (!newNote.trim()) return;
     setSending(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSending(false);
+      return;
+    }
     const { data, error } = await supabase
-      .from("ticket_notes")
+      .from("ticket_messages")
       .insert([{
         ticket_id: id,
-        body: newNote.trim(),
-        author_name: "Admin",
-        is_internal: isInternal,
+        sender_id: user.id,
+        message: newNote.trim(),
+        is_internal_note: isInternal,
       }])
-      .select()
+      .select("*, sender:sender_id(first_name, last_name, role)")
       .single();
 
     if (!error && data) {
-      setNotes((prev) => [...prev, data]);
+      setNotes((prev) => [...prev, mapMessageToNote(data)]);
       setNewNote("");
     }
     setSending(false);

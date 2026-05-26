@@ -40,13 +40,9 @@ export async function POST(request: Request) {
 
     // ── IDOR prevention: always use the authenticated user's own client record ─
     // Ignore any client_id sent in the body — derive it from the authenticated session.
-    const { data: clientRecord } = await supabase
-      .from("clients")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    const client_id = clientRecord?.id ?? null;
+    // Since client profiles are stored directly in public.profiles (whose id matches user.id),
+    // we use user.id directly as the client_id.
+    const client_id = user.id;
 
     // ── Create ticket ──────────────────────────────────────────────────────────
     const { data: ticket, error: dbError } = await supabase

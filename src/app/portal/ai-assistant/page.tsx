@@ -1,162 +1,213 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { Bot, Send, User, Loader2, Zap } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Send, Bot, User, ArrowLeft, Loader2, Sparkles, AlertCircle, Ticket, HardDrive } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
 
-const suggestions = [
-  "How do I submit a support ticket?",
-  "What's included in the Managed IT Pro plan?",
-  "How do I reset my VPN password?",
-  "What is your average response time for critical issues?",
-];
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+interface TicketData {
+  id: string;
+  subject: string;
+  status: string;
+}
 
 export default function AIAssistantPage() {
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([
-    { role: "assistant", content: "Hi! I'm **Kira**, your AI IT assistant from Kool Tech Solutions. I'm here to help with technical questions, service inquiries, and general IT support. How can I help you today?" }
+  const [messages, setMessages] = useState<Message[]>([
+    { role: "assistant", content: "Hello! I'm Kira, your virtual IT engineer. How can I help you with your services, tickets, or network settings today?" }
   ]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [sending, setSending] = useState(false);
+  const [tickets, setTickets] = useState<TicketData[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const supabase = createClient();
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+    async function loadQuickContext() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-  async function handleSend(text?: string) {
-    const msgText = text || input.trim();
-    if (!msgText) return;
+      const { data } = await supabase
+        .from("tickets")
+        .select("id, subject, status")
+        .eq("client_id", user.id)
+        .limit(3);
+
+      if (data) setTickets(data);
+    }
+    loadQuickContext();
+  }, [supabase]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || sending) return;
+
+    const userMessage = input.trim();
     setInput("");
-    const newMessages = [...messages, { role: "user", content: msgText }];
-    setMessages(newMessages);
-    setLoading(true);
+    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+    setSending(true);
 
     try {
-      const res = await fetch("/api/chat", {
+      const chatHistory = [...messages, { role: "user", content: userMessage }];
+      const res = await fetch("/api/portal/ai-assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content })), agentName: "Kira" }),
+        body: JSON.stringify({ messages: chatHistory }),
       });
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      const replyBuffer: string[] = [];
-      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          // Parse streaming data text chunks
-          const lines = chunk.split("\n").filter(l => l.startsWith("0:"));
-          for (const line of lines) {
-            try {
-              const txt = JSON.parse(line.slice(2));
-              replyBuffer.push(txt);
-              const currentReply = replyBuffer.join("");
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: "assistant", content: currentReply };
-                return updated;
-              });
-            } catch {}
-          }
-        }
+      const data = await res.json();
+      if (res.ok && data.text) {
+        setMessages(prev => [...prev, { role: "assistant", content: data.text }]);
+      } else {
+        setMessages(prev => [...prev, { role: "assistant", content: "I'm sorry, I encountered a connection error. Please try again." }]);
       }
-    } catch (e) {
-      setMessages(prev => [...prev, { role: "assistant", content: "I'm sorry, I ran into an issue. Please try again or submit a support ticket." }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: "assistant", content: "Failed to communicate with AI server." }]);
+    } finally {
+      setSending(false);
     }
-    setLoading(false);
-  }
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 128px)", maxWidth: "860px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>
-          AI <span className="gradient-text">Assistant</span>
-        </h1>
-        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-          Powered by Kira — your 24/7 intelligent IT support agent.
-        </p>
+    <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100vh - 120px)" }}>
+      {/* Header */}
+      <div style={{ marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+        <Link href="/portal" style={{ color: "var(--color-neutral-400)", display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+          <ArrowLeft size={18} /> Back
+        </Link>
+        <div>
+          <h1 style={{ color: "white", fontSize: "1.5rem", fontWeight: 800, fontFamily: "Syne, sans-serif", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Sparkles size={20} color="var(--color-accent-500)" /> AI Support Assistant
+          </h1>
+          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Chat with Kira, your virtual support assistant, connected to your environment.</p>
+        </div>
       </div>
 
-      {/* Messages */}
-      <div className="glass-card" style={{ flex: 1, overflowY: "auto", padding: "1.5rem", borderRadius: "16px 16px 0 0", display: "flex", flexDirection: "column", gap: "1rem" }}>
-        {messages.map((msg, i) => (
-          <div key={i} style={{ display: "flex", gap: "0.875rem", alignItems: "flex-start", flexDirection: msg.role === "user" ? "row-reverse" : "row" }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              background: msg.role === "user" ? "rgba(0,212,255,0.15)" : "linear-gradient(135deg, #00D4FF20, #A855F720)",
-              border: `1px solid ${msg.role === "user" ? "rgba(0,212,255,0.3)" : "rgba(168,85,247,0.3)"}`,
-            }}>
-              {msg.role === "user" ? <User size={16} color="var(--color-accent-500)" /> : <Bot size={16} color="#A855F7" />}
-            </div>
-            <div style={{
-              maxWidth: "75%", padding: "0.875rem 1.125rem", borderRadius: msg.role === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
-              background: msg.role === "user" ? "rgba(0,212,255,0.1)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${msg.role === "user" ? "rgba(0,212,255,0.2)" : "rgba(255,255,255,0.06)"}`,
-              color: "var(--color-neutral-200, #E2E8F0)", fontSize: "0.875rem", lineHeight: 1.6,
-            }}>
-              {msg.content || <Loader2 size={16} className="animate-spin" color="var(--color-neutral-400)" />}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "1.5rem", flex: 1, minHeight: 0 }} className="portal-assistant-grid">
+        {/* Chat area */}
+        <div className="glass-card" style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden", borderRadius: "16px" }}>
+          {/* Thread messages */}
+          <div ref={scrollRef} style={{ flex: 1, padding: "1.5rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            {messages.map((msg, idx) => {
+              const isAssistant = msg.role === "assistant";
+              return (
+                <div key={idx} style={{ display: "flex", gap: "1rem", alignSelf: isAssistant ? "flex-start" : "flex-end", maxWidth: "80%" }}>
+                  {isAssistant && (
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Bot size={18} color="var(--color-accent-500)" />
+                    </div>
+                  )}
+                  <div style={{
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    background: isAssistant ? "rgba(255,255,255,0.02)" : "var(--color-accent-650, #00D4FF15)",
+                    border: isAssistant ? "1px solid rgba(255,255,255,0.05)" : "1px solid rgba(0,212,255,0.2)",
+                    color: "white",
+                    fontSize: "0.9375rem",
+                    lineHeight: 1.5,
+                    whiteSpace: "pre-line",
+                  }}>
+                    {msg.content}
+                  </div>
+                  {!isAssistant && (
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <User size={18} color="var(--color-neutral-400)" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {sending && (
+              <div style={{ display: "flex", gap: "1rem" }}>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Loader2 className="animate-spin" size={18} color="var(--color-accent-500)" />
+                </div>
+                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", alignSelf: "center" }}>Kira is typing...</div>
+              </div>
+            )}
+          </div>
+
+          {/* Form input */}
+          <div style={{ padding: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.2)" }}>
+            <form onSubmit={handleSend} style={{ display: "flex", gap: "0.75rem" }}>
+              <input
+                type="text"
+                placeholder="Ask about your tickets, billing, or network config..."
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "0.875rem 1.25rem",
+                  borderRadius: "12px",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "white",
+                  outline: "none",
+                  fontSize: "0.9375rem"
+                }}
+              />
+              <button
+                type="submit"
+                disabled={sending || !input.trim()}
+                style={{
+                  background: "var(--color-accent-500)",
+                  border: "none",
+                  width: 48,
+                  height: 48,
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  opacity: (sending || !input.trim()) ? 0.5 : 1
+                }}
+              >
+                <Send size={18} color="black" />
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Sidebar Info */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "16px" }}>
+            <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700, marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Ticket size={16} color="var(--color-accent-400)" /> Support Context
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {tickets.length === 0 ? (
+                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>No tickets active.</div>
+              ) : tickets.map(t => (
+                <div key={t.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.5rem" }}>
+                  <div style={{ color: "white", fontSize: "0.8125rem", fontWeight: 600 }} className="truncate">{t.subject}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--color-neutral-500)", marginTop: "0.25rem" }}>
+                    <span>#{t.id.slice(0, 8)}</span>
+                    <span style={{ color: "var(--color-accent-400)", textTransform: "capitalize" }}>{t.status.replace("_", " ")}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
-        {loading && messages[messages.length - 1]?.content === "" && (
-          <div style={{ display: "flex", gap: "0.875rem", alignItems: "flex-start" }}>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #00D4FF20, #A855F720)", border: "1px solid rgba(168,85,247,0.3)", flexShrink: 0 }}>
-              <Bot size={16} color="#A855F7" />
-            </div>
-            <div style={{ padding: "1rem", borderRadius: "4px 16px 16px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: "0.4rem", alignItems: "center" }}>
-              {[0, 1, 2].map(d => <div key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: "#A855F7", opacity: 0.7, animation: `pulse-dot 1.2s ease-in-out ${d * 0.2}s infinite` }} />)}
-            </div>
+
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "16px" }}>
+            <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700, marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <HardDrive size={16} color="var(--color-success)" /> Telemetry Sync
+            </h3>
+            <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.5 }}>
+              Kira automatically reviews database snapshots and RMM node statuses to troubleshoot performance anomalies.
+            </p>
           </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Suggestions */}
-      {messages.length <= 1 && (
-        <div style={{ padding: "0.75rem 1rem", background: "rgba(10,22,40,0.6)", borderLeft: "1px solid rgba(0,212,255,0.08)", borderRight: "1px solid rgba(0,212,255,0.08)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          {suggestions.map(s => (
-            <button key={s} onClick={() => handleSend(s)} style={{
-              padding: "0.375rem 0.875rem", borderRadius: "100px", border: "1px solid rgba(168,85,247,0.3)",
-              background: "rgba(168,85,247,0.06)", color: "var(--color-neutral-400)", fontSize: "0.78rem", cursor: "pointer", fontFamily: "DM Sans, sans-serif",
-            }}>
-              {s}
-            </button>
-          ))}
         </div>
-      )}
-
-      {/* Input */}
-      <div style={{ display: "flex", gap: "0.75rem", padding: "1rem 1.25rem", background: "rgba(10,22,40,0.8)", border: "1px solid rgba(0,212,255,0.08)", borderRadius: "0 0 16px 16px", backdropFilter: "blur(12px)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
-          <Zap size={13} color="#A855F7" /> Kira
-        </div>
-        <input
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-          placeholder="Ask Kira anything about IT, your services, or request support..."
-          disabled={loading}
-          style={{
-            flex: 1, background: "transparent", border: "none", color: "white", fontSize: "0.9375rem", outline: "none",
-          }}
-        />
-        <button onClick={() => handleSend()} disabled={loading || !input.trim()} style={{
-          width: 38, height: 38, borderRadius: "10px", background: input.trim() ? "linear-gradient(135deg, #A855F7, #00D4FF)" : "rgba(75,132,200,0.1)",
-          border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: input.trim() ? "pointer" : "not-allowed", flexShrink: 0, transition: "background 0.2s",
-        }}>
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-        </button>
       </div>
-
-      <style>{`
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 0.3; transform: scale(0.85); }
-          50% { opacity: 1; transform: scale(1.1); }
-        }
-      `}</style>
     </div>
   );
 }

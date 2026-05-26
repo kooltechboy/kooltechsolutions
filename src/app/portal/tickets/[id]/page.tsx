@@ -126,7 +126,19 @@ export default function TicketDetailPage() {
     );
   }
 
-  if (!ticket) return <div>Ticket not found.</div>;
+  async function handleMarkResolved() {
+    await supabase.from('tickets').update({ status: 'resolved', updated_at: new Date().toISOString() }).eq('id', id);
+    setTicket(prev => prev ? { ...prev, status: 'resolved' } : prev);
+  }
+
+  if (!ticket) {
+    return (
+      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--color-neutral-500)' }}>
+        <p>Ticket not found.</p>
+        <Link href="/portal/tickets" style={{ color: 'var(--color-accent-500)', fontWeight: 600, fontSize: '0.875rem' }}>← Back to tickets</Link>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: "1000px", margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100vh - 120px)" }}>
@@ -263,12 +275,29 @@ export default function TicketDetailPage() {
           <div className="glass-card" style={{ padding: "1.5rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
               <Bot size={20} color="var(--color-accent-500)" />
-              <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700 }}>AI Summary</h3>
+              <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700 }}>Kira AI Summary</h3>
             </div>
             <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6 }}>
-              Kira is currently reviewing the technical details of your intermittent VPN drops. An engineer will be assigned shortly.
+              {ticket.description.slice(0, 180)}{ticket.description.length > 180 ? '...' : ''}
             </p>
           </div>
+
+          {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
+            <button
+              onClick={handleMarkResolved}
+              style={{
+                width: '100%', padding: '0.875rem', borderRadius: '10px',
+                background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)',
+                color: '#10b981', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.15)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.08)')}
+            >
+              ✓ Mark as Resolved
+            </button>
+          )}
         </div>
       </div>
     </div>

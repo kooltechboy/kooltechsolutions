@@ -1,9 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
-  Ticket, Send, AlertCircle, CheckCircle2, Clock, Search, Plus, Loader2, 
+  Ticket, AlertCircle, CheckCircle2, Clock, Search, Plus, Loader2, 
   ChevronRight, Filter, MessageSquare, Shield, Zap, X,
-  User, Activity, LifeBuoy, Bell
+  User, Activity, LifeBuoy, Bell, Send
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -16,8 +18,13 @@ interface TicketData {
   created_at: string;
 }
 
+interface TicketWithCount extends TicketData {
+  messageCount: number;
+}
+
 export default function ClientTicketsPage() {
-  const [tickets, setTickets] = useState<TicketData[]>([]);
+  const router = useRouter();
+  const [tickets, setTickets] = useState<TicketWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showNewForm, setShowNewForm] = useState(false);
@@ -25,6 +32,7 @@ export default function ClientTicketsPage() {
   const [success, setSuccess] = useState(false);
   const [tempTicketNum, setTempTicketNum] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const supabase = createClient();
 
@@ -40,7 +48,22 @@ export default function ClientTicketsPage() {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        setTickets(data);
+        // Fetch message counts for each ticket in one query
+        const ticketIds = data.map(t => t.id);
+        let countMap: Record<string, number> = {};
+        if (ticketIds.length > 0) {
+          const { data: msgCounts } = await supabase
+            .from('ticket_messages')
+            .select('ticket_id')
+            .in('ticket_id', ticketIds)
+            .eq('is_internal_note', false);
+          if (msgCounts) {
+            msgCounts.forEach(row => {
+              countMap[row.ticket_id] = (countMap[row.ticket_id] || 0) + 1;
+            });
+          }
+        }
+        setTickets(data.map(t => ({ ...t, messageCount: countMap[t.id] || 0 })));
       }
       setLoading(false);
     }
@@ -65,14 +88,19 @@ export default function ClientTicketsPage() {
       });
 
       if (res.ok) {
-        setTempTicketNum(Math.floor(1000 + Math.random() * 9000).toString());
+        const data = await res.json();
+        setTempTicketNum(data.ticketId ? data.ticketId.slice(0, 8) : Math.floor(1000 + Math.random() * 9000).toString());
         setSuccess(true);
         setForm({ subject: '', description: '', priority: 'normal' });
         setTimeout(() => {
           setSuccess(false);
           setShowNewForm(false);
-          setRefreshKey(prev => prev + 1);
-        }, 2500);
+          if (data.ticketId) {
+            router.push(`/portal/tickets/${data.ticketId}`);
+          } else {
+            setRefreshKey(prev => prev + 1);
+          }
+        }, 1500);
       }
     } catch (err) {
       console.error(err);
@@ -93,6 +121,12 @@ export default function ClientTicketsPage() {
   }
 
   const activeCount = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
+  const filteredTickets = tickets.filter(t =>
+    !searchQuery.trim() ||
+    t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.priority.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -245,6 +279,8 @@ export default function ClientTicketsPage() {
                 <input 
                   type="text" 
                   placeholder="Filter tickets..." 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="bg-white/5 border border-white/10 rounded-lg py-1.5 pl-9 pr-3 text-[10px] text-white focus:outline-none w-48"
                 />
               </div>
@@ -265,9 +301,19 @@ export default function ClientTicketsPage() {
                   <p className="text-neutral-700 text-[10px] mt-1 font-bold">Your support history is currently empty</p>
                 </div>
               </div>
+            ) : filteredTickets.length === 0 ? (
+              <div className="py-16 text-center space-y-3">
+                <Search size={32} className="mx-auto text-neutral-700" />
+                <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest">No tickets match your search</p>
+              </div>
             ) : (
-              tickets.map(ticket => (
-                <div key={ticket.id} className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 hover:bg-white/[0.03] transition-all cursor-pointer">
+              filteredTickets.map(ticket => (
+                <Link
+                  key={ticket.id}
+                  href={`/portal/tickets/${ticket.id}`}
+                  className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 hover:bg-white/[0.03] transition-all cursor-pointer no-underline"
+                  style={{ textDecoration: 'none', display: 'flex' }}
+                >
                   <div className="flex items-start gap-6 flex-1 min-w-0">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border ${
                       ticket.priority === 'critical' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
@@ -291,7 +337,7 @@ export default function ClientTicketsPage() {
                           <User size={12} /> Assigned: <span className="text-neutral-300">Engineering L3</span>
                         </div>
                         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                          <MessageSquare size={12} /> 2 Updates
+                          <MessageSquare size={12} /> {ticket.messageCount} {ticket.messageCount === 1 ? 'Update' : 'Updates'}
                         </div>
                       </div>
                     </div>
@@ -299,14 +345,16 @@ export default function ClientTicketsPage() {
                   
                   <div className="mt-4 sm:mt-0 flex items-center gap-6 w-full sm:w-auto border-t sm:border-t-0 border-white/5 pt-4 sm:pt-0">
                     <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      ticket.status === 'open' ? 'bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20' : 
+                      ticket.status === 'open' ? 'bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20' :
+                      ticket.status === 'in_progress' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
+                      ticket.status === 'resolved' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
                       'bg-[#00E676]/10 text-[#00E676] border border-[#00E676]/20'
                     }`}>
-                      {ticket.status.replace('_', ' ')}
+                      {ticket.status.replace(/_/g, ' ')}
                     </div>
                     <ChevronRight size={20} className="text-neutral-800 group-hover:text-white group-hover:translate-x-1 transition-all hidden sm:block" />
                   </div>
-                </div>
+                </Link>
               ))
             )}
           </div>
