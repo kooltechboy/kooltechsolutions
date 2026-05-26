@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { DollarSign, Users, Ticket, TrendingUp, AlertTriangle, ArrowUp, ArrowDown, Activity, ArrowRight, Loader2 } from "lucide-react";
+import { DollarSign, Users, Ticket, TrendingUp, AlertTriangle, ArrowUp, ArrowDown, Activity, ArrowRight, Loader2, Monitor, Package, ShieldCheck } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 const priorityColor: Record<string, string> = {
@@ -10,6 +10,44 @@ const priorityColor: Record<string, string> = {
 const statusColor: Record<string, string> = {
   open: "#00D4FF", in_progress: "#FFB300", resolved: "#00E676", closed: "#64748B", waiting_on_client: "#A855F7",
 };
+
+interface RMMDevice {
+  id: string;
+  name: string;
+  os: string;
+  status: string;
+  last_seen: string;
+  note?: string;
+}
+
+interface ITFlowAsset {
+  id: string;
+  type: string;
+  model: string;
+  assignment: string;
+  purchase_date: string;
+  warranty_expires: string;
+  note?: string;
+}
+
+interface Action1Endpoint {
+  id: string;
+  name: string;
+  os: string;
+  patches_missing: number;
+  patches_installed: number;
+  last_scan: string;
+  status: string;
+  note?: string;
+}
+
+interface Action1Summary {
+  total_endpoints: number;
+  compliant: number;
+  needs_attention: number;
+  critical: number;
+  total_missing_patches: number;
+}
 
 interface ClientDetails {
   first_name?: string;
@@ -40,7 +78,14 @@ export default function AdminDashboard() {
   const [currentMrr, setCurrentMrr] = useState(0);
   const [integrations, setIntegrations] = useState<IntegrationHealth[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
+  // Live Telemetry State
+  const [rmmDevices, setRmmDevices] = useState<RMMDevice[]>([]);
+  const [itflowAssets, setItflowAssets] = useState<ITFlowAsset[]>([]);
+  const [action1Endpoints, setAction1Endpoints] = useState<Action1Endpoint[]>([]);
+  const [action1Summary, setAction1Summary] = useState<Action1Summary | null>(null);
+  const [telemetryLoading, setTelemetryLoading] = useState(true);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -98,6 +143,36 @@ export default function AdminDashboard() {
       setLoading(false);
     }
     fetchData();
+
+    // Fetch live telemetry from the integration proxies
+    async function fetchTelemetry() {
+      try {
+        const [rmmRes, itflowRes, action1Res] = await Promise.allSettled([
+          fetch("/api/rmm"),
+          fetch("/api/itflow?endpoint=assets"),
+          fetch("/api/action1"),
+        ]);
+
+        if (rmmRes.status === "fulfilled" && rmmRes.value.ok) {
+          const json = await rmmRes.value.json();
+          setRmmDevices(json.devices || []);
+        }
+        if (itflowRes.status === "fulfilled" && itflowRes.value.ok) {
+          const json = await itflowRes.value.json();
+          setItflowAssets(json.data || []);
+        }
+        if (action1Res.status === "fulfilled" && action1Res.value.ok) {
+          const json = await action1Res.value.json();
+          setAction1Endpoints(json.endpoints || []);
+          setAction1Summary(json.summary || null);
+        }
+      } catch (e) {
+        console.warn("Telemetry fetch error:", e);
+      } finally {
+        setTelemetryLoading(false);
+      }
+    }
+    fetchTelemetry();
   }, [supabase]);
 
   const maxRevenue = Math.max(...revenueData, 1000); // minimum scale
@@ -202,6 +277,188 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* ── Live Systems Telemetry ── */}
+      <div style={{ marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.1rem" }}>
+            Live Systems <span className="gradient-text">Telemetry</span>
+          </h2>
+          <Link href="/admin/integrations" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-accent-500)", fontSize: "0.8125rem", textDecoration: "none", fontWeight: 600 }}>
+            Manage Integrations <ArrowRight size={13} />
+          </Link>
+        </div>
+
+        {telemetryLoading ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "120px" }}>
+            <Loader2 className="animate-spin" size={32} color="var(--color-accent-500)" />
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.25rem" }}>
+
+            {/* ── Tactical RMM Panel ── */}
+            <div className="kpi-card" style={{ padding: "1.25rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1rem" }}>
+                <div style={{ width: 34, height: 34, borderRadius: "9px", background: "rgba(0,212,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Monitor size={16} color="#00D4FF" />
+                </div>
+                <div>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Tactical RMM</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Managed Devices</div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: rmmDevices.length > 0 ? "#00E676" : "#FF4444", boxShadow: rmmDevices.length > 0 ? "0 0 6px #00E676" : "none" }} />
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{rmmDevices.length > 0 ? "Live" : "No Data"}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "180px", overflowY: "auto", paddingRight: "0.25rem" }}>
+                {rmmDevices.length === 0 ? (
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8rem", textAlign: "center", padding: "1.5rem 0" }}>No devices found. Configure Tactical RMM in Integrations.</div>
+                ) : rmmDevices.map(device => (
+                  <div key={device.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem 0.625rem", borderRadius: "8px", background: "rgba(75,132,200,0.07)", border: "1px solid rgba(75,132,200,0.1)" }}>
+                    <div>
+                      <div style={{ color: "white", fontSize: "0.8rem", fontWeight: 600 }}>{device.name}</div>
+                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>{device.os}</div>
+                    </div>
+                    <span style={{
+                      fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "20px", textTransform: "capitalize",
+                      background: device.status === "online" ? "rgba(0,230,118,0.15)" : "rgba(255,68,68,0.15)",
+                      color: device.status === "online" ? "#00E676" : "#FF4444",
+                      border: `1px solid ${device.status === "online" ? "rgba(0,230,118,0.3)" : "rgba(255,68,68,0.3)"}`
+                    }}>{device.status}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: "0.875rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(75,132,200,0.1)", display: "flex", gap: "1rem" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#00E676", fontSize: "1.1rem" }}>{rmmDevices.filter(d => d.status === "online").length}</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Online</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#FF4444", fontSize: "1.1rem" }}>{rmmDevices.filter(d => d.status === "offline").length}</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Offline</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.1rem" }}>{rmmDevices.length}</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Total</div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── ITFlow Panel ── */}
+            <div className="kpi-card" style={{ padding: "1.25rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1rem" }}>
+                <div style={{ width: 34, height: 34, borderRadius: "9px", background: "rgba(168,85,247,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Package size={16} color="#A855F7" />
+                </div>
+                <div>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>ITFlow</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>IT Asset Inventory</div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: itflowAssets.length > 0 ? "#00E676" : "#FF4444", boxShadow: itflowAssets.length > 0 ? "0 0 6px #00E676" : "none" }} />
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{itflowAssets.length > 0 ? "Live" : "No Data"}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "180px", overflowY: "auto", paddingRight: "0.25rem" }}>
+                {itflowAssets.length === 0 ? (
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8rem", textAlign: "center", padding: "1.5rem 0" }}>No assets found. Configure ITFlow in Integrations.</div>
+                ) : itflowAssets.map(asset => (
+                  <div key={asset.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem 0.625rem", borderRadius: "8px", background: "rgba(75,132,200,0.07)", border: "1px solid rgba(75,132,200,0.1)" }}>
+                    <div>
+                      <div style={{ color: "white", fontSize: "0.8rem", fontWeight: 600 }}>{asset.model}</div>
+                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>{asset.type} · {asset.assignment}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ color: "var(--color-neutral-400)", fontSize: "0.65rem" }}>Warranty</div>
+                      <div style={{ color: new Date(asset.warranty_expires) > new Date() ? "#00E676" : "#FF4444", fontSize: "0.68rem", fontWeight: 600 }}>
+                        {new Date(asset.warranty_expires).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: "0.875rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(75,132,200,0.1)", display: "flex", gap: "1rem" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#A855F7", fontSize: "1.1rem" }}>{itflowAssets.length}</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Total Assets</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#00E676", fontSize: "1.1rem" }}>{itflowAssets.filter(a => new Date(a.warranty_expires) > new Date()).length}</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Under Warranty</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#FF4444", fontSize: "1.1rem" }}>{itflowAssets.filter(a => new Date(a.warranty_expires) <= new Date()).length}</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Expired</div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Action1 Patch Status Panel ── */}
+            <div className="kpi-card" style={{ padding: "1.25rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1rem" }}>
+                <div style={{ width: 34, height: 34, borderRadius: "9px", background: "rgba(255,179,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <ShieldCheck size={16} color="#FFB300" />
+                </div>
+                <div>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Action1</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Patch Compliance</div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: action1Endpoints.length > 0 ? "#00E676" : "#FF4444", boxShadow: action1Endpoints.length > 0 ? "0 0 6px #00E676" : "none" }} />
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{action1Endpoints.length > 0 ? "Live" : "No Data"}</span>
+                </div>
+              </div>
+              {action1Summary && (
+                <div style={{ display: "flex", gap: "0.625rem", marginBottom: "0.875rem" }}>
+                  <div style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", background: "rgba(0,230,118,0.1)", border: "1px solid rgba(0,230,118,0.2)", textAlign: "center" }}>
+                    <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#00E676", fontSize: "1.1rem" }}>{action1Summary.compliant}</div>
+                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.65rem" }}>Compliant</div>
+                  </div>
+                  <div style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", background: "rgba(255,179,0,0.1)", border: "1px solid rgba(255,179,0,0.2)", textAlign: "center" }}>
+                    <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#FFB300", fontSize: "1.1rem" }}>{action1Summary.needs_attention}</div>
+                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.65rem" }}>Needs Attn</div>
+                  </div>
+                  <div style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", background: "rgba(255,68,68,0.1)", border: "1px solid rgba(255,68,68,0.2)", textAlign: "center" }}>
+                    <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#FF4444", fontSize: "1.1rem" }}>{action1Summary.critical}</div>
+                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.65rem" }}>Critical</div>
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "150px", overflowY: "auto", paddingRight: "0.25rem" }}>
+                {action1Endpoints.length === 0 ? (
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8rem", textAlign: "center", padding: "1.5rem 0" }}>No endpoints found. Configure Action1 in Integrations.</div>
+                ) : action1Endpoints.map(ep => (
+                  <div key={ep.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem 0.625rem", borderRadius: "8px", background: "rgba(75,132,200,0.07)", border: "1px solid rgba(75,132,200,0.1)" }}>
+                    <div>
+                      <div style={{ color: "white", fontSize: "0.8rem", fontWeight: 600 }}>{ep.name}</div>
+                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>{ep.os}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{
+                        fontSize: "0.63rem", fontWeight: 700, padding: "0.18rem 0.5rem", borderRadius: "20px",
+                        background: ep.status === "Compliant" ? "rgba(0,230,118,0.15)" : ep.status === "Critical" ? "rgba(255,68,68,0.15)" : "rgba(255,179,0,0.15)",
+                        color: ep.status === "Compliant" ? "#00E676" : ep.status === "Critical" ? "#FF4444" : "#FFB300",
+                        border: `1px solid ${ep.status === "Compliant" ? "rgba(0,230,118,0.3)" : ep.status === "Critical" ? "rgba(255,68,68,0.3)" : "rgba(255,179,0,0.3)"}`
+                      }}>{ep.status}</span>
+                      {ep.patches_missing > 0 && (
+                        <div style={{ color: "#FF4444", fontSize: "0.65rem", marginTop: "0.15rem" }}>{ep.patches_missing} missing</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {action1Summary && (
+                <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(75,132,200,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>Total Missing Patches</span>
+                  <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: action1Summary.total_missing_patches === 0 ? "#00E676" : "#FF4444", fontSize: "1rem" }}>{action1Summary.total_missing_patches}</span>
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
       </div>
 
       {/* Live Tickets Table */}

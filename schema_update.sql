@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS public.integration_configs (
 INSERT INTO public.integration_configs (name, category, status) VALUES
   ('Tactical RMM', 'RMM', 'Disconnected'),
   ('ITFlow', 'PSA', 'Disconnected'),
+  ('Action1', 'Patching', 'Disconnected'),
   ('Wazuh SIEM', 'Security', 'Connected'),
   ('Stripe', 'Billing', 'Connected'),
   ('Grafana', 'Monitoring', 'Connected'),
