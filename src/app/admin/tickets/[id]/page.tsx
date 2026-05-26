@@ -1,350 +1,427 @@
 "use client";
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Send, User, Bot, Clock, ShieldCheck, Loader2, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
+import {
+  ArrowLeft, Send, CheckCircle2, Clock, AlertCircle,
+  MessageSquare, User, Loader2, ChevronDown,
+} from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 
-interface ClientInfo {
-  first_name?: string;
-  last_name?: string;
-  company_name?: string;
+interface TicketNote {
+  id: string;
+  ticket_id: string;
+  body: string;
+  author_name: string;
+  is_internal: boolean;
+  created_at: string;
 }
 
-interface TicketInfo {
+interface TicketDetails {
   id: string;
   subject: string;
   description: string;
   status: string;
   priority: string;
   created_at: string;
-  updated_at: string;
-  client?: ClientInfo | ClientInfo[] | null;
+  updated_at?: string;
+  client?: { first_name?: string; last_name?: string; company_name?: string; email?: string } | null;
+  assignee?: { first_name?: string; last_name?: string } | null;
 }
 
-interface MessageSender {
-  first_name?: string;
-  last_name?: string;
-  role?: string;
+const STATUS_OPTIONS = ["open", "in_progress", "resolved", "closed", "critical"];
+
+function statusStyle(status: string) {
+  switch (status) {
+    case "critical": return { bg: "rgba(239,68,68,0.1)", color: "#ef4444", icon: <AlertCircle size={14} /> };
+    case "open":     return { bg: "rgba(59,130,246,0.1)", color: "#3b82f6", icon: <MessageSquare size={14} /> };
+    case "in_progress": return { bg: "rgba(245,158,11,0.1)", color: "#f59e0b", icon: <Clock size={14} /> };
+    case "resolved": return { bg: "rgba(16,185,129,0.1)", color: "#10b981", icon: <CheckCircle2 size={14} /> };
+    case "closed":   return { bg: "rgba(107,114,128,0.1)", color: "#6b7280", icon: <CheckCircle2 size={14} /> };
+    default:         return { bg: "rgba(107,114,128,0.1)", color: "#6b7280", icon: <MessageSquare size={14} /> };
+  }
 }
 
-interface TicketMessageInfo {
-  id: string;
-  ticket_id: string;
-  sender_id: string;
-  message: string;
-  is_internal_note: boolean;
-  created_at: string;
-  sender?: MessageSender | MessageSender[] | null;
+function priorityColor(p: string) {
+  if (p === "critical") return "#ef4444";
+  if (p === "high") return "#f59e0b";
+  if (p === "medium") return "#3b82f6";
+  return "#6b7280";
 }
 
-interface PostgresChangesPayload {
-  new: TicketMessageInfo;
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
 }
 
-export default function AdminTicketDetailPage() {
-  const { id } = useParams();
+export default function TicketDetailPage() {
+  const params = useParams();
   const router = useRouter();
-  const [ticket, setTicket] = useState<TicketInfo | null>(null);
-  const [messages, setMessages] = useState<TicketMessageInfo[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [isInternal, setIsInternal] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const id = params.id as string;
   const supabase = createClient();
 
-  const fetchAiSummary = useCallback(async (ticketData: TicketInfo, msgs: TicketMessageInfo[]) => {
-    setAiLoading(true);
-    try {
-      const res = await fetch('/api/ai-workforce/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticketData, messages: msgs }),
-      });
-      const data = await res.json();
-      if (data.summary) setAiSummary(data.summary);
-    } catch (e) {
-      console.error('AI summary fetch failed', e);
-    } finally {
-      setAiLoading(false);
-    }
-  }, []);
-
-  const fetchTicketData = useCallback(async () => {
-    const { data: ticketData } = await supabase
-      .from('tickets')
-      .select('*, client:client_id(first_name, last_name, company_name)')
-      .eq('id', id)
-      .single();
-    
-    if (ticketData) {
-      setTicket(ticketData as TicketInfo);
-      
-      const { data: msgs } = await supabase
-        .from('ticket_messages')
-        .select('*, sender:sender_id(first_name, last_name, role)')
-        .eq('ticket_id', id)
-        .order('created_at', { ascending: true });
-      
-      if (msgs) setMessages(msgs as TicketMessageInfo[]);
- 
-      // Fetch AI summary after data loads
-      if (ticketData) fetchAiSummary(ticketData as TicketInfo, (msgs || []) as TicketMessageInfo[]);
-    }
-    setLoading(false);
-  }, [id, supabase, fetchAiSummary]);
+  const [ticket, setTicket] = useState<TicketDetails | null>(null);
+  const [notes, setNotes] = useState<TicketNote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newNote, setNewNote] = useState("");
+  const [isInternal, setIsInternal] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchTicketData();
-    }, 0);
-    
-    const channel = supabase
-      .channel(`admin-ticket-${id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${id}` }, (payload: PostgresChangesPayload) => {
-        setMessages(prev => [...prev, payload.new]);
-      })
-      .subscribe();
+    async function load() {
+      const [ticketRes, notesRes] = await Promise.all([
+        supabase
+          .from("tickets")
+          .select("*, client:client_id(first_name, last_name, company_name, email), assignee:assigned_to(first_name, last_name)")
+          .eq("id", id)
+          .single(),
+        supabase
+          .from("ticket_notes")
+          .select("*")
+          .eq("ticket_id", id)
+          .order("created_at", { ascending: true }),
+      ]);
 
-    return () => {
-      clearTimeout(timer);
-      supabase.removeChannel(channel);
-    };
-  }, [id, supabase, fetchTicketData]);
+      if (ticketRes.data) {
+        const t = ticketRes.data;
+        const clientRaw = Array.isArray(t.client) ? t.client[0] : t.client;
+        const assigneeRaw = Array.isArray(t.assignee) ? t.assignee[0] : t.assignee;
+        setTicket({ ...t, client: clientRaw, assignee: assigneeRaw });
+      }
+      if (notesRes.data) setNotes(notesRes.data);
+      setLoading(false);
+    }
+    load();
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [notes]);
 
-  async function handleSendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newMessage.trim() || sending) return;
-
+  const handleSendNote = async () => {
+    if (!newNote.trim()) return;
     setSending(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { error } = await supabase.from('ticket_messages').insert({
-      ticket_id: id,
-      sender_id: user?.id,
-      message: newMessage,
-      is_internal_note: isInternal
-    });
+    const { data, error } = await supabase
+      .from("ticket_notes")
+      .insert([{
+        ticket_id: id,
+        body: newNote.trim(),
+        author_name: "Admin",
+        is_internal: isInternal,
+      }])
+      .select()
+      .single();
 
-    if (!error) {
-      setNewMessage("");
-      // Update ticket updated_at
-      await supabase.from('tickets').update({ updated_at: new Date().toISOString() }).eq('id', id);
+    if (!error && data) {
+      setNotes((prev) => [...prev, data]);
+      setNewNote("");
     }
     setSending(false);
-  }
+  };
 
-  async function updateStatus(status: string) {
-    const { error } = await supabase.from('tickets').update({ status }).eq('id', id);
-    if (!error) setTicket(prev => prev ? { ...prev, status } : null);
-  }
+  const handleStatusChange = async (newStatus: string) => {
+    setUpdatingStatus(true);
+    setStatusOpen(false);
+    const { error } = await supabase.from("tickets").update({ status: newStatus }).eq("id", id);
+    if (!error && ticket) setTicket({ ...ticket, status: newStatus });
+    setUpdatingStatus(false);
+  };
 
   if (loading) {
     return (
-      <div style={{ height: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
       </div>
     );
   }
 
-  if (!ticket) return <div>Ticket not found.</div>;
+  if (!ticket) {
+    return (
+      <div style={{ padding: "2rem", color: "var(--color-neutral-400)" }}>
+        Ticket not found.{" "}
+        <Link href="/admin/tickets" style={{ color: "var(--color-accent-500)" }}>Go back</Link>
+      </div>
+    );
+  }
 
-  const clientObj = Array.isArray(ticket.client) ? ticket.client[0] : ticket.client;
+  const ss = statusStyle(ticket.status);
+  const clientName = ticket.client
+    ? ticket.client.company_name || `${ticket.client.first_name ?? ""} ${ticket.client.last_name ?? ""}`.trim()
+    : "Unknown Client";
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100vh - 120px)" }}>
+    <div style={{ padding: "2rem", maxWidth: "1100px", margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: "1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer" }}>
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <h1 style={{ color: "white", fontSize: "1.5rem", fontWeight: 800, fontFamily: "Syne, sans-serif" }}>{ticket.subject}</h1>
-              <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)" }}>#{ticket.id.slice(0, 8)}</span>
-            </div>
-            <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-              Client: <span style={{ color: "var(--color-accent-500)", fontWeight: 600 }}>{clientObj?.company_name || `${clientObj?.first_name || ''} ${clientObj?.last_name || ''}`.trim() || 'Unknown'}</span>
-            </p>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
+        <Link href="/admin/tickets" style={{ color: "var(--color-neutral-400)", textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <ArrowLeft size={20} />
+        </Link>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.5rem", color: "white", margin: 0 }}>
+              {ticket.subject}
+            </h1>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: "0.35rem",
+              padding: "0.3rem 0.75rem", borderRadius: "999px",
+              background: ss.bg, color: ss.color, fontSize: "0.75rem", fontWeight: 700, textTransform: "capitalize",
+            }}>
+              {ss.icon} {ticket.status.replace("_", " ")}
+            </span>
+            <span style={{
+              padding: "0.3rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase",
+              color: priorityColor(ticket.priority), background: `${priorityColor(ticket.priority)}1a`,
+            }}>
+              {ticket.priority}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: "1.5rem", marginTop: "0.5rem", color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>
+            <span>#{ticket.id.slice(0, 8)}</span>
+            <span>Client: <strong style={{ color: "var(--color-neutral-300)" }}>{clientName}</strong></span>
+            {ticket.client?.email && <span>{ticket.client.email}</span>}
+            <span>Opened {timeAgo(ticket.created_at)}</span>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <select 
-            value={ticket.status}
-            onChange={(e) => updateStatus(e.target.value)}
-            style={{ 
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", 
-              color: "white", padding: "0.5rem 1rem", borderRadius: "8px", outline: "none", fontWeight: 600
+
+        {/* Status Dropdown */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setStatusOpen((o) => !o)}
+            disabled={updatingStatus}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.5rem",
+              padding: "0.6rem 1rem", borderRadius: "8px",
+              background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)",
+              color: "var(--color-accent-400)", fontSize: "0.875rem", fontWeight: 600,
+              cursor: "pointer",
             }}
           >
-            <option value="open">Open</option>
-            <option value="in_progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-            <option value="closed">Closed</option>
-          </select>
-          <button onClick={() => updateStatus('resolved')} className="btn-primary" style={{ background: "var(--color-success)" }}>
-            Resolve Ticket
+            {updatingStatus ? <Loader2 size={14} className="animate-spin" /> : null}
+            Change Status <ChevronDown size={16} />
           </button>
+          {statusOpen && (
+            <div style={{
+              position: "absolute", right: 0, top: "110%", zIndex: 100,
+              background: "#0D1526", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "8px",
+              overflow: "hidden", minWidth: "160px", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            }}>
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleStatusChange(s)}
+                  style={{
+                    display: "block", width: "100%", textAlign: "left",
+                    padding: "0.625rem 1rem", background: s === ticket.status ? "rgba(0,212,255,0.05)" : "none",
+                    border: "none", color: statusStyle(s).color, fontSize: "0.875rem", fontWeight: 600,
+                    cursor: "pointer", textTransform: "capitalize",
+                  }}
+                >
+                  {s.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "1.5rem", flex: 1, minHeight: 0 }}>
-        {/* Chat Area */}
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
-          <div ref={scrollRef} style={{ flex: 1, padding: "1.5rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            {/* Original Issue */}
-            <div style={{ background: "rgba(0,212,255,0.03)", padding: "1.25rem", borderRadius: "12px", border: "1px solid rgba(0,212,255,0.1)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <MessageSquare size={16} color="var(--color-accent-500)" />
-                <span style={{ color: "white", fontWeight: 700, fontSize: "0.875rem" }}>Original Request</span>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "2rem", alignItems: "start" }}>
+        {/* Thread */}
+        <div>
+          {/* Original description */}
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", marginBottom: "1rem", borderLeft: "3px solid var(--color-accent-500)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <User size={18} color="var(--color-accent-400)" />
               </div>
-              <div style={{ color: "var(--color-neutral-300)", fontSize: "0.9375rem", lineHeight: 1.6 }}>{ticket.description}</div>
+              <div>
+                <div style={{ color: "white", fontWeight: 600, fontSize: "0.9rem" }}>{clientName}</div>
+                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{timeAgo(ticket.created_at)}</div>
+              </div>
             </div>
-
-            {messages.map((msg, idx) => {
-              const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
-              const isAdmin = senderObj?.role === 'admin' || senderObj?.role === 'agent';
-              return (
-                <div key={idx} style={{ 
-                  display: "flex", gap: "1rem", 
-                  background: msg.is_internal_note ? "rgba(255,179,0,0.05)" : "transparent",
-                  padding: msg.is_internal_note ? "1rem" : 0,
-                  borderRadius: msg.is_internal_note ? "8px" : 0,
-                  border: msg.is_internal_note ? "1px dashed rgba(255,179,0,0.2)" : "none"
-                }}>
-                  <div style={{ 
-                    width: 40, height: 40, borderRadius: "50%", 
-                    background: isAdmin ? "rgba(0,212,255,0.1)" : "rgba(255,255,255,0.05)", 
-                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 
-                  }}>
-                    {isAdmin ? <ShieldCheck size={20} color="var(--color-accent-500)" /> : <User size={20} color="var(--color-neutral-400)" />}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                      <span style={{ color: isAdmin ? "var(--color-accent-500)" : "white", fontWeight: 600, fontSize: "0.875rem" }}>
-                        {isAdmin ? `${senderObj?.first_name || ''} (Team)` : `${clientObj?.first_name || ''} (Client)`}
-                        {msg.is_internal_note && <span style={{ marginLeft: "0.5rem", color: "#FFB300", fontSize: "0.7rem", textTransform: "uppercase" }}>Internal Note</span>}
-                      </span>
-                      <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{new Date(msg.created_at).toLocaleTimeString()}</span>
-                    </div>
-                    <div style={{ color: "var(--color-neutral-300)", fontSize: "0.9375rem", lineHeight: 1.6 }}>{msg.message}</div>
-                  </div>
-                </div>
-              )
-            })}
+            <p style={{ color: "var(--color-neutral-300)", fontSize: "0.9rem", lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>
+              {ticket.description || "No description provided."}
+            </p>
           </div>
 
-          {/* Admin Input */}
-          <div style={{ padding: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.2)" }}>
-            <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-              <button 
+          {/* Notes thread */}
+          {notes.map((note) => (
+            <div
+              key={note.id}
+              className="glass-card"
+              style={{
+                padding: "1.25rem 1.5rem", borderRadius: "12px", marginBottom: "0.75rem",
+                borderLeft: note.is_internal
+                  ? "3px solid rgba(168,85,247,0.6)"
+                  : "3px solid rgba(0,230,118,0.4)",
+                opacity: 1,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: note.is_internal ? "rgba(168,85,247,0.15)" : "rgba(0,230,118,0.1)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <User size={16} color={note.is_internal ? "#a855f7" : "var(--color-success)"} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>{note.author_name}</span>
+                    {note.is_internal && (
+                      <span style={{ padding: "0.15rem 0.5rem", borderRadius: "999px", fontSize: "0.65rem", fontWeight: 700, background: "rgba(168,85,247,0.15)", color: "#a855f7" }}>
+                        INTERNAL
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{timeAgo(note.created_at)}</div>
+                </div>
+              </div>
+              <p style={{ color: "var(--color-neutral-300)", fontSize: "0.875rem", lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>
+                {note.body}
+              </p>
+            </div>
+          ))}
+          <div ref={bottomRef} />
+
+          {/* Reply box */}
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", marginTop: "1rem" }}>
+            <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
+              <button
                 onClick={() => setIsInternal(false)}
-                style={{ 
-                  background: !isInternal ? "var(--color-accent-500)" : "rgba(255,255,255,0.05)", 
-                  border: "none", color: "white", padding: "0.4rem 1rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" 
+                style={{
+                  padding: "0.4rem 1rem", borderRadius: "6px", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer",
+                  background: !isInternal ? "rgba(0,230,118,0.1)" : "transparent",
+                  border: !isInternal ? "1px solid rgba(0,230,118,0.3)" : "1px solid rgba(255,255,255,0.08)",
+                  color: !isInternal ? "var(--color-success)" : "var(--color-neutral-500)",
                 }}
               >
                 Reply to Client
               </button>
-              <button 
+              <button
                 onClick={() => setIsInternal(true)}
-                style={{ 
-                  background: isInternal ? "#FFB300" : "rgba(255,255,255,0.05)", 
-                  border: "none", color: isInternal ? "black" : "white", padding: "0.4rem 1rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" 
+                style={{
+                  padding: "0.4rem 1rem", borderRadius: "6px", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer",
+                  background: isInternal ? "rgba(168,85,247,0.1)" : "transparent",
+                  border: isInternal ? "1px solid rgba(168,85,247,0.3)" : "1px solid rgba(255,255,255,0.08)",
+                  color: isInternal ? "#a855f7" : "var(--color-neutral-500)",
                 }}
               >
                 Internal Note
               </button>
             </div>
-            <form onSubmit={handleSendMessage} style={{ position: "relative" }}>
-              <textarea 
-                value={newMessage}
-                onChange={e => setNewMessage(e.target.value)}
-                placeholder={isInternal ? "Write a private note for the team..." : "Send a response to the client..."}
-                style={{ 
-                  width: "100%", padding: "1rem 3.5rem 1rem 1.25rem", borderRadius: "12px", 
-                  background: "rgba(255,255,255,0.05)", border: `1px solid ${isInternal ? '#FFB30040' : 'rgba(255,255,255,0.1)'}`, 
-                  color: "white", outline: "none", resize: "none", fontSize: "0.9375rem" 
-                }}
-                rows={2}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
-              />
-              <button 
-                type="submit" 
-                disabled={sending || !newMessage.trim()}
-                style={{ 
-                  position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)",
-                  background: isInternal ? "#FFB300" : "var(--color-accent-500)", border: "none", width: 36, height: 36, 
-                  borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", opacity: (sending || !newMessage.trim()) ? 0.5 : 1
-                }}
+            <textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSendNote();
+              }}
+              placeholder={isInternal ? "Add an internal note (not visible to client)..." : "Type your reply to the client..."}
+              style={{
+                width: "100%", minHeight: "120px", padding: "1rem",
+                background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "8px", color: "white", fontSize: "0.9rem",
+                resize: "vertical", outline: "none", boxSizing: "border-box",
+                lineHeight: 1.6,
+              }}
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.75rem" }}>
+              <span style={{ color: "var(--color-neutral-600)", fontSize: "0.75rem" }}>Ctrl+Enter to send</span>
+              <button
+                onClick={handleSendNote}
+                disabled={sending || !newNote.trim()}
+                className="btn-primary"
+                style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 1.25rem", borderRadius: "8px", fontSize: "0.875rem" }}
               >
-                {sending ? <Loader2 className="animate-spin" size={18} color={isInternal ? 'black' : 'white'} /> : <Send size={18} color={isInternal ? 'black' : 'white'} />}
+                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {isInternal ? "Add Note" : "Send Reply"}
               </button>
-            </form>
+            </div>
           </div>
         </div>
 
         {/* Sidebar */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div className="glass-card" style={{ padding: "1.5rem" }}>
-            <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700, marginBottom: "1rem", textTransform: "uppercase" }}>Ticket Info</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              <div>
-                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginBottom: "0.25rem" }}>Priority</div>
-                <div style={{ color: ticket.priority === 'critical' ? '#ef4444' : 'white', fontWeight: 700, fontSize: "1rem", textTransform: "capitalize" }}>{ticket.priority}</div>
+          {/* Details */}
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px" }}>
+            <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: "0.875rem", fontWeight: 700, color: "white", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Ticket Details
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {[
+                { label: "Status", value: <span style={{ color: ss.color, textTransform: "capitalize" }}>{ticket.status.replace("_", " ")}</span> },
+                { label: "Priority", value: <span style={{ color: priorityColor(ticket.priority), textTransform: "uppercase", fontSize: "0.75rem", fontWeight: 700 }}>{ticket.priority}</span> },
+                { label: "Client", value: clientName },
+                { label: "Email", value: ticket.client?.email || "—" },
+                {
+                  label: "Assignee",
+                  value: ticket.assignee
+                    ? `${ticket.assignee.first_name ?? ""} ${ticket.assignee.last_name ?? ""}`.trim()
+                    : "Unassigned",
+                },
+                { label: "Opened", value: new Date(ticket.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+                  <span style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>{label}</span>
+                  <span style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 500, textAlign: "right" }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Thread Summary */}
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px" }}>
+            <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: "0.875rem", fontWeight: 700, color: "white", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Activity
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>Total replies</span>
+                <span style={{ color: "white", fontWeight: 700 }}>{notes.length}</span>
               </div>
-              <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.05)" }} />
-              <div>
-                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginBottom: "0.5rem" }}>Client Contact</div>
-                <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600 }}>{clientObj?.first_name || ''} {clientObj?.last_name || ''}</div>
-                <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>{clientObj?.company_name}</div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>Internal notes</span>
+                <span style={{ color: "#a855f7", fontWeight: 700 }}>{notes.filter((n) => n.is_internal).length}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>Client replies</span>
+                <span style={{ color: "var(--color-success)", fontWeight: 700 }}>{notes.filter((n) => !n.is_internal).length}</span>
               </div>
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: "1.5rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-              <Bot size={20} color="var(--color-accent-500)" />
-              <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700 }}>AI Intelligence</h3>
-            </div>
-            {aiLoading ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>
-                <Loader2 size={16} className="animate-spin" color="var(--color-accent-500)" />
-                Max is analyzing this ticket...
-              </div>
-            ) : aiSummary ? (
-              <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.7, whiteSpace: "pre-line" }}>
-                {aiSummary.split('\n').map((line, i) => {
-                  if (line.startsWith('Suggested Fix:')) {
-                    return <div key={i}><span style={{ color: "white", fontWeight: 700 }}>Suggested Fix:</span>{line.replace('Suggested Fix:', '')}</div>;
-                  }
-                  if (line.startsWith('Recommended Action:')) {
-                    return <div key={i} style={{ marginTop: "0.75rem" }}><span style={{ color: "var(--color-accent-500)", fontWeight: 700 }}>Recommended Action:</span>{line.replace('Recommended Action:', '')}</div>;
-                  }
-                  return line ? <div key={i}>{line}</div> : null;
-                })}
-              </div>
-            ) : (
-              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>No AI analysis available.</div>
-            )}
-            {!aiLoading && ticket && (
+          {/* Quick Actions */}
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px" }}>
+            <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: "0.875rem", fontWeight: 700, color: "white", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Quick Actions
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <button
-                onClick={() => fetchAiSummary(ticket, messages)}
-                style={{ marginTop: "1rem", background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)", color: "var(--color-accent-500)", fontSize: "0.75rem", fontWeight: 600, padding: "0.4rem 0.875rem", borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem" }}
+                onClick={() => handleStatusChange("resolved")}
+                style={{ padding: "0.625rem", borderRadius: "8px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer" }}
               >
-                ↻ Re-analyze
+                ✓ Mark as Resolved
               </button>
-            )}
+              <button
+                onClick={() => handleStatusChange("closed")}
+                style={{ padding: "0.625rem", borderRadius: "8px", background: "rgba(107,114,128,0.1)", border: "1px solid rgba(107,114,128,0.2)", color: "#6b7280", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer" }}
+              >
+                × Close Ticket
+              </button>
+              <button
+                onClick={() => router.push("/admin/tickets")}
+                style={{ padding: "0.625rem", borderRadius: "8px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", color: "var(--color-neutral-400)", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer" }}
+              >
+                ← Back to Queue
+              </button>
+            </div>
           </div>
         </div>
       </div>
