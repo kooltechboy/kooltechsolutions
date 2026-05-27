@@ -155,7 +155,14 @@ export default function AdminDashboard() {
 
         if (rmmRes.status === "fulfilled" && rmmRes.value.ok) {
           const json = await rmmRes.value.json();
-          setRmmDevices(json.devices || []);
+          const agents = json.agents || [];
+          setRmmDevices(agents.map((a: any) => ({
+            id: a.id || a.agent_id,
+            name: a.hostname,
+            os: a.os,
+            status: a.status,
+            last_seen: a.last_seen,
+          })));
         }
         if (itflowRes.status === "fulfilled" && itflowRes.value.ok) {
           const json = await itflowRes.value.json();
