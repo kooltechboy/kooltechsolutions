@@ -136,7 +136,14 @@ export default function IntegrationsPage() {
                     <Plug size={22} color={accentColor} />
                   </div>
                   <div>
-                    <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.0625rem", color: "white", marginBottom: "0.1rem" }}>{intg.name}</h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.1rem" }}>
+                      <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.0625rem", color: "white", margin: 0 }}>{intg.name}</h3>
+                      {intg.name === 'ITFlow' && isConnected && (
+                        <span style={{ padding: "0.15rem 0.4rem", background: "rgba(168,85,247,0.15)", color: "#A855F7", borderRadius: "4px", fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", border: "1px solid rgba(168,85,247,0.3)" }}>
+                          Live Data Sync
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: "0.6875rem", color: accentColor, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{intg.category}</div>
                   </div>
                 </div>

@@ -353,8 +353,8 @@ export default function AdminDashboard() {
                   <Package size={16} color="#A855F7" />
                 </div>
                 <div>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>ITFlow</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>IT Asset Inventory</div>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>ITFlow PSA</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Live Sync: Tickets, Clients & Assets</div>
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
                   <div style={{ width: 7, height: 7, borderRadius: "50%", background: itflowAssets.length > 0 ? "#00E676" : "#FF4444", boxShadow: itflowAssets.length > 0 ? "0 0 6px #00E676" : "none" }} />
