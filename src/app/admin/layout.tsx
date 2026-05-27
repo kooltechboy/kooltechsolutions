@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   LayoutDashboard, Users, Ticket, BarChart3, DollarSign,
   PenSquare, Plug, Bot, Monitor, Shield, Zap, Settings, Database,
-  LogOut, Bell, ChevronDown, Menu, X,
+  LogOut, Bell, ChevronDown, Menu, X, Server
 } from "lucide-react";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 
@@ -31,6 +31,7 @@ const navGroups = [
   {
     label: "Platform",
     items: [
+      { icon: Server, label: "ITFlow Sync", href: "/admin/itflow" },
       { icon: PenSquare, label: "Blog CMS", href: "/admin/blog" },
       { icon: Bot, label: "AI Workers", href: "/admin/ai-workforce" },
       { icon: Database, label: "AI Logs", href: "/admin/ai-logs" },
