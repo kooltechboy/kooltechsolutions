@@ -57,9 +57,41 @@ export async function GET(_request: Request) {
     }
 
     try {
-      // ── 1. Fetch agents from wazuh-monitoring index ────────────────────────
+      // ── 1. Find the latest monitoring snapshot timestamp ───────────────────
+      // The wazuh-monitoring-* index stores periodic snapshots (every ~15 min).
+      // Querying all history returns stale/deleted agents; we only want the
+      // most recent snapshot window to get the true current agent inventory.
+      const latestDoc = await opensearchQuery("wazuh-monitoring-*", {
+        size: 1,
+        sort: [{ timestamp: { order: "desc" } }],
+        _source: ["timestamp"],
+      });
+
+      const latestTimestamp: string | null =
+        latestDoc?.hits?.hits?.[0]?._source?.timestamp ?? null;
+
+      // Build the time filter: use 5-min window around latest snapshot if available,
+      // otherwise fall back to the last 30 minutes.
+      const snapshotFilter = latestTimestamp
+        ? {
+            range: {
+              timestamp: {
+                gte: new Date(
+                  new Date(latestTimestamp).getTime() - 5 * 60 * 1000
+                ).toISOString(),
+              },
+            },
+          }
+        : {
+            range: {
+              timestamp: { gte: "now-30m" },
+            },
+          };
+
+      // ── 2. Fetch agents from that snapshot window only ─────────────────────
       const agentsRes = await opensearchQuery("wazuh-monitoring-*", {
         size: 0,
+        query: snapshotFilter,
         aggs: {
           agents: {
             terms: { field: "id", size: 200 },
@@ -81,9 +113,6 @@ export async function GET(_request: Request) {
                 },
               },
             },
-          },
-          status_counts: {
-            terms: { field: "status", size: 10 },
           },
         },
       });
@@ -107,24 +136,13 @@ export async function GET(_request: Request) {
         };
       });
 
-      // Build summary from status aggregation buckets
-      const statusBuckets: Array<{ key: string; doc_count: number }> =
-        agentsRes?.aggregations?.status_counts?.buckets ?? [];
-
-      const getCount = (key: string) =>
-        statusBuckets.find((b) => b.key === key)?.doc_count ?? 0;
-
-      // Status counts from agg reflect historical docs — use unique agent statuses instead
+      // Build summary from actual agent statuses (not aggregation doc counts)
       const summary = {
         total_agents: agents.length,
         active: agents.filter((a) => a.status === "active").length,
         disconnected: agents.filter((a) => a.status === "disconnected").length,
         never_connected: agents.filter((a) => a.status === "never_connected").length,
         pending: agents.filter((a) => a.status === "pending").length,
-        // Keep raw counts for reference
-        _raw_status_counts: Object.fromEntries(
-          statusBuckets.map((b) => [b.key, b.doc_count])
-        ),
       };
 
       // ── 2. Fetch recent high-severity alerts ───────────────────────────────
