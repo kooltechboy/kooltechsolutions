@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { DollarSign, Users, Ticket, TrendingUp, AlertTriangle, ArrowUp, ArrowDown, Activity, ArrowRight, Loader2, Monitor, Package, ShieldCheck } from "lucide-react";
+import { DollarSign, Users, Ticket, TrendingUp, AlertTriangle, ArrowUp, ArrowDown, Activity, ArrowRight, Loader2, Monitor, Package, ShieldCheck, ShieldAlert } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { motion } from "framer-motion";
 
 const priorityColor: Record<string, string> = {
   critical: "#FF4444", high: "#FFB300", normal: "#00D4FF", low: "#00E676",
@@ -49,6 +50,27 @@ interface Action1Summary {
   total_missing_patches: number;
 }
 
+interface WazuhAgent {
+  id: string;
+  name: string;
+  ip: string;
+  status: string;
+}
+
+interface WazuhEvent {
+  id: string;
+  rule_level: number;
+  description: string;
+  agent_name: string;
+  timestamp: string;
+}
+
+interface WazuhData {
+  agents: WazuhAgent[];
+  summary: { total_agents: number; active: number; disconnected: number };
+  recent_events: WazuhEvent[];
+}
+
 interface ClientDetails {
   first_name?: string;
   last_name?: string;
@@ -84,6 +106,7 @@ export default function AdminDashboard() {
   const [itflowAssets, setItflowAssets] = useState<ITFlowAsset[]>([]);
   const [action1Endpoints, setAction1Endpoints] = useState<Action1Endpoint[]>([]);
   const [action1Summary, setAction1Summary] = useState<Action1Summary | null>(null);
+  const [wazuhData, setWazuhData] = useState<WazuhData | null>(null);
   const [telemetryLoading, setTelemetryLoading] = useState(true);
 
   const supabase = createClient();
@@ -147,10 +170,11 @@ export default function AdminDashboard() {
     // Fetch live telemetry from the integration proxies
     async function fetchTelemetry() {
       try {
-        const [rmmRes, itflowRes, action1Res] = await Promise.allSettled([
+        const [rmmRes, itflowRes, action1Res, wazuhRes] = await Promise.allSettled([
           fetch("/api/rmm"),
           fetch("/api/itflow?endpoint=assets"),
           fetch("/api/action1"),
+          fetch("/api/wazuh"),
         ]);
 
         if (rmmRes.status === "fulfilled" && rmmRes.value.ok) {
@@ -172,6 +196,10 @@ export default function AdminDashboard() {
           const json = await action1Res.value.json();
           setAction1Endpoints(json.endpoints || []);
           setAction1Summary(json.summary || null);
+        }
+        if (wazuhRes.status === "fulfilled" && wazuhRes.value.ok) {
+          const json = await wazuhRes.value.json();
+          setWazuhData(json);
         }
       } catch (e) {
         console.warn("Telemetry fetch error:", e);
@@ -212,8 +240,15 @@ export default function AdminDashboard() {
 
       {/* KPI Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        {kpis.map(kpi => (
-          <div key={kpi.label} className="kpi-card">
+        {kpis.map((kpi, idx) => (
+          <motion.div 
+            key={kpi.label} 
+            className="kpi-card"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05, duration: 0.4 }}
+            whileHover={{ y: -4, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" }}
+          >
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.75rem" }}>
               <div style={{ width: 38, height: 38, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <kpi.icon size={18} color={kpi.color} />
@@ -226,7 +261,7 @@ export default function AdminDashboard() {
             </div>
             <div style={{ fontFamily: "Syne, sans-serif", fontSize: "1.625rem", fontWeight: 800, color: "white" }}>{kpi.value}</div>
             <div style={{ color: "var(--color-neutral-500)", fontSize: "0.78rem", marginTop: "0.2rem" }}>{kpi.label}</div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -305,7 +340,12 @@ export default function AdminDashboard() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.25rem" }}>
 
             {/* ── Tactical RMM Panel ── */}
-            <div className="kpi-card" style={{ padding: "1.25rem" }}>
+            <motion.div className="kpi-card" style={{ padding: "1.25rem" }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              whileHover={{ scale: 1.015 }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1rem" }}>
                 <div style={{ width: 34, height: 34, borderRadius: "9px", background: "rgba(0,212,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Monitor size={16} color="#00D4FF" />
@@ -351,10 +391,15 @@ export default function AdminDashboard() {
                   <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Total</div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* ── ITFlow Panel ── */}
-            <div className="kpi-card" style={{ padding: "1.25rem" }}>
+            <motion.div className="kpi-card" style={{ padding: "1.25rem" }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              whileHover={{ scale: 1.015 }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1rem" }}>
                 <div style={{ width: 34, height: 34, borderRadius: "9px", background: "rgba(168,85,247,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Package size={16} color="#A855F7" />
@@ -400,10 +445,15 @@ export default function AdminDashboard() {
                   <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Expired</div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* ── Action1 Patch Status Panel ── */}
-            <div className="kpi-card" style={{ padding: "1.25rem" }}>
+            <motion.div className="kpi-card" style={{ padding: "1.25rem" }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              whileHover={{ scale: 1.015 }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1rem" }}>
                 <div style={{ width: 34, height: 34, borderRadius: "9px", background: "rgba(255,179,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <ShieldCheck size={16} color="#FFB300" />
@@ -462,7 +512,59 @@ export default function AdminDashboard() {
                   <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: action1Summary.total_missing_patches === 0 ? "#00E676" : "#FF4444", fontSize: "1rem" }}>{action1Summary.total_missing_patches}</span>
                 </div>
               )}
-            </div>
+            </motion.div>
+
+            {/* ── Wazuh SIEM Panel ── */}
+            <motion.div className="kpi-card" style={{ padding: "1.25rem" }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              whileHover={{ scale: 1.015 }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1rem" }}>
+                <div style={{ width: 34, height: 34, borderRadius: "9px", background: "rgba(255,68,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <ShieldAlert size={16} color="#FF4444" />
+                </div>
+                <div>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Wazuh SIEM</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Threat Detection</div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: wazuhData ? "#00E676" : "#FF4444", boxShadow: wazuhData ? "0 0 6px #00E676" : "none" }} />
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{wazuhData ? "Live" : "No Data"}</span>
+                </div>
+              </div>
+              
+              {wazuhData && (
+                <>
+                  <div style={{ display: "flex", gap: "0.625rem", marginBottom: "0.875rem" }}>
+                    <div style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", background: "rgba(0,230,118,0.1)", border: "1px solid rgba(0,230,118,0.2)", textAlign: "center" }}>
+                      <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#00E676", fontSize: "1.1rem" }}>{wazuhData.summary.active}</div>
+                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.65rem" }}>Active Agents</div>
+                    </div>
+                    <div style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", background: "rgba(255,179,0,0.1)", border: "1px solid rgba(255,179,0,0.2)", textAlign: "center" }}>
+                      <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#FFB300", fontSize: "1.1rem" }}>{wazuhData.summary.disconnected}</div>
+                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.65rem" }}>Disconnected</div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem", marginBottom: "0.5rem", fontWeight: 600 }}>Recent Alerts</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "120px", overflowY: "auto", paddingRight: "0.25rem" }}>
+                    {wazuhData.recent_events.length === 0 ? (
+                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8rem", textAlign: "center", padding: "1rem 0" }}>No recent alerts.</div>
+                    ) : wazuhData.recent_events.map(evt => (
+                      <div key={evt.id} style={{ display: "flex", flexDirection: "column", gap: "0.2rem", padding: "0.5rem 0.625rem", borderRadius: "8px", background: "rgba(255,68,68,0.07)", border: "1px solid rgba(255,68,68,0.1)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <span style={{ color: "white", fontSize: "0.75rem", fontWeight: 600 }}>{evt.agent_name}</span>
+                          <span style={{ color: "#FF4444", fontSize: "0.65rem", fontWeight: 700, background: "rgba(255,68,68,0.15)", padding: "0.1rem 0.4rem", borderRadius: "4px" }}>Level {evt.rule_level}</span>
+                        </div>
+                        <div style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem", lineHeight: "1.2" }}>{evt.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </motion.div>
 
           </div>
         )}

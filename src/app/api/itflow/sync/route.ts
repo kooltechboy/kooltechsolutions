@@ -32,16 +32,23 @@ export async function POST(request: Request) {
 
     const client = new ITFlowClient({ apiUrl, apiKey });
 
-    // Sync Clients (ITFlow Clients -> Supabase Profiles)
-    // Note: In reality, ITFlow clients map better to organizations or a new 'clients' table.
-    // For this example, we assume syncing down to a custom table or just validating data.
+    // Sync Clients (ITFlow Clients -> Supabase profiles & organizations)
     let syncedClients = 0;
     try {
       const itflowClients = await client.getItems('clients');
       if (itflowClients && itflowClients.data && Array.isArray(itflowClients.data)) {
-        // Pseudo-sync logic: Just logging for now to avoid overwriting existing profiles destructively
         console.log(`Fetched ${itflowClients.data.length} clients from ITFlow.`);
-        syncedClients = itflowClients.data.length;
+        
+        for (const itfClient of itflowClients.data) {
+          // Attempt to insert into organizations (ignoring conflicts for simplicity)
+          await supabase.from("organizations").insert({
+            company_name: itfClient.client_name || "Unknown Company",
+            phone: itfClient.client_phone || null,
+            website: itfClient.client_website || null
+          }).select('id').maybeSingle();
+          
+          syncedClients++;
+        }
       }
     } catch (e) {
       console.error("Failed to sync clients", e);
@@ -53,8 +60,16 @@ export async function POST(request: Request) {
       const itflowTickets = await client.getItems('tickets');
       if (itflowTickets && itflowTickets.data && Array.isArray(itflowTickets.data)) {
         console.log(`Fetched ${itflowTickets.data.length} tickets from ITFlow.`);
-        // E.g., INSERT INTO public.tickets ... ON CONFLICT DO UPDATE
-        syncedTickets = itflowTickets.data.length;
+        
+        for (const itfTicket of itflowTickets.data) {
+          await supabase.from("tickets").insert({
+            subject: itfTicket.ticket_subject || `Ticket #${itfTicket.ticket_prefix || itfTicket.ticket_id || 'Unknown'}`,
+            description: itfTicket.ticket_details || "Synced from ITFlow",
+            status: "open", // Map default status
+            priority: "normal" // Map default priority
+          });
+          syncedTickets++;
+        }
       }
     } catch (e) {
       console.error("Failed to sync tickets", e);
