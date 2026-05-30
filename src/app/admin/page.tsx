@@ -69,6 +69,8 @@ interface WazuhData {
   agents: WazuhAgent[];
   summary: { total_agents: number; active: number; disconnected: number };
   recent_events: WazuhEvent[];
+  _mock?: boolean;
+  _error?: string;
 }
 
 interface ClientDetails {
@@ -530,10 +532,33 @@ export default function AdminDashboard() {
                   <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Threat Detection</div>
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: wazuhData ? "#00E676" : "#FF4444", boxShadow: wazuhData ? "0 0 6px #00E676" : "none" }} />
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{wazuhData ? "Live" : "No Data"}</span>
+                  <div style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: wazuhData ? (wazuhData._mock ? "#FFB300" : "#00E676") : "#FF4444",
+                    boxShadow: wazuhData ? (wazuhData._mock ? "0 0 6px #FFB300" : "0 0 6px #00E676") : "none"
+                  }} />
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>
+                    {wazuhData ? (wazuhData._mock ? "Mock Data" : "Live") : "No Data"}
+                  </span>
                 </div>
               </div>
+
+              {wazuhData && wazuhData._error && (
+                <div style={{
+                  padding: "0.5rem 0.75rem",
+                  borderRadius: "6px",
+                  background: "rgba(255,68,68,0.1)",
+                  border: "1px solid rgba(255,68,68,0.2)",
+                  color: "#FF4444",
+                  fontSize: "0.7rem",
+                  marginBottom: "0.75rem",
+                  wordBreak: "break-word"
+                }}>
+                  <strong>Connection Error:</strong> {wazuhData._error}
+                </div>
+              )}
               
               {wazuhData && (
                 <>
