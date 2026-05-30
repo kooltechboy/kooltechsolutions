@@ -1,136 +1,175 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
-// Wazuh API client with JWT auth
-async function getWazuhToken(apiUrl: string, username: string, password: string): Promise<string> {
-  const credentials = Buffer.from(`${username}:${password}`).toString("base64");
+// ──────────────────────────────────────────────────────────────────────────────
+// Wazuh data is fetched via the OpenSearch Dashboard's /api/console/proxy
+// endpoint using Basic Auth. The Wazuh Manager REST API (port 55000) is not
+// exposed externally, but all data lives in the OpenSearch indices.
+// ──────────────────────────────────────────────────────────────────────────────
 
-  const response = await fetch(`${apiUrl}/security/user/authenticate`, {
+const DASHBOARD_URL = process.env.WAZUH_API_URL || "";
+const BASIC_AUTH = Buffer.from(
+  `${process.env.WAZUH_API_USER || "admin"}:${process.env.WAZUH_API_PASSWORD || ""}`
+).toString("base64");
+
+const OPENSEARCH_HEADERS = {
+  Authorization: `Basic ${BASIC_AUTH}`,
+  "Content-Type": "application/json",
+  "osd-xsrf": "true",
+};
+
+async function opensearchQuery(index: string, body: object) {
+  const encodedPath = encodeURIComponent(`/${index}/_search`);
+  const url = `${DASHBOARD_URL}/api/console/proxy?path=${encodedPath}&method=GET`;
+
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "Authorization": `Basic ${credentials}`,
-      "Content-Type": "application/json",
-    },
-    // Wazuh often uses self-signed certs in internal deployments
-    // In production, ensure proper cert validation
-    signal: AbortSignal.timeout(10000),
+    headers: OPENSEARCH_HEADERS,
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(12000),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "Unknown error");
-    throw new Error(`Wazuh auth failed (${response.status}): ${errorText}`);
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`OpenSearch query failed [${res.status}] on ${index}: ${txt.slice(0, 200)}`);
   }
 
-  const data = await response.json();
-  const token = data?.data?.token;
-
-  if (!token) {
-    throw new Error("No token returned from Wazuh auth endpoint");
-  }
-
-  return token;
-}
-
-async function wazuhFetch(apiUrl: string, token: string, endpoint: string) {
-  const response = await fetch(`${apiUrl}${endpoint}`, {
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    signal: AbortSignal.timeout(10000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Wazuh API error at ${endpoint}: ${response.status}`);
-  }
-
-  return response.json();
+  return res.json();
 }
 
 export async function GET(_request: Request) {
+  // Disable self-signed cert rejection for internal SIEM server
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Pull config from DB or env vars
-    const { data: dbConfig } = await supabase
-      .from("integration_configs")
-      .select("endpoint, api_key, status")
-      .eq("name", "Wazuh SIEM")
-      .maybeSingle();
-
-    const apiUrl = dbConfig?.endpoint || process.env.WAZUH_API_URL;
-    const apiUser = process.env.WAZUH_API_USER || "admin";
-    const apiPassword = dbConfig?.api_key || process.env.WAZUH_API_PASSWORD;
-
-    // Fall back to mock data if not configured
-    if (!apiUrl || !apiPassword) {
+    if (!DASHBOARD_URL || !process.env.WAZUH_API_PASSWORD) {
       return NextResponse.json(getMockData());
     }
 
-    // --- Real Wazuh API flow ---
     try {
-      const token = await getWazuhToken(apiUrl, apiUser, apiPassword);
+      // ── 1. Fetch agents from wazuh-monitoring index ────────────────────────
+      const agentsRes = await opensearchQuery("wazuh-monitoring-*", {
+        size: 0,
+        aggs: {
+          agents: {
+            terms: { field: "id", size: 200 },
+            aggs: {
+              latest: {
+                top_hits: {
+                  size: 1,
+                  sort: [{ timestamp: { order: "desc" } }],
+                  _source: [
+                    "id",
+                    "name",
+                    "ip",
+                    "status",
+                    "os.name",
+                    "os.platform",
+                    "version",
+                    "lastKeepAlive",
+                  ],
+                },
+              },
+            },
+          },
+          status_counts: {
+            terms: { field: "status", size: 10 },
+          },
+        },
+      });
 
-      // Fetch agents
-      const agentsRes = await wazuhFetch(apiUrl, token, "/agents?limit=100&sort=-lastKeepAlive");
-      const rawAgents = agentsRes?.data?.affected_items ?? [];
+      const agentBuckets: Array<{
+        key: string;
+        latest: { hits: { hits: Array<{ _source: Record<string, unknown> }> } };
+      }> = agentsRes?.aggregations?.agents?.buckets ?? [];
 
-      const agents = rawAgents.map((a: Record<string, unknown>) => ({
-        id: a.id,
-        name: a.name,
-        ip: a.ip || a.registerIP || "N/A",
-        os: typeof a.os === 'object' && a.os !== null ? (a.os as Record<string, string>).platform || "Unknown" : "Unknown",
-        version: a.version || "Unknown",
-        status: a.status,
-        lastKeepAlive: a.lastKeepAlive || a.dateAdd,
-      }));
+      const agents = agentBuckets.map((bucket) => {
+        const src = bucket.latest?.hits?.hits?.[0]?._source ?? {};
+        const os = src.os as Record<string, string> | undefined;
+        return {
+          id: src.id ?? bucket.key,
+          name: src.name ?? "Unknown",
+          ip: src.ip ?? "N/A",
+          os: os?.name ?? os?.platform ?? "Unknown",
+          version: src.version ?? "Unknown",
+          status: src.status ?? "unknown",
+          lastKeepAlive: src.lastKeepAlive ?? null,
+        };
+      });
 
+      // Build summary from status aggregation buckets
+      const statusBuckets: Array<{ key: string; doc_count: number }> =
+        agentsRes?.aggregations?.status_counts?.buckets ?? [];
+
+      const getCount = (key: string) =>
+        statusBuckets.find((b) => b.key === key)?.doc_count ?? 0;
+
+      // Status counts from agg reflect historical docs — use unique agent statuses instead
       const summary = {
-        total_agents: agentsRes?.data?.total_affected_items ?? agents.length,
-        active: agents.filter((a: { status: string }) => a.status === "active").length,
-        disconnected: agents.filter((a: { status: string }) => a.status === "disconnected").length,
-        never_connected: agents.filter((a: { status: string }) => a.status === "never_connected").length,
-        pending: agents.filter((a: { status: string }) => a.status === "pending").length,
+        total_agents: agents.length,
+        active: agents.filter((a) => a.status === "active").length,
+        disconnected: agents.filter((a) => a.status === "disconnected").length,
+        never_connected: agents.filter((a) => a.status === "never_connected").length,
+        pending: agents.filter((a) => a.status === "pending").length,
+        // Keep raw counts for reference
+        _raw_status_counts: Object.fromEntries(
+          statusBuckets.map((b) => [b.key, b.doc_count])
+        ),
       };
 
-      // Fetch recent security alerts (level 7+)
+      // ── 2. Fetch recent high-severity alerts ───────────────────────────────
       let recent_events: unknown[] = [];
       try {
-        const alertsRes = await wazuhFetch(
-          apiUrl,
-          token,
-          "/security/events?limit=10&sort=-timestamp&q=rule.level>6"
+        const alertsRes = await opensearchQuery("wazuh-alerts-*", {
+          size: 10,
+          sort: [{ timestamp: { order: "desc" } }],
+          _source: ["rule.level", "rule.description", "rule.id", "agent.name", "timestamp"],
+          query: {
+            range: { "rule.level": { gte: 7 } },
+          },
+        });
+
+        recent_events = (alertsRes?.hits?.hits ?? []).map(
+          (
+            hit: { _source: Record<string, unknown> },
+            idx: number
+          ) => {
+            const src = hit._source;
+            const rule = src.rule as Record<string, unknown> | undefined;
+            const agent = src.agent as Record<string, string> | undefined;
+            return {
+              id: `evt-${idx}`,
+              rule_level: rule?.level ?? 0,
+              rule_id: rule?.id ?? "unknown",
+              description: rule?.description ?? "Security event",
+              agent_name: agent?.name ?? "Unknown",
+              timestamp: src.timestamp,
+            };
+          }
         );
-        const rawAlerts = alertsRes?.data?.affected_items ?? [];
-        recent_events = rawAlerts.map((evt: Record<string, unknown>, idx: number) => ({
-          id: `evt-${idx}`,
-          rule_level: typeof evt.rule === 'object' && evt.rule !== null ? (evt.rule as Record<string, unknown>).level ?? 0 : 0,
-          description: typeof evt.rule === 'object' && evt.rule !== null ? (evt.rule as Record<string, unknown>).description ?? "Security event" : "Security event",
-          agent_name: typeof evt.agent === 'object' && evt.agent !== null ? (evt.agent as Record<string, string>).name ?? "Unknown" : "Unknown",
-          timestamp: evt.timestamp,
-        }));
-      } catch {
-        // Alerts endpoint may not be available on all Wazuh versions; non-fatal
-        console.warn("Could not fetch Wazuh alerts — may be a version compatibility issue.");
+      } catch (alertErr) {
+        console.warn("Could not fetch Wazuh alerts:", alertErr);
       }
 
       return NextResponse.json({ agents, summary, recent_events });
-
     } catch (apiError) {
-      console.error("Live Wazuh API call failed, returning mock data:", apiError);
-      // Return mock data with an error flag so the frontend can show a warning
+      console.error("Wazuh OpenSearch query failed, falling back to mock:", apiError);
       return NextResponse.json({
         ...getMockData(),
         _error: apiError instanceof Error ? apiError.message : "Wazuh connection failed",
         _mock: true,
       });
     }
-
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
     console.error("Wazuh Route Error:", err);
@@ -153,54 +192,15 @@ function getMockData() {
       },
       {
         id: "001",
-        name: "DESKTOP-CEO",
-        ip: "192.168.1.105",
-        os: "Windows 11 Pro",
-        version: "Wazuh v4.7.2",
+        name: "pve-host",
+        ip: "192.168.250.11",
+        os: "Debian GNU/Linux",
+        version: "Wazuh v4.14.5",
         status: "active",
         lastKeepAlive: new Date().toISOString(),
       },
-      {
-        id: "002",
-        name: "SERVER-DC-01",
-        ip: "192.168.1.10",
-        os: "Windows Server 2022",
-        version: "Wazuh v4.7.2",
-        status: "active",
-        lastKeepAlive: new Date().toISOString(),
-      },
-      {
-        id: "003",
-        name: "LAPTOP-EMP-04",
-        ip: "192.168.1.112",
-        os: "Windows 10 Pro",
-        version: "Wazuh v4.6.0",
-        status: "disconnected",
-        lastKeepAlive: new Date(Date.now() - 86400000).toISOString(),
-      },
     ],
-    summary: {
-      total_agents: 4,
-      active: 3,
-      disconnected: 1,
-      never_connected: 0,
-      pending: 0,
-    },
-    recent_events: [
-      {
-        id: "evt-1",
-        rule_level: 12,
-        description: "Multiple authentication failures",
-        agent_name: "SERVER-DC-01",
-        timestamp: new Date(Date.now() - 1500000).toISOString(),
-      },
-      {
-        id: "evt-2",
-        rule_level: 10,
-        description: "Suspicious network connection detected",
-        agent_name: "DESKTOP-CEO",
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-      },
-    ],
+    summary: { total_agents: 2, active: 2, disconnected: 0, never_connected: 0, pending: 0 },
+    recent_events: [],
   };
 }
