@@ -70,17 +70,13 @@ export async function GET(_request: Request) {
       const latestTimestamp: string | null =
         latestDoc?.hits?.hits?.[0]?._source?.timestamp ?? null;
 
-      // Build the time filter: use 5-min window around latest snapshot if available,
+      // Build the time filter: use the exact latest snapshot timestamp,
       // otherwise fall back to the last 30 minutes.
       const snapshotFilter = latestTimestamp
         ? {
-            range: {
-              timestamp: {
-                gte: new Date(
-                  new Date(latestTimestamp).getTime() - 5 * 60 * 1000
-                ).toISOString(),
-              },
-            },
+            term: {
+              timestamp: latestTimestamp
+            }
           }
         : {
             range: {
