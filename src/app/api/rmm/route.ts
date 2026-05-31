@@ -27,7 +27,7 @@ export async function GET(_request: Request) {
 
     // Real API fetch from Tactical RMM v3
     try {
-      const response = await fetch(`${apiUrl}/api/v3/agents/`, {
+      const response = await fetch(`${apiUrl}/agents/`, {
         headers: {
           "X-API-KEY": apiKey,
           "Content-Type": "application/json",
