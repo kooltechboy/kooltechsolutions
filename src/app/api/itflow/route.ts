@@ -40,6 +40,21 @@ export async function GET(request: Request) {
     try {
       const client = await getClientAndAuth();
       const data = await client.getItems(endpoint, params);
+      
+      // Normalize data fields for client convenience if the endpoint is assets
+      if (endpoint === 'assets' && data && Array.isArray(data.data)) {
+        data.data = data.data.map((item: any) => ({
+          id: item.asset_id || item.id,
+          type: item.asset_type || "Laptop",
+          model: item.asset_model || item.asset_name || "Workstation",
+          assignment: item.client_name || (item.asset_client_id === "1" ? "KOOL TECH SOLUTIONS" : "N/A"),
+          purchase_date: item.asset_purchase_date || null,
+          warranty_expires: item.asset_warranty_expire || null,
+          serial: item.asset_serial || "UNKNOWN",
+          os: item.asset_os || ""
+        }));
+      }
+      
       return NextResponse.json(data);
     } catch (err: any) {
       if (err.message === "Unauthorized") {

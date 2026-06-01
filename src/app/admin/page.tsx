@@ -105,9 +105,12 @@ export default function AdminDashboard() {
 
   // Live Telemetry State
   const [rmmDevices, setRmmDevices] = useState<RMMDevice[]>([]);
+  const [rmmSource, setRmmSource] = useState<string>("mock");
   const [itflowAssets, setItflowAssets] = useState<ITFlowAsset[]>([]);
+  const [itflowMock, setItflowMock] = useState<boolean>(true);
   const [action1Endpoints, setAction1Endpoints] = useState<Action1Endpoint[]>([]);
   const [action1Summary, setAction1Summary] = useState<Action1Summary | null>(null);
+  const [action1Mock, setAction1Mock] = useState<boolean>(true);
   const [wazuhData, setWazuhData] = useState<WazuhData | null>(null);
   const [telemetryLoading, setTelemetryLoading] = useState(true);
 
@@ -182,6 +185,7 @@ export default function AdminDashboard() {
         if (rmmRes.status === "fulfilled" && rmmRes.value.ok) {
           const json = await rmmRes.value.json();
           const agents = json.agents || [];
+          setRmmSource(json.source || "mock");
           setRmmDevices(agents.map((a: any) => ({
             id: a.id || a.agent_id,
             name: a.hostname,
@@ -192,10 +196,12 @@ export default function AdminDashboard() {
         }
         if (itflowRes.status === "fulfilled" && itflowRes.value.ok) {
           const json = await itflowRes.value.json();
+          setItflowMock(!!json._mock);
           setItflowAssets(json.data || []);
         }
         if (action1Res.status === "fulfilled" && action1Res.value.ok) {
           const json = await action1Res.value.json();
+          setAction1Mock(!!json._mock);
           setAction1Endpoints(json.endpoints || []);
           setAction1Summary(json.summary || null);
         }
@@ -357,8 +363,16 @@ export default function AdminDashboard() {
                   <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Managed Devices</div>
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: rmmDevices.length > 0 ? "#00E676" : "#FF4444", boxShadow: rmmDevices.length > 0 ? "0 0 6px #00E676" : "none" }} />
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{rmmDevices.length > 0 ? "Live" : "No Data"}</span>
+                  <div style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: rmmDevices.length > 0 ? (rmmSource === "live" ? "#00E676" : "#FFB300") : "#FF4444",
+                    boxShadow: rmmDevices.length > 0 ? (rmmSource === "live" ? "0 0 6px #00E676" : "0 0 6px #FFB300") : "none"
+                  }} />
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>
+                    {rmmDevices.length > 0 ? (rmmSource === "live" ? "Live" : "Mock Data") : "No Data"}
+                  </span>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "180px", overflowY: "auto", paddingRight: "0.25rem" }}>
@@ -411,8 +425,16 @@ export default function AdminDashboard() {
                   <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Live Sync: Tickets, Clients & Assets</div>
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: itflowAssets.length > 0 ? "#00E676" : "#FF4444", boxShadow: itflowAssets.length > 0 ? "0 0 6px #00E676" : "none" }} />
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{itflowAssets.length > 0 ? "Live" : "No Data"}</span>
+                  <div style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: itflowAssets.length > 0 ? (itflowMock ? "#FFB300" : "#00E676") : "#FF4444",
+                    boxShadow: itflowAssets.length > 0 ? (itflowMock ? "0 0 6px #FFB300" : "0 0 6px #00E676") : "none"
+                  }} />
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>
+                    {itflowAssets.length > 0 ? (itflowMock ? "Mock Data" : "Live") : "No Data"}
+                  </span>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "180px", overflowY: "auto", paddingRight: "0.25rem" }}>
@@ -465,8 +487,16 @@ export default function AdminDashboard() {
                   <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Patch Compliance</div>
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: action1Endpoints.length > 0 ? "#00E676" : "#FF4444", boxShadow: action1Endpoints.length > 0 ? "0 0 6px #00E676" : "none" }} />
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>{action1Endpoints.length > 0 ? "Live" : "No Data"}</span>
+                  <div style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: action1Endpoints.length > 0 ? (action1Mock ? "#FFB300" : "#00E676") : "#FF4444",
+                    boxShadow: action1Endpoints.length > 0 ? (action1Mock ? "0 0 6px #FFB300" : "0 0 6px #00E676") : "none"
+                  }} />
+                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>
+                    {action1Endpoints.length > 0 ? (action1Mock ? "Mock Data" : "Live") : "No Data"}
+                  </span>
                 </div>
               </div>
               {action1Summary && (

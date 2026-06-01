@@ -7,6 +7,8 @@ import { NextResponse } from "next/server";
 // exposed externally, but all data lives in the OpenSearch indices.
 // ──────────────────────────────────────────────────────────────────────────────
 
+import https from "https";
+
 const DASHBOARD_URL = process.env.WAZUH_API_URL || "";
 const BASIC_AUTH = Buffer.from(
   `${process.env.WAZUH_API_USER || "admin"}:${process.env.WAZUH_API_PASSWORD || ""}`
@@ -18,23 +20,51 @@ const OPENSEARCH_HEADERS = {
   "osd-xsrf": "true",
 };
 
-async function opensearchQuery(index: string, body: object) {
+async function opensearchQuery(index: string, body: object): Promise<any> {
   const encodedPath = encodeURIComponent(`/${index}/_search`);
   const url = `${DASHBOARD_URL}/api/console/proxy?path=${encodedPath}&method=GET`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: OPENSEARCH_HEADERS,
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(12000),
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || (parsedUrl.protocol === "https:" ? 443 : 80),
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: "POST",
+      headers: OPENSEARCH_HEADERS,
+      rejectUnauthorized: false, // Bypass self-signed cert validation issues in Next.js
+    };
+
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => {
+        data += chunk;
+      });
+      res.on("end", () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`Invalid JSON response: ${data.slice(0, 100)}`));
+          }
+        } else {
+          reject(new Error(`HTTP Error ${res.statusCode}: ${data.slice(0, 200)}`));
+        }
+      });
+    });
+
+    req.on("error", (e) => {
+      reject(e);
+    });
+
+    // Handle timeout
+    req.setTimeout(12000, () => {
+      req.destroy(new Error("Request timeout"));
+    });
+
+    req.write(JSON.stringify(body));
+    req.end();
   });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`OpenSearch query failed [${res.status}] on ${index}: ${txt.slice(0, 200)}`);
-  }
-
-  return res.json();
 }
 
 export async function GET(_request: Request) {

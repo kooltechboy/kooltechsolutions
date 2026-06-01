@@ -24,6 +24,7 @@ export async function GET(_request: Request) {
     if (!isConnected || !apiKey) {
       // Return mock data when not configured
       return NextResponse.json({
+        _mock: true,
         endpoints: [
           {
             id: "EP-001",
@@ -95,6 +96,7 @@ export async function GET(_request: Request) {
     } catch (fetchErr) {
       console.warn("Action1 fetch failed, falling back to mock data:", fetchErr);
       return NextResponse.json({
+        _mock: true,
         endpoints: [
           {
             id: "EP-001",
