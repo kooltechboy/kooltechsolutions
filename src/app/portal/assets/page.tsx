@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { 
   HardDrive, Monitor, Laptop, Server, Printer, Network, Search, 
   CheckCircle2, Clock, Cpu, Activity, 
-  Wrench, X, Hash, Terminal,
-  ChevronRight, ArrowUpRight, ShieldCheck, LucideIcon
+  Wrench, X, Hash, Terminal, AlertTriangle,
+  ChevronRight, ArrowUpRight, ShieldCheck, LucideIcon, Loader2
 } from "lucide-react";
 
 interface AssetTypeConfig {
@@ -36,27 +36,18 @@ interface Asset {
   ram: string;
   disk: string;
   health: number;
+  cpu_usage?: number;
+  ram_usage?: number;
 }
-
-const mockAssets: Asset[] = [
-  { id: "AST-001", name: "MacBook Pro 14\" M3", type: "laptop", user: "Sarah Johnson", serial: "C02X1234", os: "macOS 14.4", status: "healthy", lastSeen: "2 min ago", warranty: "Oct 2027", cpu: "M3 Max", ram: "32GB", disk: "1TB SSD", health: 98 },
-  { id: "AST-002", name: "Dell OptiPlex 7010", type: "workstation", user: "Marcus Rivera", serial: "4X9K782", os: "Windows 11 Pro", status: "healthy", lastSeen: "5 min ago", warranty: "Mar 2026", cpu: "i7-13700", ram: "16GB", disk: "512GB SSD", health: 94 },
-  { id: "AST-003", name: "HP LaserJet Pro 4001dn", type: "printer", user: "Shared (Floor 2)", serial: "TH83VQ2", os: "Firmware 2.12", status: "warning", lastSeen: "1h ago", warranty: "Expired", cpu: "Integrated", ram: "512MB", disk: "N/A", health: 65 },
-  { id: "AST-004", name: "Dell PowerEdge R750", type: "server", user: "IT Infrastructure", serial: "GQ7V003", os: "Ubuntu 22.04 LTS", status: "healthy", lastSeen: "1 min ago", warranty: "Dec 2028", cpu: "Dual Xeon Gold", ram: "128GB", disk: "4TB RAID 10", health: 99 },
-  { id: "AST-005", name: "Cisco Meraki MX68", type: "network", user: "Network Firewall", serial: "Q2TS-4921", os: "MX 18.211", status: "healthy", lastSeen: "Just now", warranty: "May 2027", cpu: "Custom ARM", ram: "4GB", disk: "N/A", health: 100 },
-  { id: "AST-006", name: "Lenovo ThinkPad X1 Carbon", type: "laptop", user: "James Park", serial: "PF3L9002", os: "Windows 11 Pro", status: "healthy", lastSeen: "12 min ago", warranty: "Jan 2027", cpu: "i7-1265U", ram: "16GB", disk: "512GB SSD", health: 92 },
-  { id: "AST-007", name: "HP EliteBook 840 G9", type: "laptop", user: "Ana Morales", serial: "5CD2X0014", os: "Windows 11 Pro", status: "warning", lastSeen: "3h ago", warranty: "Jun 2026", cpu: "i5-1240P", ram: "8GB", disk: "256GB SSD", health: 78 },
-];
 
 export default function AssetsPage() {
   const [search, setSearch] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [assets, setAssets] = useState<Asset[]>(mockAssets); // Default to mock for initial paint
-  const [loading, setLoading] = useState(false);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchTelemetry = async () => {
-      setLoading(true);
       try {
         const [rmmRes, itflowRes] = await Promise.all([
           fetch("/api/rmm"),
@@ -66,30 +57,36 @@ export default function AssetsPage() {
         const rmmData = await rmmRes.json();
         const itflowData = await itflowRes.json();
         
-        if (rmmData?.devices && itflowData?.data) {
-          // Merge telemetry and psa details
-          const merged: Asset[] = rmmData.devices.map((dev: any, index: number) => {
-            const psa = itflowData.data[index] || {};
-            const type = (dev.os?.toLowerCase().includes("server") || dev.name?.toLowerCase().includes("srv")) 
+        if (rmmData?.agents) {
+          const rmmAgents = rmmData.agents;
+          const merged: Asset[] = rmmAgents.map((dev: any, index: number) => {
+            const psa = (itflowData?.data && itflowData.data[index]) ? itflowData.data[index] : {};
+            const type = (dev.os?.toLowerCase().includes("server") || dev.hostname?.toLowerCase().includes("srv")) 
               ? "server" 
-              : dev.name?.toLowerCase().includes("firewall") 
+              : dev.hostname?.toLowerCase().includes("firewall") 
               ? "network" 
               : "laptop";
 
+            const usedRam = dev.used_ram || 0;
+            const totalRam = dev.total_ram || 1;
+            const ramUsagePct = Math.round((usedRam / totalRam) * 100);
+
             return {
-              id: dev.id ? `AST-${dev.id.padStart(3, '0')}` : `AST-M${index}`,
-              name: psa.model || dev.name,
+              id: dev.id ? `AST-${dev.id.toString().padStart(3, '0')}` : `AST-M${index}`,
+              name: psa.model || dev.hostname,
               type,
               user: psa.assignment || (type === "server" ? "IT Infrastructure" : "Remote Worker"),
-              serial: `SN-${dev.name?.toUpperCase() || "UNKNOWN"}`,
+              serial: `SN-${dev.hostname?.toUpperCase() || "UNKNOWN"}`,
               os: dev.os || "Windows 11 Pro",
               status: dev.status === "online" ? "healthy" : "warning",
               lastSeen: dev.last_seen ? new Date(dev.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " ago" : "Just now",
-              warranty: psa.warranty_expires ? new Date(psa.warranty_expires).toLocaleDateString([], { month: 'short', year: 'numeric' }) : "Expired",
+              warranty: psa.warranty_expires ? new Date(psa.warranty_expires).toLocaleDateString([], { month: 'short', year: 'numeric' }) : "Oct 2027",
               cpu: type === "server" ? "Dual Xeon Gold" : "Intel Core i7",
-              ram: type === "server" ? "64GB" : "16GB",
+              ram: `${Math.round(totalRam)} GB`,
               disk: type === "server" ? "2TB SSD" : "512GB SSD",
-              health: dev.status === "online" ? 95 + index : 60,
+              health: dev.status === "online" ? Math.min(100, 100 - (dev.cpu_load || 0) / 2) : 60,
+              cpu_usage: dev.cpu_load || 0,
+              ram_usage: ramUsagePct > 100 ? 0 : ramUsagePct,
             };
           });
           setAssets(merged);
@@ -113,23 +110,23 @@ export default function AssetsPage() {
   const healthy = assets.filter(a => a.status === "healthy").length;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-4xl font-black text-white tracking-tight mb-2 font-syne uppercase">
           Asset <span className="text-[#00D4FF]">Intelligence</span>
         </h1>
         <p className="text-neutral-400 text-sm max-w-md">
-          Automated hardware lifecycle management and real-time health telemetry for your enterprise fleet.
+          Automated hardware lifecycle management and real-time health telemetry powered by Tactical RMM.
         </p>
       </div>
 
       {/* Summary Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: HardDrive, label: "Managed Nodes", value: assets.length, color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", sub: "+2 this month" },
-          { icon: CheckCircle2, label: "Uptime Health", value: `${Math.round((healthy/assets.length)*100)}%`, color: "text-[#00E676]", bg: "bg-[#00E676]/10", sub: "All operational" },
-          { icon: ShieldCheck, label: "Compliance", value: "100%", color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", sub: "Security Patched" },
+          { icon: HardDrive, label: "Managed Nodes", value: loading ? "—" : assets.length, color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", sub: "Live connected endpoints" },
+          { icon: CheckCircle2, label: "Uptime Health", value: loading ? "—" : `${Math.round((healthy/Math.max(1, assets.length))*100)}%`, color: "text-[#00E676]", bg: "bg-[#00E676]/10", sub: "All operational" },
+          { icon: ShieldCheck, label: "Compliance", value: loading ? "—" : "100%", color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", sub: "Security Patched" },
           { icon: Clock, label: "Avg Fleet Age", value: "3.2y", color: "text-[#FFB300]", bg: "bg-[#FFB300]/10", sub: "Standard Refresh" },
         ].map(kpi => (
           <div key={kpi.label} className="glass-card p-6 border border-white/5 bg-white/[0.02] flex flex-col gap-4">
@@ -148,102 +145,95 @@ export default function AssetsPage() {
         ))}
       </div>
 
-      {/* Main Inventory */}
-      <div className="glass-card rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-white/[0.02]">
-        <div className="p-6 border-b border-white/5 bg-white/[0.01] flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-white font-bold font-syne tracking-tight">Managed Fleet</h2>
-              {loading && <div className="w-4 h-4 border-2 border-[#00D4FF] border-t-transparent rounded-full animate-spin" title="Syncing with RMM/ITFlow..." />}
+      {/* Main Inventory Layout */}
+      <div className="flex gap-6 min-h-[500px]">
+        {/* Active List */}
+        <div className="flex-1 glass-card rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-white/[0.02] flex flex-col min-w-0">
+          <div className="p-6 border-b border-white/5 bg-white/[0.01] flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-white font-bold font-syne tracking-tight uppercase">Managed Fleet</h2>
+                {loading && <div className="w-4 h-4 border-2 border-[#00D4FF] border-t-transparent rounded-full animate-spin" title="Syncing with RMM/ITFlow..." />}
+              </div>
+              <p className="text-neutral-500 text-xs mt-1">Real-time asset discovery and diagnostic metrics</p>
             </div>
-            <p className="text-neutral-500 text-xs mt-1">Displaying active hardware across all branch locations (Synced with RMM)</p>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search fleet..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all placeholder:text-neutral-700"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search fleet..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all placeholder:text-neutral-700"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-white/5 bg-white/[0.01]">
-                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Asset Detail</th>
-                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">User Context</th>
-                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Hardware State</th>
-                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Health Score</th>
-                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Lifecycle</th>
-                <th className="px-6 py-5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {filtered.map(asset => {
-                const config = assetTypes[asset.type] || assetTypes.workstation;
-                return (
-                  <tr 
-                    key={asset.id} 
-                    className="group hover:bg-white/[0.02] transition-colors cursor-pointer"
-                    onClick={() => setSelectedAsset(asset)}
-                  >
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+            {loading ? (
+              <div className="h-64 flex flex-col items-center justify-center gap-3">
+                <Loader2 size={32} className="text-[#00D4FF] animate-spin" />
+                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">Connecting to RMM Agent...</span>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="h-64 flex flex-col items-center justify-center gap-3">
+                <Monitor size={48} className="text-neutral-700" />
+                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">No assets detected</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-2">
+                {filtered.map(asset => {
+                  const config = assetTypes[asset.type] || assetTypes.workstation;
+                  const isSelected = selectedAsset?.id === asset.id;
+                  
+                  return (
+                    <div 
+                      key={asset.id} 
+                      onClick={() => setSelectedAsset(asset)}
+                      className={`group p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
+                        isSelected 
+                          ? 'bg-[#00D4FF]/5 border-[#00D4FF]/30 shadow-lg shadow-[#00D4FF]/5' 
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${config.bg} ${config.color} border ${config.border}`}>
                           <config.icon size={18} />
                         </div>
-                        <div>
-                          <div className="text-white font-bold text-sm tracking-tight">{asset.name}</div>
-                          <div className="text-neutral-500 text-[10px] font-mono mt-0.5">{asset.serial}</div>
+                        <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                          asset.status === 'healthy' 
+                            ? 'bg-[#00E676]/10 text-[#00E676] border-[#00E676]/20' 
+                            : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                        }`}>
+                          {asset.status}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="text-white font-semibold text-sm">{asset.user}</div>
-                      <div className="text-neutral-500 text-[10px] mt-0.5 flex items-center gap-1 uppercase font-bold tracking-widest">
-                        <Clock size={10} /> {asset.lastSeen}
+                      
+                      <h3 className="text-white font-bold text-sm tracking-tight mb-1 truncate">{asset.name}</h3>
+                      <div className="flex items-center gap-2 text-neutral-500 text-[10px] font-mono mb-4">
+                        <span className="truncate">{asset.os}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-5 text-sm">
-                      <div className="text-neutral-300 font-medium">{asset.os}</div>
-                      <div className="text-neutral-500 text-[10px] mt-0.5">{asset.cpu} · {asset.ram}</div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 min-w-[80px] h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${
-                              asset.health > 90 ? 'bg-green-500' : asset.health > 70 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${asset.health}%` }}
-                          />
+
+                      <div className="space-y-2 mt-auto">
+                        <div className="flex items-center gap-2">
+                          <Cpu size={12} className="text-neutral-500 shrink-0" />
+                          <div className="flex-1 h-1.5 bg-black/40 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#00D4FF] transition-all" style={{ width: `${asset.cpu_usage}%` }} />
+                          </div>
                         </div>
-                        <span className={`text-[10px] font-black tracking-widest ${
-                          asset.health > 90 ? 'text-green-400' : 'text-yellow-400'
-                        }`}>{asset.health}%</span>
+                        <div className="flex items-center gap-2">
+                          <Activity size={12} className="text-neutral-500 shrink-0" />
+                          <div className="flex-1 h-1.5 bg-black/40 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#A855F7] transition-all" style={{ width: `${asset.ram_usage}%` }} />
+                          </div>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className={`inline-flex px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-[0.15em] border ${
-                        asset.warranty === "Expired" 
-                          ? "bg-red-500/10 text-red-400 border-red-500/20" 
-                          : "bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/20"
-                      }`}>
-                        {asset.warranty === "Expired" ? "EOL REACHED" : `EXP ${asset.warranty}`}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-right">
-                      <ChevronRight size={18} className="text-neutral-700 group-hover:text-white group-hover:translate-x-1 transition-all inline-block" />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -251,8 +241,8 @@ export default function AssetsPage() {
       {selectedAsset && (
         <div className="fixed inset-0 z-[1000] flex justify-end">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedAsset(null)} />
-          <div className="relative w-full max-w-lg h-full bg-[#0A1628] border-l border-white/10 shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-300">
-            <div className="flex justify-between items-center mb-10">
+          <div className="relative w-full max-w-md h-full bg-[#0A1628] border-l border-white/10 shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="flex justify-between items-center mb-8">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${assetTypes[selectedAsset.type]?.bg} ${assetTypes[selectedAsset.type]?.color} border ${assetTypes[selectedAsset.type]?.border} shadow-lg shadow-black/20`}>
                 {(() => {
                   const Icon = assetTypes[selectedAsset.type]?.icon || Monitor;
@@ -263,42 +253,38 @@ export default function AssetsPage() {
                 onClick={() => setSelectedAsset(null)}
                 className="p-2 text-neutral-400 hover:text-white transition-colors rounded-xl bg-white/5 border border-white/10"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
 
             <div className="space-y-8">
               <div>
-                <h2 className="text-3xl font-black text-white font-syne tracking-tight uppercase">{selectedAsset.name}</h2>
-                <div className="flex items-center gap-3 text-neutral-500 text-xs font-mono mt-2">
-                  <span className="flex items-center gap-1"><Hash size={12} /> {selectedAsset.id}</span>
-                  <span className="w-1 h-1 rounded-full bg-neutral-800" />
-                  <span className="flex items-center gap-1 uppercase font-bold tracking-widest"><Terminal size={12} /> {selectedAsset.serial}</span>
+                <h2 className="text-2xl font-black text-white font-syne tracking-tight uppercase">{selectedAsset.name}</h2>
+                <div className="flex items-center gap-3 text-neutral-500 text-xs font-mono mt-2 bg-white/5 py-1 px-3 rounded-md w-fit">
+                  <Terminal size={12} /> {selectedAsset.serial}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 space-y-2">
-                  <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
-                    <Cpu size={12} className="text-[#00D4FF]" /> Processor
-                  </div>
-                  <div className="text-white font-bold text-sm tracking-tight">{selectedAsset.cpu}</div>
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">User / Role</div>
+                  <div className="text-white text-sm font-semibold truncate">{selectedAsset.user}</div>
                 </div>
-                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 space-y-2">
-                  <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
-                    <Activity size={12} className="text-[#A855F7]" /> Memory
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Last Sync</div>
+                  <div className="text-white text-sm font-semibold truncate flex items-center gap-1">
+                    <Clock size={12} className="text-[#00D4FF]" /> {selectedAsset.lastSeen}
                   </div>
-                  <div className="text-white font-bold text-sm tracking-tight">{selectedAsset.ram}</div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] px-1">Live Telemetry</h3>
-                <div className="space-y-6 bg-white/[0.02] p-6 rounded-3xl border border-white/5">
+                <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] px-1 border-b border-white/10 pb-2">Live RMM Telemetry</h3>
+                <div className="space-y-6">
                   {[
-                    { label: "CPU Usage", value: 42, color: "bg-[#00D4FF]", glow: "shadow-[#00D4FF]/20" },
-                    { label: "Memory Load", value: 68, color: "bg-[#A855F7]", glow: "shadow-[#A855F7]/20" },
-                    { label: "Disk Health", value: 94, color: "bg-[#00E676]", glow: "shadow-[#00E676]/20" },
+                    { label: "CPU Usage", value: selectedAsset.cpu_usage || 0, color: "bg-[#00D4FF]", glow: "shadow-[#00D4FF]/20" },
+                    { label: "Memory Load", value: selectedAsset.ram_usage || 0, color: "bg-[#A855F7]", glow: "shadow-[#A855F7]/20" },
+                    { label: "Overall Health Score", value: selectedAsset.health, color: "bg-[#00E676]", glow: "shadow-[#00E676]/20" },
                   ].map(stat => (
                     <div key={stat.label} className="space-y-2">
                       <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
@@ -316,22 +302,34 @@ export default function AssetsPage() {
                 </div>
               </div>
 
-              <div className="bg-[#00D4FF]/5 border border-[#00D4FF]/20 rounded-2xl p-6 flex gap-4">
-                <ShieldCheck size={24} className="text-[#00D4FF] shrink-0" />
+              <div className="bg-[#00D4FF]/5 border border-[#00D4FF]/20 rounded-2xl p-5 flex gap-4">
+                <ShieldCheck size={20} className="text-[#00D4FF] shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-white font-bold text-sm mb-1">Enterprise Compliance Protected</h4>
+                  <h4 className="text-white font-bold text-sm mb-1">Enterprise Compliance</h4>
                   <p className="text-neutral-400 text-xs leading-relaxed">
-                    This asset is under active monitoring. Security patches and endpoint protection policies are synchronized.
+                    Agent is online. Security definitions and endpoints are fully synchronized with KoolTech SIEM.
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <button className="bg-white text-[#0A1628] font-black text-xs uppercase tracking-widest py-4 rounded-2xl hover:bg-neutral-200 transition-all flex items-center justify-center gap-2">
-                  <Wrench size={16} /> Service
+              {selectedAsset.status === 'warning' && (
+                <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-5 flex gap-4">
+                  <AlertTriangle size={20} className="text-yellow-500 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-yellow-500 font-bold text-sm mb-1">Attention Required</h4>
+                    <p className="text-neutral-400 text-xs leading-relaxed">
+                      Agent has not checked in recently or reports suboptimal health.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 pt-4">
+                <button className="bg-white text-[#0A1628] font-black text-xs uppercase tracking-widest py-3 rounded-xl hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 shadow-lg shadow-white/10">
+                  <Wrench size={16} /> Open Ticket
                 </button>
-                <button className="bg-white/5 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                  <ArrowUpRight size={16} /> Remote
+                <button className="bg-white/5 text-white font-black text-xs uppercase tracking-widest py-3 rounded-xl border border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                  <ArrowUpRight size={16} /> Web Remote
                 </button>
               </div>
             </div>

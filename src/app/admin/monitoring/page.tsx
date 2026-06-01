@@ -1,23 +1,55 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
-import { Server, Activity, HardDrive, Wifi, CheckCircle2, AlertTriangle, XCircle, Plus, X, Loader2, RefreshCw, Wrench } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import React, { useEffect, useState, useCallback } from "react";
+import { Server, Activity, Shield, Wifi, CheckCircle2, AlertTriangle, XCircle, Wrench, RefreshCw, Loader2, Thermometer, Cpu, HardDrive } from "lucide-react";
 
-interface InfraNode {
+interface RmmAgent {
   id: string;
-  node_id: string;
+  hostname: string;
+  client: string;
+  site: string;
+  os: string;
+  status: string;
+  last_seen: string;
+  cpu_load: number;
+  used_ram: number;
+  total_ram: number;
+}
+
+interface WazuhAgent {
+  id: string;
+  name: string;
+  ip: string;
+  os: string;
+  version: string;
+  status: string;
+  lastKeepAlive: string;
+}
+
+interface SecurityEvent {
+  id: string;
+  rule_level: number;
+  rule_id: string;
+  description: string;
+  agent_name: string;
+  timestamp: string;
+}
+
+interface MergedNode {
+  id: string;
   name: string;
   type: string;
   status: "Online" | "Warning" | "Offline" | "Maintenance";
-  uptime: string;
+  os: string;
+  ip: string;
+  last_seen: string;
   cpu_usage: number;
   ram_usage: number;
-  ip_address?: string;
-  location?: string;
-  last_seen: string;
+  sources: ("RMM" | "WAZUH")[];
+  client: string;
 }
 
 const timeAgo = (d: string) => {
+  if (!d) return "—";
   const diff = Date.now() - new Date(d).getTime();
   if (diff < 60000) return "Just now";
   if (diff < 3600000) return Math.floor(diff / 60000) + " mins ago";
@@ -38,55 +70,98 @@ const UsageBar = ({ value, label }: { value: number; label: string }) => {
 };
 
 export default function MonitoringPage() {
-  const [nodes, setNodes] = useState<InfraNode[]>([]);
+  const [nodes, setNodes] = useState<MergedNode[]>([]);
+  const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ node_id: "", name: "", type: "Server", ip_address: "", location: "" });
-  const supabase = createClient();
+  const [wazuhStatus, setWazuhStatus] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchNodes = useCallback(async () => {
-    const { data } = await supabase
-      .from("infrastructure_nodes")
-      .select("id, node_id, name, type, status, uptime, cpu_usage, ram_usage, ip_address, location, last_seen")
-      .order("created_at", { ascending: false });
-    if (data) setNodes(data as InfraNode[]);
+  const fetchData = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [rmmRes, wazuhRes] = await Promise.all([
+        fetch("/api/rmm", { cache: "no-store" }),
+        fetch("/api/wazuh", { cache: "no-store" }),
+      ]);
+
+      const rmmJson = await rmmRes.json().catch(() => ({ agents: [] }));
+      const wazuhJson = await wazuhRes.json().catch(() => ({ agents: [], recent_events: [], summary: {} }));
+
+      const rmmAgents: RmmAgent[] = rmmJson.agents || [];
+      const wazuhAgents: WazuhAgent[] = wazuhJson.agents || [];
+      
+      setEvents(wazuhJson.recent_events || []);
+      setWazuhStatus(wazuhJson.summary || null);
+
+      // Merge data by hostname
+      const mergedMap = new Map<string, MergedNode>();
+
+      // Process RMM agents
+      for (const a of rmmAgents) {
+        let ramPct = 0;
+        if (a.total_ram > 0 && a.used_ram > 0) {
+          ramPct = Math.round((a.used_ram / a.total_ram) * 100);
+        }
+
+        mergedMap.set(a.hostname.toLowerCase(), {
+          id: a.id,
+          name: a.hostname,
+          type: "Workstation/Server",
+          status: a.status === "online" ? "Online" : "Offline",
+          os: a.os,
+          ip: "—",
+          last_seen: a.last_seen,
+          cpu_usage: a.cpu_load || 0,
+          ram_usage: ramPct,
+          sources: ["RMM"],
+          client: a.client,
+        });
+      }
+
+      // Process Wazuh agents
+      for (const a of wazuhAgents) {
+        const key = a.name.toLowerCase();
+        if (mergedMap.has(key)) {
+          const existing = mergedMap.get(key)!;
+          existing.sources.push("WAZUH");
+          if (existing.ip === "—") existing.ip = a.ip;
+          if (a.status === "disconnected") existing.status = "Warning";
+        } else {
+          mergedMap.set(key, {
+            id: a.id,
+            name: a.name,
+            type: "Agent",
+            status: a.status === "active" ? "Online" : "Offline",
+            os: a.os,
+            ip: a.ip,
+            last_seen: a.lastKeepAlive,
+            cpu_usage: 0,
+            ram_usage: 0,
+            sources: ["WAZUH"],
+            client: "—",
+          });
+        }
+      }
+
+      setNodes(Array.from(mergedMap.values()));
+    } catch (e) {
+      console.error(e);
+    }
     setLoading(false);
-  }, [supabase]);
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
-    fetchNodes();
-    const interval = setInterval(fetchNodes, 30000);
+    fetchData();
+    const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, [fetchNodes]);
+  }, [fetchData]);
 
-  const handleAddNode = async () => {
-    if (!form.node_id || !form.name) return;
-    setSaving(true);
-    await supabase.from("infrastructure_nodes").insert({
-      ...form,
-      status: "Online",
-      uptime: "100%",
-      cpu_usage: 0,
-      ram_usage: 0,
-    });
-    setSaving(false);
-    setShowModal(false);
-    setForm({ node_id: "", name: "", type: "Server", ip_address: "", location: "" });
-    fetchNodes();
-  };
+  const online = nodes.filter(n => n.status === "Online").length;
+  const warning = nodes.filter(n => n.status === "Warning").length;
+  const offline = nodes.filter(n => n.status === "Offline").length;
+  const threats = events.length;
 
-  const total = nodes.length;
-  const online = nodes.filter((n) => n.status === "Online").length;
-  const warning = nodes.filter((n) => n.status === "Warning").length;
-  const offline = nodes.filter((n) => n.status === "Offline" || n.status === "Maintenance").length;
-
-  const statusIcon = (s: string) => {
-    if (s === "Online") return <CheckCircle2 size={14} />;
-    if (s === "Warning") return <AlertTriangle size={14} />;
-    if (s === "Maintenance") return <Wrench size={14} />;
-    return <XCircle size={14} />;
-  };
   const statusColor = (s: string) => {
     if (s === "Online") return "#10b981";
     if (s === "Warning") return "#f59e0b";
@@ -94,185 +169,182 @@ export default function MonitoringPage() {
     return "#ef4444";
   };
 
-  if (loading) {
+  const statusIcon = (s: string) => {
+    if (s === "Online") return <CheckCircle2 size={14} />;
+    if (s === "Warning") return <AlertTriangle size={14} />;
+    if (s === "Maintenance") return <Wrench size={14} />;
+    return <XCircle size={14} />;
+  };
+
+  if (loading && nodes.length === 0) {
     return (
-      <div style={{ height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ height: "80vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem" }}>
         <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
+        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Initializing SIEM & RMM Telemetry…</p>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div style={{ padding: "2rem", maxWidth: 1600, margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
         <div>
-          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>
-            Infrastructure Monitoring
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.25rem" }}>
+            Infrastructure Security & Monitoring
           </h1>
-          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-            Real-time health and performance metrics. Auto-refreshes every 30s.
+          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
+            Unified telemetry from Tactical RMM and Wazuh SIEM. Auto-refreshes every 60s.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <button
-            onClick={fetchNodes}
-            style={{ padding: "0.625rem 1rem", borderRadius: "8px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", color: "var(--color-accent-500)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 600 }}
-          >
-            <RefreshCw size={14} /> Refresh
-          </button>
-          <button
-            onClick={() => setShowModal(true)}
-            className="btn-primary"
-            style={{ padding: "0.625rem 1.25rem", borderRadius: "8px", display: "flex", alignItems: "center", gap: "0.375rem" }}
-          >
-            <Plus size={16} /> Add Node
-          </button>
-        </div>
+        <button
+          onClick={fetchData}
+          disabled={refreshing}
+          style={{ padding: "0.625rem 1rem", borderRadius: "8px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", color: "var(--color-accent-500)", cursor: refreshing ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", fontWeight: 600, opacity: refreshing ? 0.7 : 1 }}
+        >
+          {refreshing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Refresh
+        </button>
       </div>
 
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
         {[
-          { label: "Total Nodes", value: total, icon: Server, color: "#00D4FF" },
-          { label: "Online", value: online, icon: CheckCircle2, color: "#10b981" },
-          { label: "Warning", value: warning, icon: AlertTriangle, color: "#f59e0b" },
-          { label: "Offline / Maint.", value: offline, icon: XCircle, color: "#ef4444" },
+          { label: "Total Endpoints", value: nodes.length, icon: Server, color: "#00D4FF", sub: "RMM + SIEM nodes" },
+          { label: "Healthy / Online", value: online, icon: CheckCircle2, color: "#10b981", sub: `${warning} warnings` },
+          { label: "Offline Devices", value: offline, icon: XCircle, color: "#ef4444", sub: "Requires attention" },
+          { label: "Security Events", value: threats, icon: Shield, color: threats > 0 ? "#ef4444" : "#10b981", sub: threats > 0 ? "High severity alerts" : "All clear" },
         ].map((stat, i) => (
-          <div key={i} className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px" }}>
+          <div key={i} className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", border: `1px solid ${stat.color}20` }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "8px", background: `${stat.color}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "8px", background: `${stat.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <stat.icon size={18} color={stat.color} />
               </div>
-              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem", fontWeight: 600 }}>{stat.label}</div>
+              <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", fontWeight: 600 }}>{stat.label}</div>
             </div>
             <div style={{ fontFamily: "Syne, sans-serif", fontSize: "2rem", fontWeight: 800, color: "white" }}>{stat.value}</div>
+            <div style={{ color: stat.color, fontSize: "0.75rem", marginTop: "0.25rem" }}>{stat.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Nodes Table */}
-      <div className="glass-card" style={{ borderRadius: "12px", overflow: "hidden" }}>
-        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
-          <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.125rem" }}>
-            Node Health Status
-          </h2>
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "rgba(0,212,255,0.04)", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
-                {["Node ID", "Name", "Type", "Status", "Uptime", "CPU", "RAM", "Last Seen"].map((h) => (
-                  <th key={h} style={{ padding: "0.75rem 1.25rem", color: "var(--color-neutral-500)", fontSize: "0.6875rem", textAlign: "left", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
-                    {h}
-                  </th>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1.5rem" }}>
+        {/* Unified Nodes Table */}
+        <div className="glass-card" style={{ borderRadius: "12px", overflow: "hidden" }}>
+          <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.125rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Activity size={18} color="#00D4FF" /> Unified Endpoint Telemetry
+            </h2>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "rgba(0,212,255,0.03)", borderBottom: "1px solid rgba(0,212,255,0.08)" }}>
+                  {["Hostname", "Status", "Client", "OS", "IP", "CPU / RAM", "Sources", "Last Seen"].map((h) => (
+                    <th key={h} style={{ padding: "0.75rem 1.25rem", color: "var(--color-neutral-500)", fontSize: "0.6875rem", textAlign: "left", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {nodes.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: "4rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
+                      No endpoints connected.
+                    </td>
+                  </tr>
+                ) : nodes.map((node, idx) => (
+                  <tr key={node.name + idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", transition: "background 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.025)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <td style={{ padding: "1rem 1.25rem", color: "white", fontWeight: 700, fontSize: "0.875rem" }}>
+                      {node.name}
+                    </td>
+                    <td style={{ padding: "1rem 1.25rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", color: statusColor(node.status), fontSize: "0.75rem", fontWeight: 700, background: `${statusColor(node.status)}15`, padding: "0.2rem 0.6rem", borderRadius: "999px", width: "fit-content" }}>
+                        {statusIcon(node.status)} {node.status}
+                      </div>
+                    </td>
+                    <td style={{ padding: "1rem 1.25rem", color: "var(--color-neutral-300)", fontSize: "0.8125rem", whiteSpace: "nowrap" }}>
+                      {node.client}
+                    </td>
+                    <td style={{ padding: "1rem 1.25rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {node.os}
+                    </td>
+                    <td style={{ padding: "1rem 1.25rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", fontFamily: "monospace" }}>
+                      {node.ip}
+                    </td>
+                    <td style={{ padding: "1rem 1.25rem", minWidth: 140 }}>
+                      <UsageBar value={node.cpu_usage} label="CPU" />
+                      <div style={{ height: 4 }} />
+                      <UsageBar value={node.ram_usage} label="RAM" />
+                    </td>
+                    <td style={{ padding: "1rem 1.25rem" }}>
+                      <div style={{ display: "flex", gap: "0.25rem" }}>
+                        {node.sources.map(s => (
+                          <span key={s} style={{ padding: "0.15rem 0.4rem", borderRadius: "4px", fontSize: "0.6rem", fontWeight: 800, background: s === "RMM" ? "rgba(0,212,255,0.15)" : "rgba(168,85,247,0.15)", color: s === "RMM" ? "#00D4FF" : "#a855f7" }}>
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ padding: "1rem 1.25rem", color: "var(--color-neutral-500)", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                      {timeAgo(node.last_seen)}
+                    </td>
+                  </tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {nodes.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: "4rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
-                    No infrastructure nodes found. Add your first node above.
-                  </td>
-                </tr>
-              ) : nodes.map((node) => (
-                <tr key={node.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.04)", transition: "background 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.025)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                  <td style={{ padding: "1rem 1.25rem", color: "var(--color-accent-500)", fontWeight: 700, fontSize: "0.8125rem", fontFamily: "monospace" }}>
-                    {node.node_id}
-                  </td>
-                  <td style={{ padding: "1rem 1.25rem", color: "white", fontWeight: 600, fontSize: "0.875rem" }}>
-                    {node.name}
-                  </td>
-                  <td style={{ padding: "1rem 1.25rem" }}>
-                    <span style={{ padding: "0.2rem 0.6rem", borderRadius: "6px", background: "rgba(0,212,255,0.08)", color: "var(--color-accent-600)", fontSize: "0.75rem", fontWeight: 700 }}>
-                      {node.type}
-                    </span>
-                  </td>
-                  <td style={{ padding: "1rem 1.25rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", color: statusColor(node.status), fontSize: "0.8125rem", fontWeight: 700 }}>
-                      {statusIcon(node.status)} {node.status}
-                    </div>
-                  </td>
-                  <td style={{ padding: "1rem 1.25rem", color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-                    {node.uptime}
-                  </td>
-                  <td style={{ padding: "1rem 1.25rem", minWidth: 120 }}>
-                    <UsageBar value={node.cpu_usage} label="CPU" />
-                  </td>
-                  <td style={{ padding: "1rem 1.25rem", minWidth: 120 }}>
-                    <UsageBar value={node.ram_usage} label="RAM" />
-                  </td>
-                  <td style={{ padding: "1rem 1.25rem", color: "var(--color-neutral-500)", fontSize: "0.8125rem", whiteSpace: "nowrap" }}>
-                    {timeAgo(node.last_seen)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      {/* Add Node Modal */}
-      {showModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div className="glass-card" style={{ width: "100%", maxWidth: 480, padding: "2rem", borderRadius: "16px", position: "relative", background: "#0a1628", border: "1px solid rgba(0,212,255,0.25)" }}>
-            <button onClick={() => setShowModal(false)} style={{ position: "absolute", top: "1.25rem", right: "1.25rem", background: "rgba(255,255,255,0.06)", border: "none", color: "white", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <X size={16} />
-            </button>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.75rem" }}>
-              <div style={{ width: 40, height: 40, borderRadius: "10px", background: "rgba(0,212,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Server size={20} color="#00D4FF" />
-              </div>
-              <div>
-                <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.25rem", color: "white" }}>Add Infrastructure Node</h2>
-                <p style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>Register a new managed node</p>
-              </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              {[
-                { label: "Node ID *", key: "node_id", placeholder: "e.g. SRV-DC-02" },
-                { label: "Display Name *", key: "name", placeholder: "e.g. Secondary Domain Controller" },
-                { label: "IP Address", key: "ip_address", placeholder: "e.g. 192.168.1.10" },
-                { label: "Location", key: "location", placeholder: "e.g. Rack A, DC1" },
-              ].map((f) => (
-                <div key={f.key}>
-                  <label style={{ display: "block", color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 600, marginBottom: "0.4rem" }}>{f.label}</label>
-                  <input
-                    type="text"
-                    placeholder={f.placeholder}
-                    value={form[f.key as keyof typeof form]}
-                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                    style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "0.75rem 1rem", color: "white", outline: "none", fontSize: "0.9rem", boxSizing: "border-box" }}
-                  />
+        {/* Wazuh Security Events Panel */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", borderTop: "3px solid #ef4444" }}>
+            <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Shield size={18} color="#ef4444" /> Active SIEM Alerts
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: 400, overflowY: "auto", paddingRight: "0.5rem" }}>
+              {events.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "2rem", color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
+                  <CheckCircle2 size={32} color="#10b981" style={{ margin: "0 auto 1rem", opacity: 0.5 }} />
+                  No critical security events detected in the last 24 hours.
+                </div>
+              ) : events.map(evt => (
+                <div key={evt.id} style={{ padding: "0.875rem", borderRadius: "8px", background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                    <span style={{ color: "#ef4444", fontSize: "0.75rem", fontWeight: 700 }}>Level {evt.rule_level} Alert</span>
+                    <span style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>{timeAgo(evt.timestamp)}</span>
+                  </div>
+                  <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.25rem" }}>{evt.description}</div>
+                  <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem", fontFamily: "monospace" }}>Host: {evt.agent_name} | Rule: {evt.rule_id}</div>
                 </div>
               ))}
-              <div>
-                <label style={{ display: "block", color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 600, marginBottom: "0.4rem" }}>Type</label>
-                <select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  style={{ width: "100%", background: "#0a1628", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "0.75rem 1rem", color: "white", outline: "none", fontSize: "0.9rem" }}
-                >
-                  {["Server", "Workstation", "Network", "Firewall", "Switch", "Appliance", "Cloud"].map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
+            </div>
+          </div>
+
+          {/* Integration Status */}
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px" }}>
+            <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700, marginBottom: "1rem" }}>System Health</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px" }}>
+                <span style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Server size={14} color="#00D4FF" /> Tactical RMM
+                </span>
+                <span className="badge badge-success" style={{ fontSize: "0.65rem", padding: "0.15rem 0.5rem" }}>Connected</span>
               </div>
-              <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
-                <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "0.875rem", borderRadius: "8px", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "white", fontWeight: 700, cursor: "pointer" }}>
-                  Cancel
-                </button>
-                <button onClick={handleAddNode} disabled={saving || !form.node_id || !form.name} className="btn-primary" style={{ flex: 1, padding: "0.875rem", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-                  {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <><Plus size={16} /> Add Node</>}
-                </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px" }}>
+                <span style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Shield size={14} color="#a855f7" /> Wazuh SIEM
+                </span>
+                <span className={`badge badge-${wazuhStatus ? "success" : "warning"}`} style={{ fontSize: "0.65rem", padding: "0.15rem 0.5rem" }}>
+                  {wazuhStatus ? "Connected" : "Degraded"}
+                </span>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

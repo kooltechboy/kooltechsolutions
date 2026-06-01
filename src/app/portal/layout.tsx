@@ -11,6 +11,7 @@ import {
 import NotificationHub from "@/components/shared/NotificationHub";
 import BookingModal from "@/components/shared/BookingModal";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
+import VoiceAssistant from "@/components/ai/VoiceAssistant";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/portal" },
@@ -186,6 +187,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         initialName={profile ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() : ""}
         initialEmail={profile?.email || ""}
       />
+
+      <VoiceAssistant />
 
       <style>{`
         .portal-sidebar { transform: translateX(-100%); }
