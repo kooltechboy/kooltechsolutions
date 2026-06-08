@@ -108,9 +108,8 @@ CREATE TABLE IF NOT EXISTS public.integration_configs (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Seed all integrations. ITFlow and Tactical RMM are Connected (keys stored in .env.local)
+-- Seed integrations. ITFlow is Connected (key stored in .env.local)
 INSERT INTO public.integration_configs (name, category, status, endpoint, last_sync) VALUES
-  ('Tactical RMM', 'RMM', 'Connected', 'https://rmm.kooltechsolutions.com', NOW()),
   ('ITFlow', 'PSA', 'Connected', 'https://itflow.kooltechsolutions.com/', NOW()),
   ('Action1', 'Patching', 'Disconnected', NULL, NULL),
   ('Wazuh SIEM', 'Security', 'Connected', NULL, NOW() - INTERVAL '5 minutes'),

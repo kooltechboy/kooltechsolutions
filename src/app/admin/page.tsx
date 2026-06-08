@@ -12,15 +12,6 @@ const statusColor: Record<string, string> = {
   open: "#00D4FF", in_progress: "#FFB300", resolved: "#00E676", closed: "#64748B", waiting_on_client: "#A855F7",
 };
 
-interface RMMDevice {
-  id: string;
-  name: string;
-  os: string;
-  status: string;
-  last_seen: string;
-  note?: string;
-}
-
 interface ITFlowAsset {
   id: string;
   type: string;
@@ -103,9 +94,6 @@ export default function AdminDashboard() {
   const [integrations, setIntegrations] = useState<IntegrationHealth[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Live Telemetry State
-  const [rmmDevices, setRmmDevices] = useState<RMMDevice[]>([]);
-  const [rmmSource, setRmmSource] = useState<string>("mock");
   const [itflowAssets, setItflowAssets] = useState<ITFlowAsset[]>([]);
   const [itflowMock, setItflowMock] = useState<boolean>(true);
   const [action1Endpoints, setAction1Endpoints] = useState<Action1Endpoint[]>([]);
@@ -175,25 +163,12 @@ export default function AdminDashboard() {
     // Fetch live telemetry from the integration proxies
     async function fetchTelemetry() {
       try {
-        const [rmmRes, itflowRes, action1Res, wazuhRes] = await Promise.allSettled([
-          fetch("/api/rmm"),
+        const [itflowRes, action1Res, wazuhRes] = await Promise.allSettled([
           fetch("/api/itflow?endpoint=assets"),
           fetch("/api/action1"),
           fetch("/api/wazuh"),
         ]);
 
-        if (rmmRes.status === "fulfilled" && rmmRes.value.ok) {
-          const json = await rmmRes.value.json();
-          const agents = json.agents || [];
-          setRmmSource(json.source || "mock");
-          setRmmDevices(agents.map((a: any) => ({
-            id: a.id || a.agent_id,
-            name: a.hostname,
-            os: a.os,
-            status: a.status,
-            last_seen: a.last_seen,
-          })));
-        }
         if (itflowRes.status === "fulfilled" && itflowRes.value.ok) {
           const json = await itflowRes.value.json();
           setItflowMock(!!json._mock);
@@ -346,68 +321,6 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.25rem" }}>
-
-            {/* ── Tactical RMM Panel ── */}
-            <motion.div className="kpi-card" style={{ padding: "1.25rem" }}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-              whileHover={{ scale: 1.015 }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1rem" }}>
-                <div style={{ width: 34, height: 34, borderRadius: "9px", background: "rgba(0,212,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Monitor size={16} color="#00D4FF" />
-                </div>
-                <div>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Tactical RMM</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Managed Devices</div>
-                </div>
-                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <div style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: rmmDevices.length > 0 ? (rmmSource === "live" ? "#00E676" : "#FFB300") : "#FF4444",
-                    boxShadow: rmmDevices.length > 0 ? (rmmSource === "live" ? "0 0 6px #00E676" : "0 0 6px #FFB300") : "none"
-                  }} />
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.7rem" }}>
-                    {rmmDevices.length > 0 ? (rmmSource === "live" ? "Live" : "Mock Data") : "No Data"}
-                  </span>
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "180px", overflowY: "auto", paddingRight: "0.25rem" }}>
-                {rmmDevices.length === 0 ? (
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.8rem", textAlign: "center", padding: "1.5rem 0" }}>No devices found. Configure Tactical RMM in Integrations.</div>
-                ) : rmmDevices.map(device => (
-                  <div key={device.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem 0.625rem", borderRadius: "8px", background: "rgba(75,132,200,0.07)", border: "1px solid rgba(75,132,200,0.1)" }}>
-                    <div>
-                      <div style={{ color: "white", fontSize: "0.8rem", fontWeight: 600 }}>{device.name}</div>
-                      <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>{device.os}</div>
-                    </div>
-                    <span style={{
-                      fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "20px", textTransform: "capitalize",
-                      background: device.status === "online" ? "rgba(0,230,118,0.15)" : "rgba(255,68,68,0.15)",
-                      color: device.status === "online" ? "#00E676" : "#FF4444",
-                      border: `1px solid ${device.status === "online" ? "rgba(0,230,118,0.3)" : "rgba(255,68,68,0.3)"}`
-                    }}>{device.status}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: "0.875rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(75,132,200,0.1)", display: "flex", gap: "1rem" }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#00E676", fontSize: "1.1rem" }}>{rmmDevices.filter(d => d.status === "online").length}</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Online</div>
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#FF4444", fontSize: "1.1rem" }}>{rmmDevices.filter(d => d.status === "offline").length}</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Offline</div>
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.1rem" }}>{rmmDevices.length}</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.68rem" }}>Total</div>
-                </div>
-              </div>
-            </motion.div>
 
             {/* ── ITFlow Panel ── */}
             <motion.div className="kpi-card" style={{ padding: "1.25rem" }}

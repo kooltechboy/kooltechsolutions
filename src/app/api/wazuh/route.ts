@@ -20,7 +20,26 @@ const OPENSEARCH_HEADERS = {
   "osd-xsrf": "true",
 };
 
-async function opensearchQuery(index: string, body: object): Promise<any> {
+interface OpenSearchHits<TSource> {
+  hits?: {
+    hits?: Array<{ _source?: TSource }>;
+  };
+}
+
+interface AgentBucket {
+  key: string;
+  latest: { hits: { hits: Array<{ _source: Record<string, unknown> }> } };
+}
+
+interface AgentAggregationResponse {
+  aggregations?: {
+    agents?: {
+      buckets?: AgentBucket[];
+    };
+  };
+}
+
+async function opensearchQuery(index: string, body: object): Promise<unknown> {
   const encodedPath = encodeURIComponent(`/${index}/_search`);
   const url = `${DASHBOARD_URL}/api/console/proxy?path=${encodedPath}&method=GET`;
 
@@ -68,9 +87,6 @@ async function opensearchQuery(index: string, body: object): Promise<any> {
 }
 
 export async function GET(_request: Request) {
-  // Disable self-signed cert rejection for internal SIEM server
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
   try {
     const supabase = await createClient();
     const {
@@ -83,7 +99,13 @@ export async function GET(_request: Request) {
     }
 
     if (!DASHBOARD_URL || !process.env.WAZUH_API_PASSWORD) {
-      return NextResponse.json(getMockData());
+      return NextResponse.json({
+        agents: [],
+        summary: { total_agents: 0, active: 0, disconnected: 0, never_connected: 0, pending: 0 },
+        recent_events: [],
+        _error: "Wazuh is not configured",
+        _mock: false
+      });
     }
 
     try {
@@ -95,7 +117,7 @@ export async function GET(_request: Request) {
         size: 1,
         sort: [{ timestamp: { order: "desc" } }],
         _source: ["timestamp"],
-      });
+      }) as OpenSearchHits<{ timestamp?: string }>;
 
       const latestTimestamp: string | null =
         latestDoc?.hits?.hits?.[0]?._source?.timestamp ?? null;
@@ -141,12 +163,9 @@ export async function GET(_request: Request) {
             },
           },
         },
-      });
+      }) as AgentAggregationResponse;
 
-      const agentBuckets: Array<{
-        key: string;
-        latest: { hits: { hits: Array<{ _source: Record<string, unknown> }> } };
-      }> = agentsRes?.aggregations?.agents?.buckets ?? [];
+      const agentBuckets = agentsRes.aggregations?.agents?.buckets ?? [];
 
       const agents = agentBuckets.map((bucket) => {
         const src = bucket.latest?.hits?.hits?.[0]?._source ?? {};
@@ -181,14 +200,14 @@ export async function GET(_request: Request) {
           query: {
             range: { "rule.level": { gte: 7 } },
           },
-        });
+        }) as OpenSearchHits<Record<string, unknown>>;
 
         recent_events = (alertsRes?.hits?.hits ?? []).map(
           (
-            hit: { _source: Record<string, unknown> },
+            hit: any,
             idx: number
           ) => {
-            const src = hit._source;
+            const src = hit._source ?? {};
             const rule = src.rule as Record<string, unknown> | undefined;
             const agent = src.agent as Record<string, string> | undefined;
             return {
@@ -207,11 +226,13 @@ export async function GET(_request: Request) {
 
       return NextResponse.json({ agents, summary, recent_events });
     } catch (apiError) {
-      console.error("Wazuh OpenSearch query failed, falling back to mock:", apiError);
+      console.error("Wazuh OpenSearch query failed:", apiError);
       return NextResponse.json({
-        ...getMockData(),
+        agents: [],
+        summary: { total_agents: 0, active: 0, disconnected: 0, never_connected: 0, pending: 0 },
+        recent_events: [],
         _error: apiError instanceof Error ? apiError.message : "Wazuh connection failed",
-        _mock: true,
+        _mock: false
       });
     }
   } catch (err) {
@@ -219,32 +240,4 @@ export async function GET(_request: Request) {
     console.error("Wazuh Route Error:", err);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-}
-
-function getMockData() {
-  return {
-    _mock: true,
-    agents: [
-      {
-        id: "000",
-        name: "wazuh-server",
-        ip: "127.0.0.1",
-        os: "Ubuntu 22.04.4 LTS",
-        version: "Wazuh v4.7.2",
-        status: "active",
-        lastKeepAlive: new Date().toISOString(),
-      },
-      {
-        id: "001",
-        name: "pve-host",
-        ip: "192.168.250.11",
-        os: "Debian GNU/Linux",
-        version: "Wazuh v4.14.5",
-        status: "active",
-        lastKeepAlive: new Date().toISOString(),
-      },
-    ],
-    summary: { total_agents: 2, active: 2, disconnected: 0, never_connected: 0, pending: 0 },
-    recent_events: [],
-  };
 }

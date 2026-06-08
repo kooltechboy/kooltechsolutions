@@ -5,6 +5,7 @@ import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { aiChatSchema } from "@/lib/validation";
 import { validationError, serverError, rateLimitError } from "@/lib/errors";
 import { z } from "zod";
+import { Resend } from "resend";
 
 export const runtime = "nodejs";
 
@@ -162,6 +163,29 @@ CORE MISSION:
             }).select("id").single();
             
             if (error) return { success: false, error: error.message };
+            
+            if (process.env.RESEND_API_KEY) {
+              try {
+                const resend = new Resend(process.env.RESEND_API_KEY);
+                await resend.emails.send({
+                  from: "KoolTech Alerts <onboarding@resend.dev>",
+                  to: ["sales@kooltechsolutions.com"],
+                  subject: `🚀 AI Agent Lead: ${params.name}`,
+                  html: `
+                    <h2>New Lead Collected by AI Agent</h2>
+                    <p><strong>Name:</strong> ${params.name}</p>
+                    <p><strong>Email:</strong> ${params.email}</p>
+                    <p><strong>Phone:</strong> ${params.phone || "N/A"}</p>
+                    <p><strong>Service Interest:</strong> ${params.service}</p>
+                    <p><strong>Notes:</strong> ${bookingNote}</p>
+                    <p><strong>Client Message:</strong> ${params.message || "None"}</p>
+                  `,
+                });
+              } catch (emailError) {
+                console.error("[AI Workforce] Failed to send email alert:", emailError);
+              }
+            }
+
             return { success: true, bookingId: data.id, message: "Demo booked successfully. Please inform the client." };
           }
         } as any),

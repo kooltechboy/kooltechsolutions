@@ -61,7 +61,11 @@ export default function Navbar() {
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
               <MessageCircle size={12} color="#25D366" />
-              <a href="https://wa.me/18297201611" style={{ color: "var(--color-neutral-300)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-300)"}>WhatsApp: 829-720-1611</a>
+              <a href="https://wa.me/18297201611" style={{ color: "var(--color-neutral-300)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-300)"}>WhatsApp</a>
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <Headphones size={12} color="var(--color-accent-500)" />
+              <a href="mailto:support@kooltechsolutions.com" style={{ color: "var(--color-neutral-300)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-300)"}>support@kooltechsolutions.com</a>
             </span>
             <Link href="/portal" style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-accent-500)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-accent-500)"}>
               {t("nav.clientPortal")} <ArrowRight size={12} />

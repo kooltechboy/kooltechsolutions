@@ -22,53 +22,15 @@ export async function GET(_request: Request) {
     const isConnected = dbConfig?.status === "Connected" || !!process.env.ACTION1_API_KEY;
 
     if (!isConnected || !apiKey) {
-      // Return mock data when not configured
       return NextResponse.json({
-        _mock: true,
-        endpoints: [
-          {
-            id: "EP-001",
-            name: "DESKTOP-CEO",
-            os: "Windows 11 Pro 23H2",
-            patches_missing: 0,
-            patches_installed: 312,
-            last_scan: new Date().toISOString(),
-            status: "Compliant",
-          },
-          {
-            id: "EP-002",
-            name: "SERVER-DC-01",
-            os: "Windows Server 2022",
-            patches_missing: 3,
-            patches_installed: 489,
-            last_scan: new Date(Date.now() - 3600000).toISOString(),
-            status: "Needs Attention",
-          },
-          {
-            id: "EP-003",
-            name: "LAPTOP-EMP-04",
-            os: "Windows 11 Pro 22H2",
-            patches_missing: 7,
-            patches_installed: 280,
-            last_scan: new Date(Date.now() - 7200000).toISOString(),
-            status: "Critical",
-          },
-          {
-            id: "EP-004",
-            name: "WORKSTATION-ACCT",
-            os: "Windows 10 Pro 22H2",
-            patches_missing: 1,
-            patches_installed: 345,
-            last_scan: new Date(Date.now() - 1800000).toISOString(),
-            status: "Compliant",
-          },
-        ],
+        _mock: false,
+        endpoints: [],
         summary: {
-          total_endpoints: 4,
-          compliant: 2,
-          needs_attention: 1,
-          critical: 1,
-          total_missing_patches: 11,
+          total_endpoints: 0,
+          compliant: 0,
+          needs_attention: 0,
+          critical: 0,
+          total_missing_patches: 0,
         },
       });
     }
@@ -94,28 +56,18 @@ export async function GET(_request: Request) {
       const data = await response.json();
       return NextResponse.json(data);
     } catch (fetchErr) {
-      console.warn("Action1 fetch failed, falling back to mock data:", fetchErr);
+      console.warn("Action1 fetch failed:", fetchErr);
       return NextResponse.json({
-        _mock: true,
-        endpoints: [
-          {
-            id: "EP-001",
-            name: "DESKTOP-CEO",
-            os: "Windows 11 Pro 23H2",
-            patches_missing: 0,
-            patches_installed: 312,
-            last_scan: new Date().toISOString(),
-            status: "Compliant",
-            note: "Fallback mock data due to API connection error",
-          },
-        ],
+        _mock: false,
+        endpoints: [],
         summary: {
-          total_endpoints: 1,
-          compliant: 1,
+          total_endpoints: 0,
+          compliant: 0,
           needs_attention: 0,
           critical: 0,
           total_missing_patches: 0,
         },
+        error: fetchErr instanceof Error ? fetchErr.message : "Fetch failed"
       });
     }
   } catch (err) {

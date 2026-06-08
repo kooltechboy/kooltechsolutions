@@ -69,6 +69,11 @@ export default function PrivacyPage() {
                 <p style={{ color: "var(--color-neutral-400)", lineHeight: 1.8, fontSize: "0.9375rem" }}>{s.content}</p>
               </div>
             ))}
+            <div style={{ marginTop: "3rem", padding: "1.5rem", borderRadius: "12px", background: "rgba(0,212,255,0.05)", borderLeft: "4px solid var(--color-accent-500)" }}>
+              <p style={{ color: "var(--color-neutral-300)", fontSize: "0.9375rem", lineHeight: 1.6 }}>
+                For any data protection or privacy concerns, please contact our Data Protection team at <a href="mailto:privacy@kooltechsolutions.com" style={{ color: "var(--color-accent-500)", fontWeight: 600, textDecoration: "none" }}>privacy@kooltechsolutions.com</a>.
+              </p>
+            </div>
           </div>
         </section>
       </main>

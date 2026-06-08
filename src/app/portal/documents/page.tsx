@@ -15,6 +15,13 @@ interface DocumentItem {
   locked: boolean;
 }
 
+interface DisplayDocumentItem extends DocumentItem {
+  category: string;
+  catColor: string;
+  catBg: string;
+  catBorder: string;
+}
+
 const defaultCategories = [
   {
     name: "Service Agreements",
@@ -103,7 +110,7 @@ export default function DocumentsPage() {
   };
 
   // Merge default categories with custom uploaded documents
-  const allDocs = [
+  const allDocs: DisplayDocumentItem[] = [
     ...documents.map(d => ({
       ...d,
       category: "My Uploaded Vault Documents",
@@ -310,7 +317,7 @@ export default function DocumentsPage() {
   );
 }
 
-function DocRow({ doc, color, bg, border }: { doc: any; color: string; bg: string; border: string }) {
+function DocRow({ doc, color, bg, border }: { doc: DisplayDocumentItem; color: string; bg: string; border: string }) {
   return (
     <div className="group flex items-center justify-between p-4 hover:bg-white/[0.03] rounded-2xl transition-all cursor-pointer border border-transparent hover:border-white/5">
       <div className="flex items-center gap-5 min-w-0 flex-1">

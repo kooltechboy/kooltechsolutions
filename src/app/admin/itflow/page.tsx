@@ -57,6 +57,23 @@ interface ITInvoice {
   created_at?: string;
   paid_at?: string;
 }
+type ITFlowRecord = ITTicket | ITClient | ITAsset | ITInvoice | Record<string, unknown>;
+type ITFlowApiResponse = { success?: string; message?: string; data?: ITFlowRecord[] };
+
+function getWarrantyState(expires?: string) {
+  const warrantyDate = expires ? new Date(expires) : null;
+  const warningCutoff = new Date();
+  warningCutoff.setDate(warningCutoff.getDate() + 90);
+
+  const warrantyExpired = warrantyDate ? warrantyDate < new Date() : false;
+  const warrantyColor = warrantyExpired
+    ? "#ef4444"
+    : warrantyDate && warrantyDate < warningCutoff
+      ? "#f59e0b"
+      : "#10b981";
+
+  return { warrantyExpired, warrantyColor };
+}
 
 /* ─── Mock fallbacks ─────────────────────────────────────── */
 const MOCK_TICKETS: ITTicket[] = [
@@ -148,7 +165,7 @@ type TabId = typeof TABS[number]["id"];
 /* ─── Main Component ─────────────────────────────────────── */
 export default function ITFlowDashboard() {
   const [activeTab, setActiveTab] = useState<TabId>("tickets");
-  const [dataMap, setDataMap] = useState<Record<TabId, any[]>>({
+  const [dataMap, setDataMap] = useState<Record<TabId, ITFlowRecord[]>>({
     tickets: [], clients: [], assets: [], invoices: [],
   });
   const [loading, setLoading] = useState(true);
@@ -161,21 +178,21 @@ export default function ITFlowDashboard() {
     try {
       const res = await fetch(`/api/itflow?endpoint=${tab}`, { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const json = await res.json();
+      const json = await res.json() as ITFlowApiResponse | ITFlowRecord[];
       
       // ITFlow returns { success: "False", message: "No resource..." } when the table is empty
-      if (json.success === "False" && json.message?.includes("No resource")) {
+      if (!Array.isArray(json) && json.success === "False" && json.message?.includes("No resource")) {
         setDataMap(prev => ({ ...prev, [tab]: [] }));
         setSource("live");
-      } else if (Array.isArray(json.data) || Array.isArray(json)) {
-        const items = Array.isArray(json.data) ? json.data : json;
+      } else if (Array.isArray(json) || Array.isArray(json.data)) {
+        const items = Array.isArray(json) ? json : json.data;
         setDataMap(prev => ({ ...prev, [tab]: items }));
         setSource("live");
       } else {
         throw new Error("Unexpected ITFlow payload format");
       }
     } catch {
-      const mocks: Record<TabId, any[]> = {
+      const mocks: Record<TabId, ITFlowRecord[]> = {
         tickets: MOCK_TICKETS, clients: MOCK_CLIENTS,
         assets: MOCK_ASSETS, invoices: MOCK_INVOICES,
       };
@@ -365,7 +382,7 @@ export default function ITFlowDashboard() {
           <AlertCircle size={16} color="#f59e0b" style={{ flexShrink: 0 }} />
           <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", margin: 0 }}>
             <strong style={{ color: "#f59e0b" }}>Demo data displayed.</strong>{" "}
-            ITFlow API key requires global scope. Go to <strong>ITFlow → Settings → API Keys</strong>, ensure the key has "All Clients" access, then hit Refresh.
+            ITFlow API key requires global scope. Go to <strong>ITFlow → Settings → API Keys</strong>, ensure the key has &quot;All Clients&quot; access, then hit Refresh.
           </p>
         </div>
       )}
@@ -519,9 +536,7 @@ function AssetsTable({ data }: { data: ITAsset[] }) {
           {data.length === 0 ? (
             <tr><td colSpan={7} style={{ padding: "4rem", textAlign: "center", color: "var(--color-neutral-500)" }}>No assets found.</td></tr>
           ) : data.map((a, i) => {
-            const warrantyDate = a.warranty_expires ? new Date(a.warranty_expires) : null;
-            const warrantyExpired = warrantyDate ? warrantyDate < new Date() : false;
-            const warrantyColor = warrantyExpired ? "#ef4444" : (warrantyDate && warrantyDate < new Date(Date.now() + 90 * 86400000) ? "#f59e0b" : "#10b981");
+            const { warrantyExpired, warrantyColor } = getWarrantyState(a.warranty_expires);
             return (
               <tr key={a.id ?? i}
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", cursor: "pointer", transition: "background 0.15s" }}

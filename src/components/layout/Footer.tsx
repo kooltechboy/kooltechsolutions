@@ -74,8 +74,9 @@ export default function Footer() {
               {t("footer.desc")}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <ContactItem icon={Phone} text="+1 (829) 720-1611" />
-              <ContactItem icon={Mail} text="danieljwilliams@kooltechsolutions.com" />
+              <ContactItem icon={Phone} text="+1 (829) 720-1611" href="tel:18297201611" />
+              <ContactItem icon={Mail} text="info@kooltechsolutions.com" href="mailto:info@kooltechsolutions.com" />
+              <ContactItem icon={Mail} text="support@kooltechsolutions.com" href="mailto:support@kooltechsolutions.com" />
               <ContactItem icon={MapPin} text={t("footer.location")} />
             </div>
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
@@ -154,11 +155,17 @@ export default function Footer() {
   );
 }
 
-function ContactItem({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
+function ContactItem({ icon: Icon, text, href }: { icon: React.ElementType; text: string; href?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
       <Icon size={14} color="var(--color-accent-500)" style={{ flexShrink: 0 }} />
-      <span style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>{text}</span>
+      {href ? (
+        <a href={href} style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--color-accent-500)"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-500)"}>
+          {text}
+        </a>
+      ) : (
+        <span style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>{text}</span>
+      )}
     </div>
   );
 }

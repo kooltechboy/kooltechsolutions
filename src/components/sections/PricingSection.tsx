@@ -123,6 +123,13 @@ export default function PricingSection() {
           ))}
         </div>
 
+        <div style={{ textAlign: "center", marginTop: "3.5rem" }}>
+          <p style={{ color: "var(--color-neutral-400)", marginBottom: "1.25rem", fontSize: "1rem" }}>Need a custom or enterprise plan?</p>
+          <a href="mailto:sales@kooltechsolutions.com" className="btn-primary" style={{ display: "inline-flex", textDecoration: "none" }}>
+            Contact Enterprise Sales
+          </a>
+        </div>
+
         <p style={{ textAlign: "center", color: "var(--color-neutral-500)", fontSize: "0.8125rem", marginTop: "2rem" }}>
           {t("pricing.footnote")}
         </p>

@@ -1,9 +1,18 @@
 "use client";
 import Link from "next/link";
-import { Shield, Cloud, Network, Monitor, Headphones, Award, ArrowRight } from "lucide-react";
+import { Shield, Cloud, Network, Monitor, Headphones, Award, ArrowRight, type LucideIcon } from "lucide-react";
 import { useLanguage } from "@/components/shared/LanguageProvider";
 
-const servicesList = [
+interface ServiceCardData {
+  icon: LucideIcon;
+  titleKey: string;
+  color: string;
+  descKey: string;
+  features: string[];
+  href: string;
+}
+
+const servicesList: ServiceCardData[] = [
   {
     icon: Shield, titleKey: "services.cybersecurity", color: "#FF4444",
     descKey: "services.cybersecurityDesc",
@@ -25,7 +34,7 @@ const servicesList = [
   {
     icon: Monitor, titleKey: "services.monitoring", color: "#FFB300",
     descKey: "services.monitoringDesc",
-    features: ["Uptime Kuma", "Tactical RMM", "Grafana Dashboards", "SMS/Email Alerts"],
+    features: ["Uptime Kuma", "Action1", "Grafana Dashboards", "SMS/Email Alerts"],
     href: "/services/monitoring",
   },
   {
@@ -78,7 +87,11 @@ export default function ServicesSection() {
   );
 }
 
-function ServiceCard({ icon: Icon, titleKey, color, descKey, features, href, t }: any) {
+interface ServiceCardProps extends ServiceCardData {
+  t: (key: string) => string;
+}
+
+function ServiceCard({ icon: Icon, titleKey, color, descKey, features, href, t }: ServiceCardProps) {
   return (
     <Link href={href} style={{ textDecoration: "none" }}>
       <div className="glass-card" style={{ borderRadius: "16px", padding: "1.75rem", height: "100%", cursor: "pointer" }}>

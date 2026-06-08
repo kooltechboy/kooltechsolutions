@@ -1,8 +1,31 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
+interface DocumentRecord {
+  id?: string;
+  client_id: string;
+  name: string;
+  size: string;
+  type: string;
+  locked: boolean;
+  created_at: string;
+}
+
+interface DocumentRequestBody {
+  name: string;
+  size: string;
+  type?: string;
+  locked?: boolean;
+}
+
 // Fallback in-memory store for documents if database table is missing
-const mockStore: Record<string, any[]> = {};
+const mockStore: Record<string, DocumentRecord[]> = {};
+
+function isDocumentRequestBody(value: unknown): value is DocumentRequestBody {
+  if (typeof value !== "object" || value === null) return false;
+  const body = value as Record<string, unknown>;
+  return typeof body.name === "string" && typeof body.size === "string";
+}
 
 export async function GET(request: Request) {
   try {
@@ -45,17 +68,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { name, size, type, locked } = body;
-
-    if (!name || !size) {
+    const body = await request.json() as unknown;
+    if (!isDocumentRequestBody(body)) {
       return NextResponse.json({ error: "Name and size are required" }, { status: 400 });
     }
 
-    const docRecord = {
+    const { name, size, type, locked } = body;
+
+    if (!name.trim() || !size.trim()) {
+      return NextResponse.json({ error: "Name and size are required" }, { status: 400 });
+    }
+
+    const docRecord: DocumentRecord = {
       client_id: user.id,
-      name,
-      size,
+      name: name.trim(),
+      size: size.trim(),
       type: type || "PDF",
       locked: !!locked,
       created_at: new Date().toISOString(),

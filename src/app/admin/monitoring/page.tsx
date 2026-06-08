@@ -2,19 +2,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Server, Activity, Shield, Wifi, CheckCircle2, AlertTriangle, XCircle, Wrench, RefreshCw, Loader2, Thermometer, Cpu, HardDrive } from "lucide-react";
 
-interface RmmAgent {
-  id: string;
-  hostname: string;
-  client: string;
-  site: string;
-  os: string;
-  status: string;
-  last_seen: string;
-  cpu_load: number;
-  used_ram: number;
-  total_ram: number;
-}
-
 interface WazuhAgent {
   id: string;
   name: string;
@@ -34,6 +21,14 @@ interface SecurityEvent {
   timestamp: string;
 }
 
+interface WazuhSummary {
+  total_agents?: number;
+  active?: number;
+  disconnected?: number;
+  never_connected?: number;
+  pending?: number;
+}
+
 interface MergedNode {
   id: string;
   name: string;
@@ -44,7 +39,7 @@ interface MergedNode {
   last_seen: string;
   cpu_usage: number;
   ram_usage: number;
-  sources: ("RMM" | "WAZUH")[];
+  sources: ("WAZUH")[];
   client: string;
 }
 
@@ -73,74 +68,40 @@ export default function MonitoringPage() {
   const [nodes, setNodes] = useState<MergedNode[]>([]);
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [wazuhStatus, setWazuhStatus] = useState<any>(null);
+  const [wazuhStatus, setWazuhStatus] = useState<WazuhSummary | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [rmmRes, wazuhRes] = await Promise.all([
-        fetch("/api/rmm", { cache: "no-store" }),
+      const [wazuhRes] = await Promise.all([
         fetch("/api/wazuh", { cache: "no-store" }),
       ]);
 
-      const rmmJson = await rmmRes.json().catch(() => ({ agents: [] }));
       const wazuhJson = await wazuhRes.json().catch(() => ({ agents: [], recent_events: [], summary: {} }));
 
-      const rmmAgents: RmmAgent[] = rmmJson.agents || [];
       const wazuhAgents: WazuhAgent[] = wazuhJson.agents || [];
-      
+
+      // Track Wazuh connectivity
       setEvents(wazuhJson.recent_events || []);
-      setWazuhStatus(wazuhJson.summary || null);
+      setWazuhStatus(wazuhJson.summary?.total_agents != null ? wazuhJson.summary : null);
 
-      // Merge data by hostname
+      // Build node map from Wazuh agents
       const mergedMap = new Map<string, MergedNode>();
-
-      // Process RMM agents
-      for (const a of rmmAgents) {
-        let ramPct = 0;
-        if (a.total_ram > 0 && a.used_ram > 0) {
-          ramPct = Math.round((a.used_ram / a.total_ram) * 100);
-        }
-
-        mergedMap.set(a.hostname.toLowerCase(), {
-          id: a.id,
-          name: a.hostname,
-          type: "Workstation/Server",
-          status: a.status === "online" ? "Online" : "Offline",
-          os: a.os,
-          ip: "—",
-          last_seen: a.last_seen,
-          cpu_usage: a.cpu_load || 0,
-          ram_usage: ramPct,
-          sources: ["RMM"],
-          client: a.client,
-        });
-      }
-
-      // Process Wazuh agents
       for (const a of wazuhAgents) {
-        const key = a.name.toLowerCase();
-        if (mergedMap.has(key)) {
-          const existing = mergedMap.get(key)!;
-          existing.sources.push("WAZUH");
-          if (existing.ip === "—") existing.ip = a.ip;
-          if (a.status === "disconnected") existing.status = "Warning";
-        } else {
-          mergedMap.set(key, {
-            id: a.id,
-            name: a.name,
-            type: "Agent",
-            status: a.status === "active" ? "Online" : "Offline",
-            os: a.os,
-            ip: a.ip,
-            last_seen: a.lastKeepAlive,
-            cpu_usage: 0,
-            ram_usage: 0,
-            sources: ["WAZUH"],
-            client: "—",
-          });
-        }
+        mergedMap.set(a.name.toLowerCase(), {
+          id: a.id,
+          name: a.name,
+          type: "Agent",
+          status: a.status === "active" ? "Online" : a.status === "disconnected" ? "Warning" : "Offline",
+          os: a.os,
+          ip: a.ip,
+          last_seen: a.lastKeepAlive,
+          cpu_usage: 0,
+          ram_usage: 0,
+          sources: ["WAZUH"],
+          client: "—",
+        });
       }
 
       setNodes(Array.from(mergedMap.values()));
@@ -180,7 +141,7 @@ export default function MonitoringPage() {
     return (
       <div style={{ height: "80vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem" }}>
         <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
-        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Initializing SIEM & RMM Telemetry…</p>
+        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Initializing SIEM Telemetry…</p>
       </div>
     );
   }
@@ -194,7 +155,7 @@ export default function MonitoringPage() {
             Infrastructure Security & Monitoring
           </h1>
           <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
-            Unified telemetry from Tactical RMM and Wazuh SIEM. Auto-refreshes every 60s.
+            Unified telemetry from Wazuh SIEM. Auto-refreshes every 60s.
           </p>
         </div>
         <button
@@ -209,7 +170,7 @@ export default function MonitoringPage() {
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
         {[
-          { label: "Total Endpoints", value: nodes.length, icon: Server, color: "#00D4FF", sub: "RMM + SIEM nodes" },
+          { label: "Total Endpoints", value: nodes.length, icon: Server, color: "#00D4FF", sub: "SIEM nodes" },
           { label: "Healthy / Online", value: online, icon: CheckCircle2, color: "#10b981", sub: `${warning} warnings` },
           { label: "Offline Devices", value: offline, icon: XCircle, color: "#ef4444", sub: "Requires attention" },
           { label: "Security Events", value: threats, icon: Shield, color: threats > 0 ? "#ef4444" : "#10b981", sub: threats > 0 ? "High severity alerts" : "All clear" },
@@ -282,7 +243,7 @@ export default function MonitoringPage() {
                     <td style={{ padding: "1rem 1.25rem" }}>
                       <div style={{ display: "flex", gap: "0.25rem" }}>
                         {node.sources.map(s => (
-                          <span key={s} style={{ padding: "0.15rem 0.4rem", borderRadius: "4px", fontSize: "0.6rem", fontWeight: 800, background: s === "RMM" ? "rgba(0,212,255,0.15)" : "rgba(168,85,247,0.15)", color: s === "RMM" ? "#00D4FF" : "#a855f7" }}>
+                          <span key={s} style={{ padding: "0.15rem 0.4rem", borderRadius: "4px", fontSize: "0.6rem", fontWeight: 800, background: "rgba(168,85,247,0.15)", color: "#a855f7" }}>
                             {s}
                           </span>
                         ))}
@@ -327,12 +288,6 @@ export default function MonitoringPage() {
           <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px" }}>
             <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700, marginBottom: "1rem" }}>System Health</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px" }}>
-                <span style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <Server size={14} color="#00D4FF" /> Tactical RMM
-                </span>
-                <span className="badge badge-success" style={{ fontSize: "0.65rem", padding: "0.15rem 0.5rem" }}>Connected</span>
-              </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px" }}>
                 <span style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <Shield size={14} color="#a855f7" /> Wazuh SIEM

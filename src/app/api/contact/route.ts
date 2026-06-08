@@ -11,7 +11,7 @@ import {
 } from "@/lib/errors";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? "danieljwilliams2401@gmail.com";
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? "sales@kooltechsolutions.com";
 
 export async function POST(request: Request) {
   // ── Rate limiting: 5 submissions per IP per 15 minutes ──────────────────────
@@ -44,9 +44,14 @@ export async function POST(request: Request) {
     // ── Email alert ────────────────────────────────────────────────────────────
     try {
       if (process.env.RESEND_API_KEY) {
+        let targetEmail = ADMIN_EMAIL;
+        if (service === "Request a Quote") targetEmail = "sales@kooltechsolutions.com";
+        else if (service === "Technical Support") targetEmail = "support@kooltechsolutions.com";
+        else targetEmail = "info@kooltechsolutions.com";
+
         await resend.emails.send({
           from: "KoolTech Alerts <onboarding@resend.dev>",
-          to: [ADMIN_EMAIL],
+          to: [targetEmail],
           subject: `🚀 New Lead: ${safeName} (${safeCompany})`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">

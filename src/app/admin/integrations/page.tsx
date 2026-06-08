@@ -23,7 +23,6 @@ const timeAgo = (d: string | null | undefined) => {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  RMM: "#00D4FF",
   PSA: "#a855f7",
   Security: "#ef4444",
   Billing: "#10b981",
@@ -94,7 +93,7 @@ export default function IntegrationsPage() {
           Platform <span className="gradient-text">Integrations</span>
         </h1>
         <p style={{ color: "var(--color-neutral-400)", fontSize: "0.9375rem", marginTop: "0.25rem" }}>
-          Manage API connections to your RMM, PSA, and security tools. Keys are stored encrypted.
+          Manage API connections to your PSA and security tools. Keys are stored encrypted.
         </p>
       </div>
 
@@ -138,13 +137,13 @@ export default function IntegrationsPage() {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.1rem" }}>
                       <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.0625rem", color: "white", margin: 0 }}>{intg.name}</h3>
-                      {(intg.name === "ITFlow" || intg.name === "Tactical RMM") && isConnected && (
+                      {intg.name === "ITFlow" && isConnected && (
                         <span style={{
                           padding: "0.15rem 0.4rem", borderRadius: "4px", fontSize: "0.6rem", fontWeight: 800,
                           textTransform: "uppercase", letterSpacing: "0.05em",
-                          background: intg.name === "Tactical RMM" ? "rgba(0,212,255,0.12)" : "rgba(168,85,247,0.15)",
-                          color: intg.name === "Tactical RMM" ? "#00D4FF" : "#A855F7",
-                          border: intg.name === "Tactical RMM" ? "1px solid rgba(0,212,255,0.3)" : "1px solid rgba(168,85,247,0.3)",
+                          background: "rgba(168,85,247,0.15)",
+                          color: "#A855F7",
+                          border: "1px solid rgba(168,85,247,0.3)",
                         }}>
                           ● Live Sync
                         </span>

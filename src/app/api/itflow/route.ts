@@ -1,6 +1,34 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { ITFlowClient } from "@/lib/itflow";
+import { ITFlowClient, type ITFlowPayload } from "@/lib/itflow";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isITFlowPayload(value: unknown): value is ITFlowPayload {
+  return isRecord(value) && Object.values(value).every((item) => {
+    return (
+      item == null ||
+      typeof item === "string" ||
+      typeof item === "number" ||
+      typeof item === "boolean"
+    );
+  });
+}
+
+function normalizeAsset(item: Record<string, unknown>) {
+  return {
+    id: item.asset_id || item.id,
+    type: item.asset_type || "Laptop",
+    model: item.asset_model || item.asset_name || "Workstation",
+    assignment: item.client_name || (item.asset_client_id === "1" ? "KOOL TECH SOLUTIONS" : "N/A"),
+    purchase_date: item.asset_purchase_date || null,
+    warranty_expires: item.asset_warranty_expire || null,
+    serial: item.asset_serial || "UNKNOWN",
+    os: item.asset_os || ""
+  };
+}
 
 async function getClientAndAuth() {
   const supabase = await createClient();
@@ -39,38 +67,25 @@ export async function GET(request: Request) {
 
     try {
       const client = await getClientAndAuth();
-      const data = await client.getItems(endpoint, params);
+      const data = await client.getItems<Record<string, unknown> | unknown[]>(endpoint, params);
       
       // Normalize data fields for client convenience if the endpoint is assets
-      if (endpoint === 'assets' && data && Array.isArray(data.data)) {
-        data.data = data.data.map((item: any) => ({
-          id: item.asset_id || item.id,
-          type: item.asset_type || "Laptop",
-          model: item.asset_model || item.asset_name || "Workstation",
-          assignment: item.client_name || (item.asset_client_id === "1" ? "KOOL TECH SOLUTIONS" : "N/A"),
-          purchase_date: item.asset_purchase_date || null,
-          warranty_expires: item.asset_warranty_expire || null,
-          serial: item.asset_serial || "UNKNOWN",
-          os: item.asset_os || ""
-        }));
+      if (endpoint === 'assets' && isRecord(data) && Array.isArray(data.data)) {
+        data.data = data.data.filter(isRecord).map(normalizeAsset);
       }
       
       return NextResponse.json(data);
-    } catch (err: any) {
-      if (err.message === "Unauthorized") {
+    } catch (err) {
+      if (err instanceof Error && err.message === "Unauthorized") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
       
-      // Fallback for demo/missing config
-      console.warn("ITFlow fetch failed or not configured, using fallback:", err);
-      if (endpoint === 'assets') {
-        return NextResponse.json({
-          data: [
-            { id: "A-001", type: "Laptop", model: "Dell Latitude 5520", assignment: "John Doe", purchase_date: "2023-01-15", warranty_expires: "2026-01-15", note: "Fallback mock data" }
-          ]
-        });
-      }
-      return NextResponse.json({ data: [] });
+      console.warn("ITFlow fetch failed or not configured:", err);
+      return NextResponse.json({ 
+        data: [], 
+        _mock: false, 
+        error: err instanceof Error ? err.message : "Fetch failed" 
+      });
     }
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
@@ -83,7 +98,11 @@ export async function POST(request: Request) {
     const endpoint = searchParams.get('endpoint');
     if (!endpoint) return NextResponse.json({ error: "Endpoint parameter required" }, { status: 400 });
 
-    const body = await request.json();
+    const body = await request.json() as unknown;
+    if (!isITFlowPayload(body)) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
     const client = await getClientAndAuth();
     
     const result = await client.createItem(endpoint, body);
@@ -99,7 +118,11 @@ export async function PUT(request: Request) {
     const endpoint = searchParams.get('endpoint');
     if (!endpoint) return NextResponse.json({ error: "Endpoint parameter required" }, { status: 400 });
 
-    const body = await request.json();
+    const body = await request.json() as unknown;
+    if (!isITFlowPayload(body)) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
     const client = await getClientAndAuth();
     
     const result = await client.updateItem(endpoint, body);
@@ -115,7 +138,11 @@ export async function DELETE(request: Request) {
     const endpoint = searchParams.get('endpoint');
     if (!endpoint) return NextResponse.json({ error: "Endpoint parameter required" }, { status: 400 });
 
-    const body = await request.json(); // IDs or params for deletion
+    const body = await request.json() as unknown; // IDs or params for deletion
+    if (!isITFlowPayload(body)) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
     const client = await getClientAndAuth();
     
     const result = await client.deleteItem(endpoint, body);

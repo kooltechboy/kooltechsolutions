@@ -1,8 +1,9 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useCallback, useContext, useSyncExternalStore } from "react";
 import { translations } from "@/translations";
 
 type Language = "en" | "es";
+type TranslationNode = string | { [key: string]: TranslationNode };
 
 interface LanguageContextProps {
   language: Language;
@@ -11,48 +12,73 @@ interface LanguageContextProps {
 }
 
 const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
+const LANGUAGE_CHANGE_EVENT = "kts-language-change";
+
+function isLanguage(value: string | null): value is Language {
+  return value === "en" || value === "es";
+}
+
+function getStoredLanguage(): Language {
+  if (typeof window === "undefined") return "en";
+  const savedLanguage = window.localStorage.getItem("language");
+  return isLanguage(savedLanguage) ? savedLanguage : "en";
+}
+
+function subscribeToLanguageChanges(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === "language") onStoreChange();
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(LANGUAGE_CHANGE_EVENT, onStoreChange);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(LANGUAGE_CHANGE_EVENT, onStoreChange);
+  };
+}
+
+function getServerLanguage(): Language {
+  return "en";
+}
+
+function findTranslation(source: TranslationNode, parts: string[]): string | undefined {
+  let current: TranslationNode | undefined = source;
+
+  for (const part of parts) {
+    if (typeof current === "object" && current !== null && part in current) {
+      current = current[part];
+    } else {
+      return undefined;
+    }
+  }
+
+  return typeof current === "string" ? current : undefined;
+}
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("en");
-  const [mounted, setMounted] = useState(false);
+  const language = useSyncExternalStore(
+    subscribeToLanguageChanges,
+    getStoredLanguage,
+    getServerLanguage
+  );
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem("language") as Language;
-    if (savedLang === "en" || savedLang === "es") {
-      setLanguageState(savedLang);
-    }
-    setMounted(true);
+  const setLanguage = useCallback((lang: Language) => {
+    window.localStorage.setItem("language", lang);
+    window.dispatchEvent(new Event(LANGUAGE_CHANGE_EVENT));
   }, []);
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem("language", lang);
-  };
-
-  const t = (path: string): string => {
+  const t = useCallback((path: string): string => {
     const parts = path.split(".");
-    let current: any = translations[language];
+    return (
+      findTranslation(translations[language] as TranslationNode, parts) ??
+      findTranslation(translations.en as TranslationNode, parts) ??
+      path
+    );
+  }, [language]);
 
-    for (const part of parts) {
-      if (current && typeof current === "object" && part in current) {
-        current = current[part];
-      } else {
-        // Fallback to English
-        let fallback: any = translations["en"];
-        for (const fallbackPart of parts) {
-          if (fallback && typeof fallback === "object" && fallbackPart in fallback) {
-            fallback = fallback[fallbackPart];
-          } else {
-            return path;
-          }
-        }
-        return typeof fallback === "string" ? fallback : path;
-      }
-    }
-    return typeof current === "string" ? current : path;
-  };
-
-  // Prevent layout shifts during hydration by rendering children after mount
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
       {children}

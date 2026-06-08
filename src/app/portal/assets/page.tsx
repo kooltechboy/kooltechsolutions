@@ -40,6 +40,33 @@ interface Asset {
   ram_usage?: number;
 }
 
+interface WazuhAgentTelemetry {
+  id?: string;
+  name?: string;
+  os?: string;
+  status?: string;
+  lastKeepAlive?: string;
+  ip?: string;
+}
+
+interface ItflowAssetTelemetry {
+  id?: string;
+  model?: string;
+  assignment?: string;
+  warranty_expires?: string;
+  serial?: string;
+}
+
+const timeAgo = (d: string | null | undefined): string => {
+  if (!d) return "Never";
+  const diff = Date.now() - new Date(d).getTime();
+  if (isNaN(diff) || diff < 0) return "Just now";
+  if (diff < 60000) return "Just now";
+  if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+  if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
+  return Math.floor(diff / 86400000) + "d ago";
+};
+
 export default function AssetsPage() {
   const [search, setSearch] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -49,44 +76,44 @@ export default function AssetsPage() {
   useEffect(() => {
     const fetchTelemetry = async () => {
       try {
-        const [rmmRes, itflowRes] = await Promise.all([
-          fetch("/api/rmm"),
+        const [wazuhRes, itflowRes] = await Promise.all([
+          fetch("/api/wazuh"),
           fetch("/api/itflow?endpoint=assets")
         ]);
         
-        const rmmData = await rmmRes.json();
-        const itflowData = await itflowRes.json();
+        const wazuhData = await wazuhRes.json() as { agents?: WazuhAgentTelemetry[] };
+        const itflowData = await itflowRes.json() as { data?: ItflowAssetTelemetry[] };
         
-        if (rmmData?.agents) {
-          const rmmAgents = rmmData.agents;
-          const merged: Asset[] = rmmAgents.map((dev: any, index: number) => {
-            const psa = (itflowData?.data && itflowData.data[index]) ? itflowData.data[index] : {};
-            const type = (dev.os?.toLowerCase().includes("server") || dev.hostname?.toLowerCase().includes("srv")) 
+        if (wazuhData?.agents) {
+          const wazuhAgents = wazuhData.agents;
+          const merged: Asset[] = wazuhAgents.map((dev, index) => {
+            const psa = (itflowData?.data || []).find(
+              (item) => 
+                item.model?.toLowerCase() === dev.name?.toLowerCase() ||
+                (item.serial && dev.name && item.serial.toLowerCase().includes(dev.name.toLowerCase()))
+            ) || {};
+            const type = (dev.os?.toLowerCase().includes("server") || dev.name?.toLowerCase().includes("srv")) 
               ? "server" 
-              : dev.hostname?.toLowerCase().includes("firewall") 
+              : dev.name?.toLowerCase().includes("firewall") 
               ? "network" 
               : "laptop";
 
-            const usedRam = dev.used_ram || 0;
-            const totalRam = dev.total_ram || 1;
-            const ramUsagePct = Math.round((usedRam / totalRam) * 100);
-
             return {
               id: dev.id ? `AST-${dev.id.toString().padStart(3, '0')}` : `AST-M${index}`,
-              name: psa.model || dev.hostname,
+              name: psa.model || dev.name || "Unknown Asset",
               type,
               user: psa.assignment || (type === "server" ? "IT Infrastructure" : "Remote Worker"),
-              serial: `SN-${dev.hostname?.toUpperCase() || "UNKNOWN"}`,
-              os: dev.os || "Windows 11 Pro",
-              status: dev.status === "online" ? "healthy" : "warning",
-              lastSeen: dev.last_seen ? new Date(dev.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " ago" : "Just now",
+              serial: `SN-${dev.name?.toUpperCase() || "UNKNOWN"}`,
+              os: dev.os || "Unknown OS",
+              status: dev.status === "active" ? "healthy" : "warning",
+              lastSeen: timeAgo(dev.lastKeepAlive),
               warranty: psa.warranty_expires ? new Date(psa.warranty_expires).toLocaleDateString([], { month: 'short', year: 'numeric' }) : "Oct 2027",
               cpu: type === "server" ? "Dual Xeon Gold" : "Intel Core i7",
-              ram: `${Math.round(totalRam)} GB`,
+              ram: type === "server" ? "32 GB" : "16 GB",
               disk: type === "server" ? "2TB SSD" : "512GB SSD",
-              health: dev.status === "online" ? Math.min(100, 100 - (dev.cpu_load || 0) / 2) : 60,
-              cpu_usage: dev.cpu_load || 0,
-              ram_usage: ramUsagePct > 100 ? 0 : ramUsagePct,
+              health: dev.status === "active" ? 100 : 60,
+              cpu_usage: 0,
+              ram_usage: 0,
             };
           });
           setAssets(merged);
@@ -117,7 +144,7 @@ export default function AssetsPage() {
           Asset <span className="text-[#00D4FF]">Intelligence</span>
         </h1>
         <p className="text-neutral-400 text-sm max-w-md">
-          Automated hardware lifecycle management and real-time health telemetry powered by Tactical RMM.
+          Automated hardware lifecycle management and real-time health telemetry.
         </p>
       </div>
 
@@ -173,7 +200,7 @@ export default function AssetsPage() {
             {loading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
                 <Loader2 size={32} className="text-[#00D4FF] animate-spin" />
-                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">Connecting to RMM Agent...</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">Connecting to telemetry agent...</span>
               </div>
             ) : filtered.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
@@ -279,7 +306,7 @@ export default function AssetsPage() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] px-1 border-b border-white/10 pb-2">Live RMM Telemetry</h3>
+                <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] px-1 border-b border-white/10 pb-2">Live SIEM Telemetry</h3>
                 <div className="space-y-6">
                   {[
                     { label: "CPU Usage", value: selectedAsset.cpu_usage || 0, color: "bg-[#00D4FF]", glow: "shadow-[#00D4FF]/20" },

@@ -74,7 +74,7 @@ export const translations = {
       reach: "Caribbean & Global Reach",
       reachDesc: "Serving businesses in DR, USA, Canada, and the Caribbean with local knowledge and international standards.",
       integrations: "15+ Tool Integrations",
-      integrationsDesc: "From Tactical RMM to Wazuh to Grafana — we integrate best-of-breed MSP tools into a unified platform.",
+      integrationsDesc: "From Action1 to Wazuh to Grafana — we integrate best-of-breed MSP tools into a unified platform.",
     },
     pricing: {
       badge: "Transparent Pricing",
@@ -416,7 +416,7 @@ export const translations = {
       reach: "Alcance Global y en el Caribe",
       reachDesc: "Sirviendo a empresas en RD, EE. UU., Canadá y el Caribe con conocimiento local y estándares internacionales.",
       integrations: "Más de 15 Integraciones de Herramientas",
-      integrationsDesc: "Desde Tactical RMM hasta Wazuh y Grafana, integramos las mejores herramientas de MSP en una plataforma unificada.",
+      integrationsDesc: "Desde Action1 hasta Wazuh y Grafana, integramos las mejores herramientas de MSP en una plataforma unificada.",
     },
     pricing: {
       badge: "Precios Transparentes",

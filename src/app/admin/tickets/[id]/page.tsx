@@ -29,6 +29,15 @@ interface TicketDetails {
   assignee?: { first_name?: string; last_name?: string } | null;
 }
 
+interface TicketMessageRow {
+  id: string;
+  ticket_id: string;
+  message: string;
+  is_internal_note?: boolean;
+  created_at: string;
+  sender?: { first_name?: string; last_name?: string; role?: string } | Array<{ first_name?: string; last_name?: string; role?: string }> | null;
+}
+
 const STATUS_OPTIONS = ["open", "in_progress", "resolved", "closed", "critical"];
 
 function statusStyle(status: string) {
@@ -59,7 +68,7 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function mapMessageToNote(msg: any): TicketNote {
+function mapMessageToNote(msg: TicketMessageRow): TicketNote {
   const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
   const author_name = senderObj 
     ? `${senderObj.first_name || ''} ${senderObj.last_name || ''}`.trim() || senderObj.role || 'Support'

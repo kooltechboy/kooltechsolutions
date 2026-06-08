@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     // Sync Clients (ITFlow Clients -> Supabase profiles & organizations)
     let syncedClients = 0;
     try {
-      const itflowClients = await client.getItems('clients');
+      const itflowClients = await client.getItems<any>('clients');
       if (itflowClients && itflowClients.data && Array.isArray(itflowClients.data)) {
         console.log(`Fetched ${itflowClients.data.length} clients from ITFlow.`);
         
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     // Sync Tickets
     let syncedTickets = 0;
     try {
-      const itflowTickets = await client.getItems('tickets');
+      const itflowTickets = await client.getItems<any>('tickets');
       if (itflowTickets && itflowTickets.data && Array.isArray(itflowTickets.data)) {
         console.log(`Fetched ${itflowTickets.data.length} tickets from ITFlow.`);
         

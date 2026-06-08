@@ -26,6 +26,26 @@ interface LineItem {
   unit_price: number;
 }
 
+interface InvoiceForm {
+  client_id: string;
+  invoice_number: string;
+  due_date: string;
+  notes: string;
+}
+
+function createDefaultInvoiceForm(): InvoiceForm {
+  const now = new Date();
+  const dueDate = new Date(now);
+  dueDate.setDate(dueDate.getDate() + 30);
+
+  return {
+    client_id: "",
+    invoice_number: `INV-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    due_date: dueDate.toISOString().split("T")[0],
+    notes: "",
+  };
+}
+
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [clients, setClients] = useState<ClientDetails[]>([]);
@@ -39,12 +59,7 @@ export default function InvoicesPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Form State
-  const [form, setForm] = useState({
-    client_id: "",
-    invoice_number: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-    due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    notes: "",
-  });
+  const [form, setForm] = useState<InvoiceForm>(createDefaultInvoiceForm);
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { description: "Managed IT Services", quantity: 1, unit_price: 150.0 },
   ]);
@@ -88,7 +103,7 @@ export default function InvoicesPage() {
     setLineItems(lineItems.filter((_, i) => i !== index));
   };
 
-  const handleLineItemChange = (index: number, field: keyof LineItem, value: any) => {
+  const handleLineItemChange = (index: number, field: keyof LineItem, value: string) => {
     const updated = [...lineItems];
     if (field === "description") {
       updated[index].description = value;
@@ -126,12 +141,7 @@ export default function InvoicesPage() {
       }
 
       setShowAddModal(false);
-      setForm({
-        client_id: "",
-        invoice_number: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        notes: "",
-      });
+      setForm(createDefaultInvoiceForm());
       setLineItems([{ description: "Managed IT Services", quantity: 1, unit_price: 150.0 }]);
       fetchInvoicesAndClients();
     } catch (err) {

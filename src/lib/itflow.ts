@@ -3,6 +3,8 @@ export interface ITFlowConfig {
   apiKey: string;
 }
 
+export type ITFlowPayload = Record<string, string | number | boolean | null | undefined>;
+
 export class ITFlowClient {
   private apiUrl: string;
   private apiKey: string;
@@ -12,7 +14,12 @@ export class ITFlowClient {
     this.apiKey = config.apiKey;
   }
 
-  private async request(module: string, action: string, method: string, data?: any) {
+  private async request<TResponse = unknown>(
+    module: string,
+    action: string,
+    method: string,
+    data?: ITFlowPayload
+  ): Promise<TResponse> {
     const apiPath = this.apiUrl.endsWith('/api') ? `/v1/${module}/${action}.php` : `/api/v1/${module}/${action}.php`;
     
     let url = `${this.apiUrl}${apiPath}`;
@@ -26,8 +33,9 @@ export class ITFlowClient {
     if (method === 'GET' || method === 'DELETE') {
       url += `?api_key=${this.apiKey}`;
       if (data) {
-        Object.keys(data).forEach(key => {
-          url += `&${key}=${encodeURIComponent(data[key])}`;
+        Object.entries(data).forEach(([key, value]) => {
+          if (value == null) return;
+          url += `&${key}=${encodeURIComponent(String(value))}`;
         });
       }
     } else {
@@ -47,24 +55,24 @@ export class ITFlowClient {
       throw new Error(`ITFlow API error (${response.status}): ${response.statusText}`);
     }
 
-    return response.json();
+    return response.json() as Promise<TResponse>;
   }
 
-  async getItems(module: string, params?: any) {
-    return this.request(module, 'read', 'GET', params);
+  async getItems<TResponse = unknown>(module: string, params?: ITFlowPayload) {
+    return this.request<TResponse>(module, 'read', 'GET', params);
   }
 
-  async createItem(module: string, data: any) {
-    return this.request(module, 'create', 'POST', data);
+  async createItem<TResponse = unknown>(module: string, data: ITFlowPayload) {
+    return this.request<TResponse>(module, 'create', 'POST', data);
   }
 
-  async updateItem(module: string, data: any) {
-    return this.request(module, 'update', 'POST', data); // ITFlow often uses POST for updates
+  async updateItem<TResponse = unknown>(module: string, data: ITFlowPayload) {
+    return this.request<TResponse>(module, 'update', 'POST', data); // ITFlow often uses POST for updates
   }
 
-  async deleteItem(module: string, data: any) {
+  async deleteItem<TResponse = unknown>(module: string, data: ITFlowPayload) {
     // ITFlow often uses archive/unarchive, but we'll try a generic delete or archive action
     // Many modules in ITFlow use archive.php
-    return this.request(module, 'archive', 'POST', data); 
+    return this.request<TResponse>(module, 'archive', 'POST', data); 
   }
 }

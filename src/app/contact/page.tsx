@@ -8,25 +8,9 @@ import BookingModal from "@/components/shared/BookingModal";
 import { useLanguage } from "@/components/shared/LanguageProvider";
 
 const services = [
-  "Managed IT (Essential)",
-  "Managed IT (Advanced MDR)",
-  "Managed IT (AI SOC)",
-  "Help Desk as a Service",
-  "NOC as a Service",
-  "SOC as a Service",
-  "Cybersecurity",
-  "Managed Email Security",
-  "Endpoint Detection & Response",
-  "Cloud Services",
-  "Business Continuity & DR",
-  "Network Management",
-  "Compliance as a Service",
-  "Dark Web Monitoring",
-  "AI as a Service (Kira/Max/Nova)",
-  "Microsoft 365 / Google Workspace",
-  "Enterprise VoIP / UCaaS",
-  "Custom Web & Mobile Development",
-  "Other / General Inquiry",
+  "Request a Quote",
+  "Technical Support",
+  "General Inquiry",
 ];
 
 function ContactContent() {
@@ -89,8 +73,10 @@ function ContactContent() {
                 <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "white", marginBottom: "1.5rem" }}>{t("contact.detailsTitle")}</h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
                   {[
-                    { icon: Phone, label: t("contact.phone"), val: "+1 (829) 720-1611" },
-                    { icon: Mail, label: t("contact.email"), val: "danieljwilliams@kooltechsolutions.com" },
+                    { icon: Phone, label: t("contact.phone"), val: "+1 (829) 720-1611", isLink: true, href: "tel:18297201611" },
+                    { icon: Mail, label: "Sales Inquiries", val: "sales@kooltechsolutions.com", desc: "Looking for an IT assessment or custom quote?", isLink: true, href: "mailto:sales@kooltechsolutions.com" },
+                    { icon: Mail, label: "General Questions", val: "info@kooltechsolutions.com", desc: "For general business inquiries.", isLink: true, href: "mailto:info@kooltechsolutions.com" },
+                    { icon: Mail, label: "Technical Issues", val: "support@kooltechsolutions.com", desc: "Existing clients needing assistance.", isLink: true, href: "mailto:support@kooltechsolutions.com" },
                     { icon: MapPin, label: t("contact.hq"), val: "Santiago, Dominican Republic" },
                     { icon: Clock, label: t("contact.hours"), val: t("contact.hoursVal") },
                   ].map(item => (
@@ -100,7 +86,12 @@ function ContactContent() {
                       </div>
                       <div>
                         <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.label}</div>
-                        <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 500 }}>{item.val}</div>
+                        {item.isLink ? (
+                          <a href={item.href} style={{ color: "white", fontSize: "0.875rem", fontWeight: 500, textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--color-accent-500)"} onMouseLeave={e => e.currentTarget.style.color = "white"}>{item.val}</a>
+                        ) : (
+                          <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 500 }}>{item.val}</div>
+                        )}
+                        {item.desc && <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginTop: "0.2rem" }}>{item.desc}</div>}
                       </div>
                     </div>
                   ))}
@@ -166,7 +157,7 @@ function ContactContent() {
                       </div>
                     </div>
                     <div>
-                      <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>{t("contact.formService")}</label>
+                      <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>What can we help you with?</label>
                       <select className="input-field" value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}>
                         <option value="">{t("contact.formServicePlaceholder")}</option>
                         {services.map(s => <option key={s} value={s}>{s}</option>)}
