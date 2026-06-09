@@ -47,6 +47,28 @@ export default function TrustBar() {
           ))}
         </div>
       </div>
+
+      {/* Compliance badges */}
+      <div style={{ borderTop: "1px solid rgba(0,212,255,0.08)", padding: "1.5rem 1.5rem", background: "rgba(6,11,24,0.4)" }}>
+        <div className="container" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: "2rem" }}>
+          <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+            Compliance & Security:
+          </span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+            {[
+              "SOC 2 TYPE II CERTIFIED",
+              "HIPAA COMPLIANT",
+              "PCI-DSS SECURED",
+              "ISO 27001 ALIGNED"
+            ].map((text, idx) => (
+              <div key={idx} className="badge badge-cyan" style={{ fontSize: "0.7rem", gap: "0.35rem", padding: "0.35rem 0.85rem" }}>
+                <ShieldCheck size={12} color="var(--color-accent-500)" />
+                {text}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

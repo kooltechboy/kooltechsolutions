@@ -8,6 +8,9 @@ import BlogSection from "@/components/sections/BlogSection";
 import CTASection from "@/components/sections/CTASection";
 import TrustBar from "@/components/sections/TrustBar";
 import WhyUsSection from "@/components/sections/WhyUsSection";
+import ROICalculator from "@/components/sections/ROICalculator";
+import Testimonials from "@/components/sections/Testimonials";
+import FloatingCTA from "@/components/sections/FloatingCTA";
 
 export default function HomePage() {
   return (
@@ -18,11 +21,14 @@ export default function HomePage() {
         <TrustBar />
         <ServicesSection />
         <WhyUsSection />
+        <ROICalculator />
         <PricingSection />
+        <Testimonials />
         <AIWorkforceSection />
         <BlogSection />
         <CTASection />
       </main>
+      <FloatingCTA />
       <Footer />
     </>
   );
