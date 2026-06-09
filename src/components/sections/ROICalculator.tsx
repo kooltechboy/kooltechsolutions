@@ -12,15 +12,16 @@ interface ServiceOption {
 }
 
 const serviceOptions: ServiceOption[] = [
-  { id: "cybersecurity", nameKey: "roi.serviceCyber", pricePerUser: 40, icon: Shield },
-  { id: "cloud", nameKey: "roi.serviceCloud", pricePerUser: 35, icon: Cloud },
-  { id: "helpdesk", nameKey: "roi.serviceHelpdesk", pricePerUser: 50, icon: Monitor },
-  { id: "ai", nameKey: "roi.serviceAI", pricePerUser: 60, icon: Cpu },
+  { id: "cybersecurity", nameKey: "roi.serviceCyber", pricePerUser: 25, icon: Shield },
+  { id: "cloud", nameKey: "roi.serviceCloud", pricePerUser: 20, icon: Cloud },
+  { id: "helpdesk", nameKey: "roi.serviceHelpdesk", pricePerUser: 29, icon: Monitor },
+  { id: "ai", nameKey: "roi.serviceAI", pricePerUser: 39, icon: Cpu },
 ];
 
 export default function ROICalculator() {
   const { t } = useLanguage();
   const [users, setUsers] = useState<number>(25);
+  const [region, setRegion] = useState<"NA" | "Carib">("Carib");
   const [selectedServices, setSelectedServices] = useState<string[]>(["cybersecurity", "helpdesk"]);
   const [calculatedCosts, setCalculatedCosts] = useState({
     ktsCost: 0,
@@ -46,7 +47,14 @@ export default function ROICalculator() {
     else if (users > 20) discount = 0.90;
 
     const ktsCost = Math.round(users * baseRate * discount);
-    const inHouseCost = Math.max(6500, users * 140);
+    
+    let inHouseCost = 0;
+    if (region === "NA") {
+      inHouseCost = Math.max(6500, users * 140);
+    } else {
+      inHouseCost = Math.max(1500, users * 35);
+    }
+    
     const savings = Math.max(0, inHouseCost - ktsCost);
 
     setCalculatedCosts({
@@ -54,14 +62,14 @@ export default function ROICalculator() {
       inHouseCost,
       savings,
     });
-  }, [users, selectedServices]);
+  }, [users, selectedServices, region]);
 
   const getContactUrl = () => {
     const servicesParam = selectedServices
       .map((s) => t(serviceOptions.find((o) => o.id === s)?.nameKey || ""))
       .filter(Boolean)
       .join(", ");
-    return `/contact?intent=Get+a+Custom+IT+Quote&message=Estimated+ROI+Calculator+Quote:+User+Count+is+${users}.+Services+selected:+${encodeURIComponent(
+    return `/contact?intent=Get+a+Custom+IT+Quote&message=Estimated+ROI+Calculator+Quote:+User+Count+is+${users}.+Region+is+${region === "NA" ? "North+America" : "Caribbean/LATAM"}.+Services+selected:+${encodeURIComponent(
       servicesParam
     )}.`;
   };
@@ -146,6 +154,45 @@ export default function ROICalculator() {
               gap: "2rem",
             }}
           >
+            {/* Region Selector */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  color: "var(--color-neutral-400)",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {t("roi.regionLabel")}
+              </label>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value as "NA" | "Carib")}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "10px",
+                  background: "rgba(10, 22, 40, 0.8)",
+                  border: "1px solid rgba(0, 212, 255, 0.2)",
+                  color: "white",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  outline: "none",
+                  cursor: "pointer",
+                  appearance: "none",
+                  backgroundImage: "url('data:image/svg+xml;utf8,<svg fill=\"white\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 10px center",
+                  paddingRight: "30px",
+                }}
+              >
+                <option value="Carib" style={{ background: "#0A1628" }}>{t("roi.regionCarib")}</option>
+                <option value="NA" style={{ background: "#0A1628" }}>{t("roi.regionNA")}</option>
+              </select>
+            </div>
+
             {/* Step 1: User Count */}
             <div>
               <div

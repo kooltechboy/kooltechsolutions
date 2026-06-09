@@ -10,8 +10,19 @@ export default function PricingSection() {
 
   const tiers = [
     {
+      name: t("pricing.lite.name"),
+      price: 99,
+      color: "#94A3B8",
+      desc: t("pricing.lite.desc"),
+      popular: false,
+      features: [
+        t("pricing.lite.f1"), t("pricing.lite.f2"), t("pricing.lite.f3"),
+        t("pricing.lite.f4"), t("pricing.lite.f5"), t("pricing.lite.f6"),
+      ],
+    },
+    {
       name: t("pricing.bronze.name"),
-      price: 299,
+      price: 199,
       color: "#CD7F32",
       desc: t("pricing.bronze.desc"),
       popular: false,
@@ -22,7 +33,7 @@ export default function PricingSection() {
     },
     {
       name: t("pricing.silver.name"),
-      price: 599,
+      price: 499,
       color: "#00D4FF",
       desc: t("pricing.silver.desc"),
       popular: true,
@@ -41,8 +52,20 @@ export default function PricingSection() {
       features: [
         t("pricing.gold.f1"), t("pricing.gold.f2"), t("pricing.gold.f3"),
         t("pricing.gold.f4"), t("pricing.gold.f5"), t("pricing.gold.f6"),
-        t("pricing.gold.f7"), t("pricing.gold.f8"), t("pricing.gold.f9"),
-        t("pricing.gold.f10"),
+        t("pricing.gold.f7"), t("pricing.gold.f8"),
+      ],
+    },
+    {
+      name: t("pricing.platinum.name"),
+      price: 1999,
+      color: "#E2E8F0",
+      desc: t("pricing.platinum.desc"),
+      popular: false,
+      features: [
+        t("pricing.platinum.f1"), t("pricing.platinum.f2"), t("pricing.platinum.f3"),
+        t("pricing.platinum.f4"), t("pricing.platinum.f5"), t("pricing.platinum.f6"),
+        t("pricing.platinum.f7"), t("pricing.platinum.f8"), t("pricing.platinum.f9"),
+        t("pricing.platinum.f10"),
       ],
     },
   ];
