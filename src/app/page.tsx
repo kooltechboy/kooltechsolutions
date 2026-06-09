@@ -24,7 +24,6 @@ export default function HomePage() {
         <ROICalculator />
         <PricingSection />
         <Testimonials />
-        <AIWorkforceSection />
         <BlogSection />
         <CTASection />
       </main>

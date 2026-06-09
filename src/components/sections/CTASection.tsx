@@ -35,7 +35,7 @@ export default function CTASection() {
         <p style={{ color: "var(--color-neutral-400)", maxWidth: "520px", margin: "0 auto 2.5rem", lineHeight: 1.7, fontSize: "1.0625rem" }}>
           {t("cta.subtitle")}
         </p>
-        <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+        <div className="cta-btn-row" style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
           <button onClick={() => setBookingOpen(true)} className="btn-primary" style={{ padding: "1rem 2rem", fontSize: "1rem" }}>
             <Calendar size={18} /> {t("cta.schedule")}
           </button>

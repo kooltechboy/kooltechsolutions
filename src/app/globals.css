@@ -352,122 +352,251 @@ body {
   border-color: rgba(0, 212, 255, 0.3);
 }
 
-/* Responsive and Mobile-First Enhancements */
+/* =====================================================
+   MOBILE-FIRST RESPONSIVE SYSTEM
+   ===================================================== */
+
 @keyframes slideDownMobile {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .mobile-menu {
   animation: slideDownMobile 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Dynamic Grid Safeguards (Prevent Horizontal Scroll Overflow) */
-@media (max-width: 480px) {
-  /* Enforce single-column on all large auto-fit grids on small viewports */
-  .grid, 
-  [style*="gridTemplateColumns"], 
-  [style*="grid-template-columns"] {
-    grid-template-columns: 1fr !important;
+/* ─── Buttons: always full-width on tiny phones ─── */
+@media (max-width: 400px) {
+  .btn-primary,
+  .btn-ghost {
+    width: 100%;
+    justify-content: center;
+    padding: 0.875rem 1rem !important;
   }
 }
 
+/* ─── Small phones (≤ 480px) ─── */
+@media (max-width: 480px) {
+  body {
+    font-size: 15px;
+  }
+
+  .section {
+    padding: 2.5rem 0;
+  }
+
+  .container {
+    padding: 0 1rem !important;
+  }
+
+  /* Collapse ALL auto-fit grids to single column */
+  [style*="auto-fit"],
+  [style*="gridTemplateColumns"],
+  [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Hero section — give breathing room below navbar */
+  .hero-padding-top {
+    padding-top: 6rem !important;
+  }
+
+  /* Stats row in hero: 2×2 grid */
+  .hero-stats-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Pricing: remove scale that causes overflow */
+  .pricing-popular-card {
+    transform: none !important;
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.15) !important;
+    margin: 0 !important;
+  }
+
+  /* TrustBar stats: 2×3 grid */
+  .trust-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  /* Floating CTA: tighter positioning */
+  .floating-cta-wrapper {
+    bottom: 1rem !important;
+    right: 1rem !important;
+  }
+
+  /* Floating CTA expanded card: full-width */
+  .floating-cta-card {
+    width: calc(100vw - 2rem) !important;
+    right: 0 !important;
+    left: 0 !important;
+    margin: 0 auto !important;
+  }
+
+  /* Testimonials: stack metric box below quote */
+  .testimonial-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+    padding: 1.5rem 1rem !important;
+  }
+
+  /* ROI calculator: tighter padding */
+  .roi-card-panel {
+    padding: 1.25rem !important;
+  }
+
+  /* CTA section buttons: stack vertically */
+  .cta-btn-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .cta-btn-row .btn-primary,
+  .cta-btn-row .btn-ghost {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* WhyUs cards: ensure they don't overflow */
+  .glass-card {
+    overflow: hidden;
+  }
+}
+
+/* ─── Mobile (≤ 768px) ─── */
 @media (max-width: 768px) {
-  /* Section padding optimization for mobile screens */
   .section {
     padding: 3rem 0;
   }
 
-  /* Top contact info bar - hide on mobile to keep header clean */
+  /* Top contact info bar — hidden on mobile */
   .top-contact-bar {
     display: none !important;
   }
 
-  /* Force standard margins on mobile container */
   .container {
     padding: 0 1.25rem !important;
   }
 
-  /* Pricing popular card: remove scaling to prevent alignment issues */
+  /* Pricing popular card: remove scale */
   .pricing-popular-card {
     transform: none !important;
     box-shadow: 0 0 25px rgba(0, 212, 255, 0.15) !important;
     margin: 0.5rem 0 !important;
   }
 
-  /* Milestones Timeline layout override for mobile first readability */
+  /* Testimonials: force single column layout */
+  .testimonial-card-grid {
+    grid-template-columns: 1fr !important;
+    padding: 2rem 1.5rem !important;
+    gap: 2rem !important;
+  }
+
+  /* ROI grid: stack controls above results */
+  .roi-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  /* FloatingCTA: move left to avoid bottom-right overcrowding */
+  .floating-cta-wrapper {
+    bottom: 1.25rem !important;
+    right: 1.25rem !important;
+  }
+
+  /* Hero stat numbers: smaller */
+  .hero-stat-value {
+    font-size: 1.375rem !important;
+  }
+
+  /* Blog header: stack title and button */
+  .blog-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+
+  /* Timeline */
   .timeline-line {
     left: 20px !important;
     transform: none !important;
   }
-  
   .timeline-item {
     flex-direction: row !important;
     gap: 1rem !important;
     align-items: flex-start !important;
   }
-  
   .timeline-content {
     text-align: left !important;
     flex: 1 !important;
     order: 2 !important;
   }
-  
   .timeline-dot {
     order: 1 !important;
     margin-left: 14px !important;
     margin-top: 6px !important;
     flex-shrink: 0 !important;
   }
-  
   .timeline-spacer {
     display: none !important;
   }
 
-  /* Contact page layouts */
+  /* Contact page */
   .contact-layout-grid {
     grid-template-columns: 1fr !important;
     gap: 2rem !important;
   }
-  
   .contact-form-row {
     grid-template-columns: 1fr !important;
     gap: 1.25rem !important;
   }
 
-  /* Footer layout */
+  /* Footer */
   .footer-layout-grid {
     grid-template-columns: 1fr !important;
     gap: 2.5rem !important;
   }
 
-  /* Portal dashboard layouts */
+  /* Portal */
   .portal-dashboard-grid {
     grid-template-columns: 1fr !important;
     gap: 1.5rem !important;
   }
-
   .portal-ticket-grid {
     grid-template-columns: 1fr !important;
     gap: 1.5rem !important;
   }
-
-  /* Fix height of ticket chat container on mobile first layout */
   [style*="height: calc(100vh - 120px)"] {
     height: auto !important;
     min-height: 500px !important;
   }
 
-  /* Services info grid global reach section */
+  /* Services info grid */
   .services-info-grid {
     grid-template-columns: 1fr !important;
     gap: 2rem !important;
+  }
+
+  /* Booking Modal: full width on mobile */
+  .booking-modal-inner {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 90vh !important;
+  }
+
+  /* glass-card hover: disable transform lift on touch */
+  .glass-card:hover {
+    transform: none !important;
+  }
+}
+
+/* ─── Tablet (769px – 1024px): 2-col grids where useful ─── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .pricing-popular-card {
+    transform: none !important;
   }
 }
 

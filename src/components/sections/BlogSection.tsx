@@ -50,7 +50,7 @@ export default function BlogSection() {
   return (
     <section className="section" style={{ background: "rgba(10,22,40,0.3)" }}>
       <div className="container">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2.5rem", flexWrap: "wrap", gap: "1rem" }}>
+        <div className="blog-header-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2.5rem", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <div className="badge badge-cyan" style={{ marginBottom: "0.75rem" }}>Latest Insights</div>
             <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.5rem, 3vw, 2.25rem)", color: "white" }}>

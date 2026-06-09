@@ -27,6 +27,7 @@ export default function FloatingCTA() {
 
   return (
     <div
+      className="floating-cta-wrapper"
       style={{
         position: "fixed",
         bottom: "2rem",
@@ -41,9 +42,9 @@ export default function FloatingCTA() {
       {/* Expanded Quick Form/Links Card */}
       {isExpanded ? (
         <div
-          className="glass glow-cyan"
+          className="glass glow-cyan floating-cta-card"
           style={{
-            width: "320px",
+            width: "min(320px, calc(100vw - 2.5rem))",
             borderRadius: "16px",
             padding: "1.5rem",
             marginBottom: "1rem",
@@ -85,6 +86,11 @@ export default function FloatingCTA() {
                 color: "var(--color-neutral-400)",
                 cursor: "pointer",
                 padding: "0.25rem",
+                minWidth: "32px",
+                minHeight: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <X size={16} />
@@ -116,6 +122,7 @@ export default function FloatingCTA() {
       {/* Main Pulse Button */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-label="Open free assessment"
         style={{
           width: "56px",
           height: "56px",
@@ -130,6 +137,7 @@ export default function FloatingCTA() {
           boxShadow: "0 4px 24px rgba(0, 212, 255, 0.4)",
           position: "relative",
           transition: "transform 0.2s ease",
+          flexShrink: 0,
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = "scale(1.08)";
@@ -154,18 +162,9 @@ export default function FloatingCTA() {
 
       <style>{`
         @keyframes pulse {
-          0% {
-            transform: scale(0.95);
-            opacity: 0.8;
-          }
-          70% {
-            transform: scale(1.2);
-            opacity: 0;
-          }
-          100% {
-            transform: scale(0.95);
-            opacity: 0;
-          }
+          0% { transform: scale(0.95); opacity: 0.8; }
+          70% { transform: scale(1.2); opacity: 0; }
+          100% { transform: scale(0.95); opacity: 0; }
         }
       `}</style>
     </div>

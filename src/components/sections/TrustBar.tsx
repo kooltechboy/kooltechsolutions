@@ -25,7 +25,7 @@ export default function TrustBar() {
     <div style={{ borderTop: "1px solid rgba(0,212,255,0.08)", borderBottom: "1px solid rgba(0,212,255,0.08)", background: "rgba(10,22,40,0.6)", overflow: "hidden" }}>
       {/* Stats */}
       <div className="container" style={{ padding: "2.5rem 1.5rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1.5rem", textAlign: "center" }}>
+        <div className="trust-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1.5rem", textAlign: "center" }}>
           {statsKeys.map(s => (
             <div key={s.labelKey} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
               <s.icon size={20} color="var(--color-accent-500)" />

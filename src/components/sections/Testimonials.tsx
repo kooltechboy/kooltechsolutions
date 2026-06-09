@@ -102,14 +102,14 @@ export default function Testimonials() {
         >
           {/* Main Card */}
           <div
-            className="glass-card"
+            className="glass-card testimonial-card-grid"
             style={{
               borderRadius: "20px",
               padding: "3rem 2.5rem",
               background: "rgba(10, 22, 40, 0.6)",
               border: "1px solid rgba(0, 212, 255, 0.12)",
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
               gap: "2.5rem",
               alignItems: "center",
               position: "relative",

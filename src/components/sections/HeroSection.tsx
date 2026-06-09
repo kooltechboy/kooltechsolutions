@@ -74,7 +74,7 @@ export default function HeroSection() {
         backgroundSize: "40px 40px",
       }} />
 
-      <div className="container" style={{ position: "relative", zIndex: 1, paddingTop: "8rem", paddingBottom: "6rem" }}>
+      <div className="container hero-padding-top" style={{ position: "relative", zIndex: 1, paddingTop: "8rem", paddingBottom: "6rem" }}>
         <div style={{ maxWidth: "800px" }}>
           <div className="badge badge-cyan" style={{ marginBottom: "1.5rem" }}>
             <Zap size={12} /> {t("hero.badge")}
@@ -108,7 +108,7 @@ export default function HeroSection() {
             </Link>
           </div>
 
-          <div style={{
+          <div className="hero-stats-row" style={{
             display: "flex", gap: "2rem", marginTop: "3rem",
             flexWrap: "wrap",
           }}>

@@ -125,6 +125,7 @@ export default function ROICalculator() {
         </div>
 
         <div
+          className="roi-main-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(min(450px, 100%), 1fr))",
@@ -134,7 +135,7 @@ export default function ROICalculator() {
         >
           {/* Controls Panel */}
           <div
-            className="glass-card"
+            className="glass-card roi-card-panel"
             style={{
               borderRadius: "18px",
               padding: "2rem",
