@@ -20,6 +20,8 @@ interface ServiceDetail {
   description: string;
   features: FeatureDetail[];
   details: string;
+  primaryCTA: string;
+  ctaIntent: string;
 }
 
 const serviceData: Record<string, ServiceDetail> = {
@@ -34,7 +36,9 @@ const serviceData: Record<string, ServiceDetail> = {
       { title: "Vulnerability Management", desc: "Continuous scanning and automated patching of security gaps.", icon: Zap },
       { title: "Penetration Testing", desc: "Ethical hacking to identify and harden network weaknesses.", icon: Globe }
     ],
-    details: "Our cybersecurity solutions are built on a 'Zero Trust' architecture. We don't just react to threats; we anticipate them. With integrated SIEM and AI-driven analysis, we provide the visibility you need to sleep soundly."
+    details: "Our cybersecurity solutions are built on a 'Zero Trust' architecture. We don't just react to threats; we anticipate them. With integrated SIEM and AI-driven analysis, we provide the visibility you need to sleep soundly.",
+    primaryCTA: "Get Free Vulnerability Assessment",
+    ctaIntent: "Free Vulnerability Assessment"
   },
   "cloud": {
     title: "Cloud Infrastructure",
@@ -47,7 +51,9 @@ const serviceData: Record<string, ServiceDetail> = {
       { title: "Infrastructure as Code", desc: "Automated cloud provisioning for maximum efficiency.", icon: Zap },
       { title: "SaaS Security Audit", desc: "Continuous monitoring of cloud tenants for unauthorized access.", icon: Lock }
     ],
-    details: "Transitioning to the cloud shouldn't be complex. Our team handles the heavy lifting, ensuring your migration is zero-downtime and your ongoing costs are optimized for performance."
+    details: "Transitioning to the cloud shouldn't be complex. Our team handles the heavy lifting, ensuring your migration is zero-downtime and your ongoing costs are optimized for performance.",
+    primaryCTA: "Request Cloud & Network Audit",
+    ctaIntent: "Cloud & Network Audit"
   },
   "compliance": {
     title: "Compliance & Auditing",
@@ -60,7 +66,9 @@ const serviceData: Record<string, ServiceDetail> = {
       { title: "Ley 172-13 (DR)", desc: "Local Dominican Republic data protection law alignment.", icon: Globe },
       { title: "Policy Development", desc: "Custom security policy drafting and employee training.", icon: Lock }
     ],
-    details: "Compliance is not a one-time event; it's a continuous process. Our CaaS platform automates the tedious parts of compliance, allowing your team to focus on growth."
+    details: "Compliance is not a one-time event; it's a continuous process. Our CaaS platform automates the tedious parts of compliance, allowing your team to focus on growth.",
+    primaryCTA: "Get a Custom IT Quote",
+    ctaIntent: "Get a Custom IT Quote"
   },
   "network": {
     title: "Network Management",
@@ -73,7 +81,9 @@ const serviceData: Record<string, ServiceDetail> = {
       { title: "Managed Firewalls", desc: "Zero Trust perimeter defense with granular access controls.", icon: Lock },
       { title: "VPN & Remote Access", desc: "Secure encrypted tunnels for your distributed workforce.", icon: Shield }
     ],
-    details: "Your network is the nervous system of your business. Our NOC team ensures it remains healthy, fast, and secure, utilizing advanced SD-WAN and NGFW technologies to keep you connected."
+    details: "Your network is the nervous system of your business. Our NOC team ensures it remains healthy, fast, and secure, utilizing advanced SD-WAN and NGFW technologies to keep you connected.",
+    primaryCTA: "Request Cloud & Network Audit",
+    ctaIntent: "Cloud & Network Audit"
   },
   "support": {
     title: "Help Desk Support",
@@ -86,7 +96,9 @@ const serviceData: Record<string, ServiceDetail> = {
       { title: "Remote Remediation", desc: "Secure remote access tools to fix issues in seconds.", icon: Monitor },
       { title: "Asset Management", desc: "Full lifecycle tracking of all hardware and software.", icon: Shield }
     ],
-    details: "We don't just close tickets; we solve business problems. Our support engineers are trained in both technical excellence and customer service, ensuring your team stays productive."
+    details: "We don't just close tickets; we solve business problems. Our support engineers are trained in both technical excellence and customer service, ensuring your team stays productive.",
+    primaryCTA: "Get a Custom IT Quote",
+    ctaIntent: "Get a Custom IT Quote"
   }
 };
 
@@ -120,17 +132,13 @@ export default function ServiceDetailPage() {
               {data.description}
             </p>
             <div style={{ display: "flex", gap: "1rem" }}>
-              <button 
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setBookingOpen(true);
-                }}
+              <Link
+                href={`/contact?intent=${encodeURIComponent(data.ctaIntent)}`}
                 className="btn-primary" 
-                style={{ padding: "1rem 2rem", fontSize: "1rem" }}
+                style={{ padding: "1rem 2rem", fontSize: "1rem", textDecoration: "none", display: "inline-flex", alignItems: "center" }}
               >
-                Get Started
-              </button>
+                {data.primaryCTA}
+              </Link>
               <button 
                 type="button"
                 className="btn-secondary" 
@@ -239,17 +247,13 @@ export default function ServiceDetailPage() {
               Join hundreds of enterprise clients who trust Kool Tech Solutions for their mission-critical infrastructure.
             </p>
             <div style={{ display: "flex", gap: "1.5rem", justifyContent: "center" }}>
-              <button 
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setBookingOpen(true);
-                }}
+              <Link 
+                href={`/contact?intent=${encodeURIComponent(data.ctaIntent)}`}
                 className="btn-primary" 
-                style={{ padding: "1.25rem 3rem", fontSize: "1.125rem" }}
+                style={{ padding: "1.25rem 3rem", fontSize: "1.125rem", textDecoration: "none", display: "inline-flex", alignItems: "center" }}
               >
-                Schedule a Consultation
-              </button>
+                {data.primaryCTA}
+              </Link>
               <Link href="/contact" className="btn-secondary" style={{ padding: "1.25rem 3rem", fontSize: "1.125rem", display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
                 Contact Sales
               </Link>

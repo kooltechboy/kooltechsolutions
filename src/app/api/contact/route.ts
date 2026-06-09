@@ -45,7 +45,8 @@ export async function POST(request: Request) {
     try {
       if (process.env.RESEND_API_KEY) {
         let targetEmail = ADMIN_EMAIL;
-        if (service === "Request a Quote") targetEmail = "sales@kooltechsolutions.com";
+        const salesIntents = ["Free Vulnerability Assessment", "Cloud & Network Audit", "Get a Custom IT Quote", "Book AI Consultation", "Request a Quote"];
+        if (salesIntents.includes(service)) targetEmail = "sales@kooltechsolutions.com";
         else if (service === "Technical Support") targetEmail = "support@kooltechsolutions.com";
         else targetEmail = "info@kooltechsolutions.com";
 

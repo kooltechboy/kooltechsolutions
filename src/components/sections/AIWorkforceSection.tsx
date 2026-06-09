@@ -133,8 +133,8 @@ export default function AIWorkforceSection() {
               <p className="text-slate-400 text-sm">Leads and appointments are automatically synchronized for your team.</p>
             </div>
           </div>
-          <Link href="/contact" className="btn-primary flex items-center gap-2 whitespace-nowrap">
-            Deploy AI Workforce <ArrowRight size={18} />
+          <Link href="/contact?intent=Book+AI+Consultation" className="btn-primary flex items-center gap-2 whitespace-nowrap">
+            Book AI Consultation <ArrowRight size={16} />
           </Link>
         </motion.div>
       </div>

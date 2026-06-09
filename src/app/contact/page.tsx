@@ -8,17 +8,24 @@ import BookingModal from "@/components/shared/BookingModal";
 import { useLanguage } from "@/components/shared/LanguageProvider";
 
 const services = [
-  "Request a Quote",
+  "Free Vulnerability Assessment",
+  "Cloud & Network Audit",
+  "Get a Custom IT Quote",
+  "Book AI Consultation",
   "Technical Support",
   "General Inquiry",
 ];
 
 function ContactContent() {
   const { t } = useLanguage();
-  const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", service: "", message: "" });
-  const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
+  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState({ 
+    name: "", company: "", email: "", phone: "", 
+    service: searchParams.get("intent") || "", 
+    message: "" 
+  });
+  const [loading, setLoading] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(() => searchParams.get("book") === "true");
   const [prevBook, setPrevBook] = useState(() => searchParams.get("book"));
 

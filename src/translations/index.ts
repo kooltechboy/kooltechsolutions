@@ -187,7 +187,7 @@ export const translations = {
       titleStart: "Ready to Transform",
       titleGradient: "Your IT Infrastructure?",
       subtitle: "Get a free, no-obligation IT assessment from our senior engineers. We'll identify risks, opportunities, and craft a custom roadmap for your business.",
-      schedule: "Schedule Free Assessment",
+      schedule: "Get Free IT Assessment",
       callUs: "Call Us Now",
       noContracts: "No contracts required",
       response: "Response in under 1 hour",
