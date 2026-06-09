@@ -2,22 +2,24 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, Calculator, Check, Shield, Cloud, Monitor, Cpu, TrendingDown } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 interface ServiceOption {
   id: string;
-  name: string;
+  nameKey: string;
   pricePerUser: number;
   icon: React.ComponentType<any>;
 }
 
 const serviceOptions: ServiceOption[] = [
-  { id: "cybersecurity", name: "Zero Trust Cybersecurity", pricePerUser: 40, icon: Shield },
-  { id: "cloud", name: "Cloud & Network Management", pricePerUser: 35, icon: Cloud },
-  { id: "helpdesk", name: "24/7 Managed IT & Helpdesk", pricePerUser: 50, icon: Monitor },
-  { id: "ai", name: "AI Workforce Integrations", pricePerUser: 60, icon: Cpu },
+  { id: "cybersecurity", nameKey: "roi.serviceCyber", pricePerUser: 40, icon: Shield },
+  { id: "cloud", nameKey: "roi.serviceCloud", pricePerUser: 35, icon: Cloud },
+  { id: "helpdesk", nameKey: "roi.serviceHelpdesk", pricePerUser: 50, icon: Monitor },
+  { id: "ai", nameKey: "roi.serviceAI", pricePerUser: 60, icon: Cpu },
 ];
 
 export default function ROICalculator() {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<number>(25);
   const [selectedServices, setSelectedServices] = useState<string[]>(["cybersecurity", "helpdesk"]);
   const [calculatedCosts, setCalculatedCosts] = useState({
@@ -33,26 +35,18 @@ export default function ROICalculator() {
   };
 
   useEffect(() => {
-    // Calculate Kooltech solutions cost
     const baseRate = selectedServices.reduce((acc, serviceId) => {
       const option = serviceOptions.find((o) => o.id === serviceId);
       return acc + (option ? option.pricePerUser : 0);
     }, 0);
 
-    // Apply volume discount based on employee count
     let discount = 1.0;
-    if (users > 100) discount = 0.80; // 20% discount
-    else if (users > 50) discount = 0.85; // 15% discount
-    else if (users > 20) discount = 0.90; // 10% discount
+    if (users > 100) discount = 0.80;
+    else if (users > 50) discount = 0.85;
+    else if (users > 20) discount = 0.90;
 
     const ktsCost = Math.round(users * baseRate * discount);
-
-    // In-house IT cost approximation:
-    // A single IT admin salary (with benefits/overhead) is roughly $7,000/mo.
-    // For every 50 users, companies usually require an additional IT resource or tool licensing.
-    // We can estimate this at $130 per user, with a minimum floor of $6,500/month (representing 1 admin).
     const inHouseCost = Math.max(6500, users * 140);
-
     const savings = Math.max(0, inHouseCost - ktsCost);
 
     setCalculatedCosts({
@@ -64,7 +58,7 @@ export default function ROICalculator() {
 
   const getContactUrl = () => {
     const servicesParam = selectedServices
-      .map((s) => serviceOptions.find((o) => o.id === s)?.name)
+      .map((s) => t(serviceOptions.find((o) => o.id === s)?.nameKey || ""))
       .filter(Boolean)
       .join(", ");
     return `/contact?intent=Get+a+Custom+IT+Quote&message=Estimated+ROI+Calculator+Quote:+User+Count+is+${users}.+Services+selected:+${encodeURIComponent(
@@ -74,7 +68,6 @@ export default function ROICalculator() {
 
   return (
     <section className="section" style={{ position: "relative", background: "var(--color-primary-950)" }}>
-      {/* Visual background accents */}
       <div
         style={{
           position: "absolute",
@@ -106,7 +99,7 @@ export default function ROICalculator() {
         <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
           <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>
             <Calculator size={12} style={{ marginRight: "0.25rem" }} />
-            ROI & Cost Calculator
+            {t("roi.badge")}
           </div>
           <h2
             className="font-display"
@@ -117,7 +110,7 @@ export default function ROICalculator() {
               marginBottom: "1rem",
             }}
           >
-            Calculate Your <span className="gradient-text">IT Savings</span>
+            {t("roi.title")}
           </h2>
           <p
             style={{
@@ -127,7 +120,7 @@ export default function ROICalculator() {
               lineHeight: 1.7,
             }}
           >
-            Compare the cost of your custom outsourced Kooltech plan against hiring and training a full-time, in-house IT team.
+            {t("roi.subtitle")}
           </p>
         </div>
 
@@ -166,7 +159,7 @@ export default function ROICalculator() {
                   className="font-display"
                   style={{ color: "white", fontSize: "1.125rem", fontWeight: 700 }}
                 >
-                  1. Users / Devices
+                  1. {t("roi.usersDevices")}
                 </h3>
                 <span
                   className="font-mono"
@@ -177,7 +170,7 @@ export default function ROICalculator() {
                     textShadow: "0 0 10px rgba(0, 212, 255, 0.2)",
                   }}
                 >
-                  {users} Employees
+                  {users} {t("roi.employeesText")}
                 </span>
               </div>
               <input
@@ -206,9 +199,9 @@ export default function ROICalculator() {
                   marginTop: "0.5rem",
                 }}
               >
-                <span>5 Users</span>
-                <span>125 Users</span>
-                <span>250+ Users</span>
+                <span>5 {t("roi.employeesText")}</span>
+                <span>125 {t("roi.employeesText")}</span>
+                <span>250+ {t("roi.employeesText")}</span>
               </div>
             </div>
 
@@ -218,7 +211,7 @@ export default function ROICalculator() {
                 className="font-display"
                 style={{ color: "white", fontSize: "1.125rem", fontWeight: 700, marginBottom: "1.25rem" }}
               >
-                2. Select Required Modules
+                2. {t("roi.selectModules")}
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
                 {serviceOptions.map((opt) => {
@@ -276,10 +269,10 @@ export default function ROICalculator() {
                               fontSize: "0.875rem",
                             }}
                           >
-                            {opt.name}
+                            {t(opt.nameKey)}
                           </div>
                           <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
-                            ${opt.pricePerUser}/user/mo standard rate
+                            ${opt.pricePerUser}/{t("roi.stdRate")}
                           </div>
                         </div>
                       </div>
@@ -332,7 +325,7 @@ export default function ROICalculator() {
                   paddingBottom: "0.75rem",
                 }}
               >
-                Estimated Savings Summary
+                {t("roi.estSavings")}
               </h3>
 
               {/* Savings callout */}
@@ -364,7 +357,7 @@ export default function ROICalculator() {
                 </div>
                 <div>
                   <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", fontWeight: 600 }}>
-                    ESTIMATED MONTHLY SAVINGS
+                    {t("roi.estMonthlySavings")}
                   </div>
                   <div
                     className="font-mono"
@@ -384,7 +377,7 @@ export default function ROICalculator() {
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-                    In-House IT Dept Cost:
+                    {t("roi.inHouseCost")}
                   </span>
                   <span
                     className="font-mono"
@@ -395,7 +388,7 @@ export default function ROICalculator() {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-                    Kooltech Managed Plan:
+                    {t("roi.ktsCost")}
                   </span>
                   <span
                     className="font-mono"
@@ -406,7 +399,7 @@ export default function ROICalculator() {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-                    Annual Savings Advantage:
+                    {t("roi.annualSavings")}
                   </span>
                   <span
                     className="font-mono"
@@ -430,7 +423,7 @@ export default function ROICalculator() {
                   borderRadius: "10px",
                 }}
               >
-                Claim This Offer & Get Free Assessment
+                {t("roi.claimOffer")}
                 <ArrowRight size={16} />
               </Link>
               <div
@@ -441,7 +434,7 @@ export default function ROICalculator() {
                   marginTop: "0.75rem",
                 }}
               >
-                Calculations based on average US IT staff overhead and volume discount brackets.
+                {t("roi.footnote")}
               </div>
             </div>
           </div>

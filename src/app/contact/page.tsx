@@ -8,12 +8,12 @@ import BookingModal from "@/components/shared/BookingModal";
 import { useLanguage } from "@/components/shared/LanguageProvider";
 
 const services = [
-  "Free Vulnerability Assessment",
-  "Cloud & Network Audit",
-  "Get a Custom IT Quote",
-  "Book AI Consultation",
-  "Technical Support",
-  "General Inquiry",
+  { value: "Free Vulnerability Assessment", labelKey: "contactServices.vulnerability" },
+  { value: "Cloud & Network Audit", labelKey: "contactServices.audit" },
+  { value: "Get a Custom IT Quote", labelKey: "contactServices.quote" },
+  { value: "Book AI Consultation", labelKey: "contactServices.ai" },
+  { value: "Technical Support", labelKey: "contactServices.support" },
+  { value: "General Inquiry", labelKey: "contactServices.inquiry" },
 ];
 
 function ContactContent() {
@@ -164,10 +164,10 @@ function ContactContent() {
                       </div>
                     </div>
                     <div>
-                      <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>What can we help you with?</label>
+                      <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>{t("contactServices.formServiceLabel")}</label>
                       <select className="input-field" value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}>
                         <option value="">{t("contact.formServicePlaceholder")}</option>
-                        {services.map(s => <option key={s} value={s}>{s}</option>)}
+                        {services.map(s => <option key={s.value} value={s.value}>{t(s.labelKey)}</option>)}
                       </select>
                     </div>
                     <div>

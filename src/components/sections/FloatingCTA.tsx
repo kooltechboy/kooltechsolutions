@@ -2,14 +2,15 @@
 import { useState, useEffect } from "react";
 import { ShieldAlert, X, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 export default function FloatingCTA() {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show widget after scrolling down 400px
       if (window.scrollY > 400) {
         setIsVisible(true);
       } else {
@@ -70,10 +71,10 @@ export default function FloatingCTA() {
                 }}
               >
                 <Sparkles size={10} style={{ marginRight: "0.2rem" }} />
-                Limited Offer
+                {t("floating.badge")}
               </div>
               <h4 style={{ color: "white", fontWeight: 800, fontSize: "1rem", margin: 0 }}>
-                Free Security Assessment
+                {t("floating.title")}
               </h4>
             </div>
             <button
@@ -91,7 +92,7 @@ export default function FloatingCTA() {
           </div>
 
           <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.5, marginBottom: "1.25rem" }}>
-            Identify system exploits, outdated infrastructure, and credential leaks before hackers do. No credit card required.
+            {t("floating.desc")}
           </p>
 
           <Link
@@ -106,7 +107,7 @@ export default function FloatingCTA() {
               borderRadius: "8px",
             }}
           >
-            Claim Free Assessment
+            {t("floating.cta")}
             <ArrowRight size={14} />
           </Link>
         </div>
@@ -137,7 +138,6 @@ export default function FloatingCTA() {
           e.currentTarget.style.transform = "scale(1)";
         }}
       >
-        {/* Pulsing ring animation around the button */}
         <div
           style={{
             position: "absolute",

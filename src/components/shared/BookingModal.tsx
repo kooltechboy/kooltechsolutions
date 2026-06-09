@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2, Phone, MessageSquare, Briefcase } from "lucide-react";
+import { useLanguage } from "./LanguageProvider";
 
 export default function BookingModal({ 
   isOpen, 
@@ -17,6 +18,7 @@ export default function BookingModal({
   initialService?: string;
   initialMessage?: string;
 }) {
+  const { t, language } = useLanguage();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -201,7 +203,10 @@ export default function BookingModal({
       }}>
         <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,212,255,0.02)" }}>
           <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "white", margin: 0 }}>
-            {step === 3 ? "Demo Confirmed" : "Book a Live Demo"}
+            {step === 3 
+              ? t("bookingServices.stepConfirmTitle") 
+              : t("bookingServices.modalTitle")
+            }
           </h2>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer" }}>
             <X size={20} />
@@ -212,16 +217,19 @@ export default function BookingModal({
           {step === 1 && (
             <div>
               <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-                Select a convenient date and time for a 30-minute platform walkthrough with one of our engineers.
+                {language === "es" 
+                  ? "Seleccione una fecha y hora conveniente para una demostración de la plataforma de 30 minutos con uno de nuestros ingenieros."
+                  : "Select a convenient date and time for a 30-minute platform walkthrough with one of our engineers."
+                }
               </p>
               
               <div style={{ marginBottom: "1.5rem" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "white", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>
-                  <Calendar size={16} color="var(--color-accent-500)" /> Select Date
+                  <Calendar size={16} color="var(--color-accent-500)" /> {t("bookingServices.selectDate")}
                 </label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
                   {dates.map((d, i) => {
-                    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+                    const dateStr = d.toLocaleDateString(language === "es" ? 'es-ES' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' });
                     const isSelected = selectedDate === dateStr;
                     return (
                       <button
@@ -238,7 +246,7 @@ export default function BookingModal({
                           fontSize: "0.875rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
                         }}
                       >
-                        {d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}
+                        {d.toLocaleDateString(language === "es" ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric' })}
                       </button>
                     );
                   })}
@@ -249,29 +257,29 @@ export default function BookingModal({
                 <div style={{ animation: "slideUp 0.3s ease", marginBottom: "1.5rem" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", fontWeight: 800, textTransform: "uppercase" }}>
-                      <Clock size={14} /> Available Slots
+                      <Clock size={14} /> {t("bookingServices.availableSlots")}
                     </label>
                     {checkingAvailability && <Loader2 size={12} className="animate-spin" color="var(--color-accent-500)" />}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
-                    {times.map(t => {
-                      const isBooked = bookedSlots.includes(t);
+                    {times.map(tVal => {
+                      const isBooked = bookedSlots.includes(tVal);
                       return (
                         <button
-                          key={t}
+                          key={tVal}
                           disabled={isBooked}
-                          onClick={() => setSelectedTime(t)}
+                          onClick={() => setSelectedTime(tVal)}
                           style={{
                             padding: "0.6rem", borderRadius: "8px",
-                            background: selectedTime === t ? "var(--color-accent-500)" : "rgba(255,255,255,0.05)",
-                            border: selectedTime === t ? "1px solid var(--color-accent-400)" : "1px solid rgba(255,255,255,0.1)",
-                            color: selectedTime === t ? "#060B18" : isBooked ? "rgba(255,255,255,0.1)" : "var(--color-neutral-300)",
+                            background: selectedTime === tVal ? "var(--color-accent-500)" : "rgba(255,255,255,0.05)",
+                            border: selectedTime === tVal ? "1px solid var(--color-accent-400)" : "1px solid rgba(255,255,255,0.1)",
+                            color: selectedTime === tVal ? "#060B18" : isBooked ? "rgba(255,255,255,0.1)" : "var(--color-neutral-300)",
                             fontSize: "0.8125rem", fontWeight: 600, cursor: isBooked ? "not-allowed" : "pointer", 
                             transition: "all 0.2s",
                             textDecoration: isBooked ? "line-through" : "none"
                           }}
                         >
-                          {t}
+                          {tVal}
                         </button>
                       );
                     })}
@@ -285,7 +293,7 @@ export default function BookingModal({
                 className="btn-primary"
                 style={{ width: "100%", justifyContent: "center", padding: "0.875rem", marginTop: "1rem", opacity: (!selectedDate || !selectedTime) ? 0.5 : 1 }}
               >
-                Continue
+                {language === "es" ? "Continuar" : "Continue"}
               </button>
             </div>
           )}
@@ -294,57 +302,57 @@ export default function BookingModal({
             <form onSubmit={handleBook} style={{ animation: "slideUp 0.3s ease" }}>
               <div style={{ background: "rgba(0,212,255,0.05)", padding: "1rem", borderRadius: "8px", marginBottom: "1.5rem", border: "1px solid rgba(0,212,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem", marginBottom: "0.25rem" }}>Selected Slot</div>
-                  <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600 }}>{selectedDate} at {selectedTime}</div>
+                  <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem", marginBottom: "0.25rem" }}>{t("bookingServices.selectedSlot")}</div>
+                  <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600 }}>{selectedDate} {t("bookingServices.at")} {selectedTime}</div>
                 </div>
-                <button type="button" onClick={() => setStep(1)} style={{ background: "none", border: "none", color: "var(--color-accent-500)", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600 }}>Change</button>
+                <button type="button" onClick={() => setStep(1)} style={{ background: "none", border: "none", color: "var(--color-accent-500)", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600 }}>{t("bookingServices.change")}</button>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 <div>
                   <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.4rem" }}>
-                    <User size={14} /> Full Name *
+                    <User size={14} /> {t("bookingServices.fullName")}
                   </label>
                   <input required className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
                 </div>
                 <div>
                   <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.4rem" }}>
-                    <Mail size={14} /> Work Email *
+                    <Mail size={14} /> {t("bookingServices.workEmail")}
                   </label>
                   <input required type="email" className="input-field" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="john@company.com" />
                 </div>
                 <div>
                   <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.4rem" }}>
-                    <Phone size={14} /> Phone / WhatsApp *
+                    <Phone size={14} /> {t("bookingServices.phone")}
                   </label>
                   <input required type="tel" className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+1 (829) 000-0000" />
                 </div>
                 <div>
                   <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.4rem" }}>
-                    <Briefcase size={14} /> Interested In *
+                    <Briefcase size={14} /> {t("bookingServices.interestedIn")}
                   </label>
                   <select required className="input-field" value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}>
-                    <option value="">Select a service...</option>
-                    <option value="Cybersecurity">Cybersecurity</option>
-                    <option value="Cloud Services">Cloud Services</option>
-                    <option value="Managed IT">Managed IT</option>
-                    <option value="Help Desk Support">Help Desk Support</option>
-                    <option value="Network Management">Network Management</option>
-                    <option value="IT Compliance">IT Compliance</option>
-                    <option value="Custom Package">Custom Package</option>
-                    <option value="Other">Other</option>
+                    <option value="">{t("bookingServices.placeholder")}</option>
+                    <option value="Cybersecurity">{t("bookingServices.cybersecurity")}</option>
+                    <option value="Cloud Services">{t("bookingServices.cloud")}</option>
+                    <option value="Managed IT">{t("bookingServices.managedIt")}</option>
+                    <option value="Help Desk Support">{t("bookingServices.helpdesk")}</option>
+                    <option value="Network Management">{t("bookingServices.network")}</option>
+                    <option value="IT Compliance">{t("bookingServices.compliance")}</option>
+                    <option value="Custom Package">{t("bookingServices.custom")}</option>
+                    <option value="Other">{t("bookingServices.other")}</option>
                   </select>
                 </div>
                 <div>
                   <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.4rem" }}>
-                    <MessageSquare size={14} /> Brief Message
+                    <MessageSquare size={14} /> {t("bookingServices.briefMessage")}
                   </label>
-                  <textarea className="input-field" rows={3} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Tell us a bit about your needs..." style={{ resize: "none" }} />
+                  <textarea className="input-field" rows={3} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder={t("bookingServices.messagePlaceholder")} style={{ resize: "none" }} />
                 </div>
               </div>
 
               <button type="submit" disabled={loading} className="btn-primary" style={{ width: "100%", justifyContent: "center", padding: "0.875rem", marginTop: "2rem" }}>
-                {loading ? "Confirming..." : "Confirm Booking"}
+                {loading ? t("bookingServices.confirming") : t("bookingServices.confirmBooking")}
               </button>
             </form>
           )}
@@ -352,9 +360,13 @@ export default function BookingModal({
           {step === 3 && (
             <div style={{ textAlign: "center", padding: "2rem 0", animation: "slideUp 0.3s ease" }}>
               <CheckCircle size={64} color="var(--color-success)" style={{ margin: "0 auto 1.5rem" }} />
-              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "white", marginBottom: "0.75rem" }}>You&apos;re All Set!</h3>
+              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "white", marginBottom: "0.75rem" }}>{t("bookingServices.successTitle")}</h3>
               <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", lineHeight: 1.6, marginBottom: "2rem" }}>
-                Your demo is confirmed for <strong>{selectedDate}</strong> at <strong>{selectedTime}</strong>. A confirmation email has been sent to <strong>{form.email}</strong>.
+                {language === "es" ? (
+                  <>Su demo está confirmada para el <strong>{selectedDate}</strong> a las <strong>{selectedTime}</strong>. Se ha enviado un correo de confirmación a <strong>{form.email}</strong>.</>
+                ) : (
+                  <>Your demo is confirmed for <strong>{selectedDate}</strong> at <strong>{selectedTime}</strong>. A confirmation email has been sent to <strong>{form.email}</strong>.</>
+                )}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <a 
@@ -364,7 +376,7 @@ export default function BookingModal({
                   className="btn-primary" 
                   style={{ width: "100%", justifyContent: "center", padding: "0.875rem", gap: "0.5rem" }}
                 >
-                  <Calendar size={18} /> Add to Google Calendar
+                  <Calendar size={18} /> {t("bookingServices.addGoogle")}
                 </a>
                 <a 
                   href={getOutlookLink()} 
@@ -373,10 +385,10 @@ export default function BookingModal({
                   className="btn-secondary" 
                   style={{ width: "100%", justifyContent: "center", padding: "0.875rem", gap: "0.5rem" }}
                 >
-                  Sync with Outlook
+                  <Calendar size={18} /> {t("bookingServices.syncOutlook")}
                 </a>
                 <button onClick={onClose} className="btn-ghost" style={{ width: "100%", justifyContent: "center", padding: "0.875rem" }}>
-                  Done
+                  {t("bookingServices.done")}
                 </button>
               </div>
             </div>

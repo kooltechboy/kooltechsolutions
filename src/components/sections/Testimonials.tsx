@@ -1,56 +1,58 @@
 "use client";
 import { useState } from "react";
 import { Star, MessageSquare, Quote, ArrowLeft, ArrowRight, ShieldCheck, Cpu, Database } from "lucide-react";
+import { useLanguage } from "@/components/shared/LanguageProvider";
 
 interface Testimonial {
   id: number;
-  quote: string;
+  quoteKey: string;
   author: string;
-  role: string;
+  roleKey: string;
   company: string;
-  industry: string;
+  industryKey: string;
   metric: string;
-  metricLabel: string;
+  metricLabelKey: string;
   icon: React.ComponentType<any>;
 }
 
 const testimonials: Testimonial[] = [
   {
     id: 1,
-    quote: "Kooltech migrated our entire clinical registry to a secure, HIPAA-compliant private cloud. Since then, we've had zero downtime, and our vulnerability scans have been completely clean. Their team handles compliance headaches so we can focus on patient care.",
+    quoteKey: "testimonialsSection.t1Quote",
     author: "Dr. Sarah Jenkins",
-    role: "Chief Information Officer",
+    roleKey: "testimonialsSection.t1Role",
     company: "Apex Health Partners",
-    industry: "Healthcare",
+    industryKey: "testimonialsSection.t1Industry",
     metric: "100%",
-    metricLabel: "HIPAA Compliance Achieved",
+    metricLabelKey: "testimonialsSection.t1MetricLabel",
     icon: ShieldCheck,
   },
   {
     id: 2,
-    quote: "Implementing the Zero Trust framework with Kooltech saved us from a major ransomware threat last quarter. Their active SOC team caught the infiltration attempt and neutralized it within 4 minutes. Absolutely indispensable partner.",
+    quoteKey: "testimonialsSection.t2Quote",
     author: "Marcus Vance",
-    role: "VP of Infrastructure",
+    roleKey: "testimonialsSection.t2Role",
     company: "Beacon Finance Group",
-    industry: "Financial Services",
+    industryKey: "testimonialsSection.t2Industry",
     metric: "<5 min",
-    metricLabel: "Response & Neutralization",
+    metricLabelKey: "testimonialsSection.t2MetricLabel",
     icon: Database,
   },
   {
     id: 3,
-    quote: "We integrated Kooltech's autonomous AI agents into our customer support queue. They successfully handle 70% of routine inquiries, freeing our human staff for complex tickets. Our operational costs dropped immediately.",
+    quoteKey: "testimonialsSection.t3Quote",
     author: "Elena Rostova",
-    role: "Director of Operations",
+    roleKey: "testimonialsSection.t3Role",
     company: "Velo E-Commerce",
-    industry: "Retail & E-commerce",
+    industryKey: "testimonialsSection.t3Industry",
     metric: "45%",
-    metricLabel: "Support Overhead Reduction",
+    metricLabelKey: "testimonialsSection.t3MetricLabel",
     icon: Cpu,
   },
 ];
 
 export default function Testimonials() {
+  const { t } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
 
   const nextSlide = () => {
@@ -72,7 +74,7 @@ export default function Testimonials() {
         <div style={{ textAlign: "center", marginBottom: "4rem" }}>
           <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>
             <MessageSquare size={12} style={{ marginRight: "0.25rem" }} />
-            Client Success
+            {t("testimonialsSection.badge")}
           </div>
           <h2
             className="font-display"
@@ -83,10 +85,10 @@ export default function Testimonials() {
               marginBottom: "1rem",
             }}
           >
-            What Our <span className="gradient-text">Clients Say</span>
+            {t("testimonialsSection.title")}
           </h2>
           <p style={{ color: "var(--color-neutral-400)", maxWidth: "500px", margin: "0 auto" }}>
-            Real metrics and unfiltered feedback from businesses that rely on our proactive IT management.
+            {t("testimonialsSection.subtitle")}
           </p>
         </div>
 
@@ -143,14 +145,14 @@ export default function Testimonials() {
                   fontStyle: "italic",
                 }}
               >
-                &ldquo;{current.quote}&rdquo;
+                &ldquo;{t(current.quoteKey)}&rdquo;
               </p>
               <div>
                 <h4 style={{ color: "white", fontWeight: 700, fontSize: "1rem", marginBottom: "0.25rem" }}>
                   {current.author}
                 </h4>
                 <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>
-                  {current.role} &bull; <span style={{ color: "var(--color-accent-400)" }}>{current.company}</span>
+                  {t(current.roleKey)} &bull; <span style={{ color: "var(--color-accent-400)" }}>{current.company}</span>
                 </div>
               </div>
             </div>
@@ -197,7 +199,7 @@ export default function Testimonials() {
                 {current.metric}
               </div>
               <div style={{ color: "white", fontWeight: 600, fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                {current.metricLabel}
+                {t(current.metricLabelKey)}
               </div>
               <div
                 className="badge badge-cyan"
@@ -207,7 +209,7 @@ export default function Testimonials() {
                   marginTop: "0.5rem",
                 }}
               >
-                {current.industry}
+                {t(current.industryKey)}
               </div>
             </div>
           </div>
