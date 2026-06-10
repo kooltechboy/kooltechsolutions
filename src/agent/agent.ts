@@ -5,7 +5,7 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { buildVoiceCatalogSummary } from '../lib/knowledge/catalog';
-import { KNOWLEDGE_FALLBACK_VOICE } from '../lib/knowledge/retrieve';
+import { KNOWLEDGE_FALLBACK_VOICE, retrieveRelevantKnowledge } from '../lib/knowledge/retrieve';
 
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
@@ -176,19 +176,22 @@ class AgentTools extends llm.FunctionContext {
     @llm.aiParam({ description: 'The specific question or topic to look up' }) query: string
   ) {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-      const res = await fetch(`${baseUrl}/api/ai-workforce/v1`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: `Knowledge lookup: ${query}` }],
-          agentName: 'Kira',
-          sessionId: 'voice-kb-lookup',
-        }),
+      console.log(`[Agent] getKnowledge query: "${query}"`);
+      const chunks = await retrieveRelevantKnowledge(query, {
+        matchCount: 3,
+        threshold: 0.6,
       });
-      // For voice, return a simple fallback since we can't stream
-      return KNOWLEDGE_FALLBACK_VOICE;
-    } catch {
+
+      if (chunks.length === 0) {
+        console.log(`[Agent] getKnowledge: No relevant chunks found.`);
+        return KNOWLEDGE_FALLBACK_VOICE;
+      }
+
+      const context = chunks.map(c => `[Verified Info - ${c.title}]: ${c.content}`).join("\n\n");
+      console.log(`[Agent] getKnowledge retrieved ${chunks.length} chunks.`);
+      return context;
+    } catch (err) {
+      console.error('[Agent] getKnowledge error:', err);
       return KNOWLEDGE_FALLBACK_VOICE;
     }
   }
