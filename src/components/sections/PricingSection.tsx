@@ -72,7 +72,7 @@ export default function PricingSection() {
 
   return (
     <section className="section" style={{ background: "rgba(10,22,40,0.4)" }}>
-      <div className="container">
+      <div className="container" style={{ maxWidth: "1500px" }}>
         <div style={{ textAlign: "center", marginBottom: "3rem" }}>
           <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("pricing.badge")}</div>
           <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.75rem, 4vw, 2.75rem)", color: "white", marginBottom: "1rem" }}>
@@ -83,11 +83,7 @@ export default function PricingSection() {
           </p>
         </div>
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
-          gap: "1.5rem", alignItems: "start",
-        }}>
+        <div className="pricing-grid">
           {tiers.map(tier => (
             <div key={tier.name} className={tier.popular ? "pricing-popular-card" : ""} style={{
               position: "relative",
