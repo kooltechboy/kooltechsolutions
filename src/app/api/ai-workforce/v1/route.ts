@@ -12,6 +12,8 @@ import {
 } from "@/lib/knowledge/retrieve";
 import { z } from "zod";
 import { Resend } from "resend";
+import { createCalendarEvent } from "@/lib/calendar/google";
+import { generateIcsInvite } from "@/lib/calendar/ics";
 
 export const runtime = "nodejs";
 
@@ -59,6 +61,44 @@ async function upsertSession(
   } catch {
     // Non-critical — don't block the stream
   }
+}
+
+/**
+ * Parses free-text date and time strings into a precise UTC Date.
+ * Assumes the business timezone America/Santo_Domingo (UTC-4, no DST).
+ */
+function parseBookingDateTime(dateStr: string, timeStr: string): Date {
+  const timeRegex = /(\d+):(\d+)\s*(AM|PM)/i;
+  const match = timeStr.match(timeRegex);
+  if (!match) throw new Error("Invalid time format");
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3].toUpperCase();
+  
+  if (ampm === "PM" && hours < 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+  
+  const cleanDateStr = dateStr.replace(/^[a-zA-Z]+,\s*/, "").trim();
+  
+  let finalDateStr = cleanDateStr;
+  if (!/\d{4}/.test(cleanDateStr)) {
+    finalDateStr = `${cleanDateStr}, ${new Date().getFullYear()}`;
+  }
+  
+  const dateObj = new Date(finalDateStr);
+  if (isNaN(dateObj.getTime())) {
+    throw new Error("Invalid date format");
+  }
+  
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth();
+  const date = dateObj.getDate();
+  
+  const utcOffset = -4 * 60; // Santo Domingo is always UTC-4
+  const utcDate = new Date(Date.UTC(year, month, date, hours - (utcOffset / 60), minutes, 0, 0));
+  
+  return utcDate;
 }
 
 export async function POST(req: Request) {
@@ -204,33 +244,55 @@ CORE MISSION:
             const first_name = params.name.split(" ")[0] || "Unknown";
             const last_name = params.name.split(" ").slice(1).join(" ") || "-";
 
+            let scheduled_at_date: Date;
+            try {
+              if (params.scheduledAt) {
+                scheduled_at_date = new Date(params.scheduledAt);
+              } else {
+                scheduled_at_date = parseBookingDateTime(params.date, params.time);
+              }
+            } catch (err) {
+              console.warn("[bookDemo] Date parsing failed, defaulting to tomorrow:", err);
+              scheduled_at_date = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            }
+
+            // ── Google Calendar Sync ─────────────────────────────────────────────────
+            const { googleEventId, meetingLink } = await createCalendarEvent({
+              name: params.name,
+              email: params.email,
+              service: params.service,
+              scheduledAt: scheduled_at_date.toISOString(),
+              notes: params.message || "",
+            });
+
             // Try to insert into proper bookings table first, fall back to leads
             let bookingId: string | null = null;
 
-            if (params.scheduledAt) {
-              const { data: booking, error: bookingError } = await supabase
-                .from("bookings")
-                .insert({
-                  first_name,
-                  last_name,
-                  email: params.email,
-                  phone: params.phone || null,
-                  service_interest: params.service,
-                  notes: params.message || null,
-                  scheduled_at: params.scheduledAt,
-                  status: "confirmed",
-                  booked_via: "ai_agent",
-                  agent_name: resolvedAgentName,
-                  session_id: resolvedSessionId,
-                })
-                .select("id")
-                .single();
+            const { data: booking, error: bookingError } = await supabase
+              .from("bookings")
+              .insert({
+                first_name,
+                last_name,
+                email: params.email,
+                phone: params.phone || null,
+                service_interest: params.service,
+                notes: params.message || null,
+                scheduled_at: scheduled_at_date.toISOString(),
+                status: "confirmed",
+                booked_via: "ai_agent",
+                agent_name: resolvedAgentName,
+                session_id: resolvedSessionId,
+                google_event_id: googleEventId,
+                meeting_link: meetingLink,
+              })
+              .select("id")
+              .single();
 
-              if (!bookingError) bookingId = booking?.id;
-            }
+            if (!bookingError) bookingId = booking?.id;
 
             // Always create a CRM lead record
             const bookingNote = `LIVE DEMO SCHEDULED: ${params.date} at ${params.time}`;
+            const meetingNote = meetingLink ? `\nMeeting Link: ${meetingLink}` : "";
             const { data: lead, error: leadError } = await supabase
               .from("leads")
               .insert({
@@ -239,7 +301,7 @@ CORE MISSION:
                 email: params.email,
                 phone: params.phone || null,
                 service_interest: params.service,
-                notes: `${bookingNote}\n\nClient Message: ${params.message || "None"}`,
+                notes: `${bookingNote}${meetingNote}\n\nClient Message: ${params.message || "None"}`,
                 status: "qualified",
               })
               .select("id")
@@ -256,6 +318,25 @@ CORE MISSION:
                   process.env.ADMIN_NOTIFICATION_EMAIL ??
                   "sales@kooltechsolutions.com";
 
+                const resolvedBookingId = bookingId ?? lead.id;
+
+                const icsContent = generateIcsInvite({
+                  id: resolvedBookingId,
+                  name: params.name,
+                  email: params.email,
+                  service: params.service,
+                  scheduledAt: scheduled_at_date.toISOString(),
+                  meetingLink,
+                  notes: params.message || "",
+                });
+
+                const attachments = [
+                  {
+                    filename: "invite.ics",
+                    content: Buffer.from(icsContent),
+                  },
+                ];
+
                 await resend.emails.send({
                   from: "KoolTech AI <onboarding@resend.dev>",
                   to: [adminEmail],
@@ -266,7 +347,32 @@ CORE MISSION:
                     <p><strong>Phone:</strong> ${params.phone || "N/A"}</p>
                     <p><strong>Service:</strong> ${params.service}</p>
                     <p><strong>Slot:</strong> ${params.date} at ${params.time}</p>
+                    ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}">${meetingLink}</a></p>` : ""}
                     <p><strong>Notes:</strong> ${params.message || "None"}</p>`,
+                  attachments,
+                });
+
+                await resend.emails.send({
+                  from: "KoolTech Solutions <onboarding@resend.dev>",
+                  to: [params.email],
+                  subject: `Confirmed: Your KoolTech Solutions Demo`,
+                  html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                      <h2 style="color: #00d4ff;">Demo Confirmed!</h2>
+                      <p>Hi ${params.name},</p>
+                      <p>Your live platform demo with KoolTech Solutions is confirmed for:</p>
+                      <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="font-size: 1.25rem; font-weight: bold; color: #0A1628;">${params.date} at ${params.time}</p>
+                        ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}" style="color: #00d4ff; font-weight: bold;">Join Video Call</a></p>` : ""}
+                      </div>
+                      <p>We've attached a calendar invite (.ics) to this email to add it to your calendar.</p>
+                      ${meetingLink ? "<p>You can use the Google Meet link above to join the call at the scheduled time.</p>" : "<p>We'll send you a meeting link 15 minutes before the session starts.</p>"}
+                      <p>If you need to reschedule, please reply to this email.</p>
+                      <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                      <p style="font-size: 12px; color: #888;">KoolTech Solutions — Enterprise IT Managed Services</p>
+                    </div>
+                  `,
+                  attachments,
                 });
               } catch (e) {
                 console.error("[bookDemo] Email error:", e);

@@ -9,9 +9,49 @@ import {
   rateLimitError,
   sanitizeForEmail,
 } from "@/lib/errors";
+import { createCalendarEvent } from "@/lib/calendar/google";
+import { generateIcsInvite } from "@/lib/calendar/ics";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? "danieljwilliams2401@gmail.com";
+
+/**
+ * Parses free-text date and time strings into a precise UTC Date.
+ * Assumes the business timezone America/Santo_Domingo (UTC-4, no DST).
+ */
+function parseBookingDateTime(dateStr: string, timeStr: string): Date {
+  const timeRegex = /(\d+):(\d+)\s*(AM|PM)/i;
+  const match = timeStr.match(timeRegex);
+  if (!match) throw new Error("Invalid time format");
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3].toUpperCase();
+  
+  if (ampm === "PM" && hours < 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+  
+  const cleanDateStr = dateStr.replace(/^[a-zA-Z]+,\s*/, "").trim();
+  
+  let finalDateStr = cleanDateStr;
+  if (!/\d{4}/.test(cleanDateStr)) {
+    finalDateStr = `${cleanDateStr}, ${new Date().getFullYear()}`;
+  }
+  
+  const dateObj = new Date(finalDateStr);
+  if (isNaN(dateObj.getTime())) {
+    throw new Error("Invalid date format");
+  }
+  
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth();
+  const date = dateObj.getDate();
+  
+  const utcOffset = -4 * 60; // Santo Domingo is always UTC-4
+  const utcDate = new Date(Date.UTC(year, month, date, hours - (utcOffset / 60), minutes, 0, 0));
+  
+  return utcDate;
+}
 
 export async function POST(request: Request) {
   // ── Rate limiting: 3 bookings per IP per hour ──────────────────────────────
@@ -40,13 +80,85 @@ export async function POST(request: Request) {
     const first_name = nameParts[0] ?? "Unknown";
     const last_name = nameParts.slice(1).join(" ") || "-";
 
-    const bookingNote = `LIVE DEMO SCHEDULED: ${date} at ${time}`;
+    const scheduled_at = parseBookingDateTime(date, time);
+
+    // ── Google Calendar Sync ─────────────────────────────────────────────────
+    const { googleEventId, meetingLink } = await createCalendarEvent({
+      name,
+      email,
+      service: safeService,
+      scheduledAt: scheduled_at.toISOString(),
+      notes: message || "",
+    });
 
     const supabase = await createClient();
+
+    // ── Persist to proper bookings table ──────────────────────────────────────
+    const { data: bookingData, error: bookingDbError } = await supabase
+      .from("bookings")
+      .insert({
+        first_name,
+        last_name,
+        email,
+        phone: phone || null,
+        service_interest: safeService,
+        notes: message || null,
+        scheduled_at: scheduled_at.toISOString(),
+        google_event_id: googleEventId,
+        meeting_link: meetingLink,
+        booked_via: "web_form",
+      })
+      .select("id")
+      .single();
+
+    if (bookingDbError) {
+      console.error("[Bookings] Proper bookings table insert error:", bookingDbError.message);
+    }
+
+    // ── Persist to legacy CRM leads table ──────────────────────────────────────
+    const bookingNote = `LIVE DEMO SCHEDULED: ${date} at ${time}`;
+    const meetingNote = meetingLink ? `\nMeeting Link: ${meetingLink}` : "";
+    const { data: leadData, error: dbError } = await supabase
+      .from("leads")
+      .insert({
+        first_name,
+        last_name,
+        email,
+        phone: phone || null,
+        service_interest: service || "Live Demo",
+        notes: `${bookingNote}${meetingNote}\n\nClient Message: ${message || "None"}`,
+        status: "qualified",
+      })
+      .select("id")
+      .single();
+
+    if (dbError) {
+      console.error("[Bookings] Database error:", dbError.message);
+    }
+
+    const resolvedBookingId = bookingData?.id ?? leadData?.id ?? "booking";
 
     // ── Email alerts ───────────────────────────────────────────────────────────
     try {
       if (process.env.RESEND_API_KEY) {
+        // Generate ICS attachment
+        const icsContent = generateIcsInvite({
+          id: resolvedBookingId,
+          name,
+          email,
+          service: safeService,
+          scheduledAt: scheduled_at.toISOString(),
+          meetingLink,
+          notes: message || "",
+        });
+
+        const attachments = [
+          {
+            filename: "invite.ics",
+            content: Buffer.from(icsContent),
+          },
+        ];
+
         // Admin notification
         await resend.emails.send({
           from: "KoolTech Bookings <onboarding@resend.dev>",
@@ -63,11 +175,13 @@ export async function POST(request: Request) {
                 <p><strong>Interest:</strong> ${safeService}</p>
                 <p><strong>Message:</strong> ${safeMessage}</p>
                 <p><strong>Scheduled Slot:</strong> <span style="background: #e0faff; color: #007791; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${safeDate} at ${safeTime}</span></p>
+                ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}">${meetingLink}</a></p>` : ""}
               </div>
               <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 12px; color: #888;">KoolTech Solutions · Automated Booking Alert</p>
             </div>
           `,
+          attachments,
         });
 
         // Client confirmation
@@ -82,39 +196,23 @@ export async function POST(request: Request) {
               <p>Your live platform demo with KoolTech Solutions is confirmed for:</p>
               <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p style="font-size: 1.25rem; font-weight: bold; color: #0A1628;">${safeDate} at ${safeTime}</p>
+                ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}" style="color: #00d4ff; font-weight: bold;">Join Video Call</a></p>` : ""}
               </div>
-              <p>We'll send you a meeting link 15 minutes before the session starts.</p>
+              <p>We've attached a calendar invite (.ics) to this email to add it to your calendar.</p>
+              ${meetingLink ? "<p>You can use the Google Meet link above to join the call at the scheduled time.</p>" : "<p>We'll send you a meeting link 15 minutes before the session starts.</p>"}
               <p>If you need to reschedule, please reply to this email.</p>
               <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 12px; color: #888;">KoolTech Solutions — Enterprise IT Managed Services</p>
             </div>
           `,
+          attachments,
         });
       }
     } catch (emailError) {
       console.error("[Bookings] Email notification failed:", emailError);
     }
 
-    // ── Persist to CRM ─────────────────────────────────────────────────────────
-    const { data: leadData, error: dbError } = await supabase
-      .from("leads")
-      .insert({
-        first_name,
-        last_name,
-        email,
-        phone: phone || null,
-        service_interest: service || "Live Demo",
-        notes: `${bookingNote}\n\nClient Message: ${message || "None"}`,
-        status: "qualified",
-      })
-      .select("id")
-      .single();
-
-    if (dbError) {
-      console.error("[Bookings] Database error:", dbError.message);
-    }
-
-    return NextResponse.json({ success: true, bookingId: leadData?.id ?? null });
+    return NextResponse.json({ success: true, bookingId: resolvedBookingId });
   } catch (err) {
     return serverError(err, "bookings");
   }

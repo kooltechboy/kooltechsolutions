@@ -6,12 +6,52 @@ import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { buildVoiceCatalogSummary } from '../lib/knowledge/catalog';
 import { KNOWLEDGE_FALLBACK_VOICE, retrieveRelevantKnowledge } from '../lib/knowledge/retrieve';
+import { createCalendarEvent } from '../lib/calendar/google';
+import { generateIcsInvite } from '../lib/calendar/ics';
 
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+/**
+ * Parses free-text date and time strings into a precise UTC Date.
+ * Assumes the business timezone America/Santo_Domingo (UTC-4, no DST).
+ */
+function parseBookingDateTime(dateStr: string, timeStr: string): Date {
+  const timeRegex = /(\d+):(\d+)\s*(AM|PM)/i;
+  const match = timeStr.match(timeRegex);
+  if (!match) throw new Error("Invalid time format");
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3].toUpperCase();
+  
+  if (ampm === "PM" && hours < 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+  
+  const cleanDateStr = dateStr.replace(/^[a-zA-Z]+,\s*/, "").trim();
+  
+  let finalDateStr = cleanDateStr;
+  if (!/\d{4}/.test(cleanDateStr)) {
+    finalDateStr = `${cleanDateStr}, ${new Date().getFullYear()}`;
+  }
+  
+  const dateObj = new Date(finalDateStr);
+  if (isNaN(dateObj.getTime())) {
+    throw new Error("Invalid date format");
+  }
+  
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth();
+  const date = dateObj.getDate();
+  
+  const utcOffset = -4 * 60; // Santo Domingo is always UTC-4
+  const utcDate = new Date(Date.UTC(year, month, date, hours - (utcOffset / 60), minutes, 0, 0));
+  
+  return utcDate;
+}
 
 // ── Telemetry ─────────────────────────────────────────────────────────────────
 async function logToSupabase(
@@ -65,9 +105,55 @@ class AgentTools extends llm.FunctionContext {
   ) {
     const first_name = name.split(' ')[0] || 'Unknown';
     const last_name = name.split(' ').slice(1).join(' ') || '-';
-    const bookingNote = `LIVE DEMO SCHEDULED: ${date} at ${time}`;
 
-    const { data, error } = await supabase
+    let scheduled_at_date: Date;
+    try {
+      scheduled_at_date = parseBookingDateTime(date, time);
+    } catch (err) {
+      console.warn('[Agent] Date parsing failed, defaulting to tomorrow:', err);
+      scheduled_at_date = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    }
+
+    // ── Google Calendar Sync ─────────────────────────────────────────────────
+    const { googleEventId, meetingLink } = await createCalendarEvent({
+      name,
+      email,
+      service,
+      scheduledAt: scheduled_at_date.toISOString(),
+      notes: message || "",
+    });
+
+    // Try to insert into proper bookings table
+    let bookingId: string | null = null;
+    const { data: bookingData, error: bookingDbError } = await supabase
+      .from('bookings')
+      .insert({
+        first_name,
+        last_name,
+        email,
+        phone: phone || null,
+        service_interest: service,
+        notes: message || null,
+        scheduled_at: scheduled_at_date.toISOString(),
+        status: 'confirmed',
+        booked_via: 'ai_agent',
+        agent_name: 'VoiceAgent',
+        google_event_id: googleEventId,
+        meeting_link: meetingLink,
+      })
+      .select('id')
+      .single();
+
+    if (!bookingDbError) {
+      bookingId = bookingData?.id;
+    } else {
+      console.error('[Agent] Proper bookings table insert error:', bookingDbError.message);
+    }
+
+    // Always create a CRM lead record
+    const bookingNote = `LIVE DEMO SCHEDULED: ${date} at ${time}`;
+    const meetingNote = meetingLink ? `\nMeeting Link: ${meetingLink}` : "";
+    const { data: leadData, error: leadError } = await supabase
       .from('leads')
       .insert({
         first_name,
@@ -75,35 +161,83 @@ class AgentTools extends llm.FunctionContext {
         email,
         phone: phone || null,
         service_interest: service,
-        notes: `${bookingNote}\n\nClient Message: ${message || 'None'}`,
+        notes: `${bookingNote}${meetingNote}\n\nClient Message: ${message || 'None'}`,
         status: 'qualified',
       })
       .select('id')
       .single();
 
-    if (error) return `Error booking demo: ${error.message}`;
+    if (leadError) return `Error booking demo: ${leadError.message}`;
 
-    // Send admin email alert
+    const resolvedBookingId = bookingId ?? leadData.id;
+
+    // Send email alert with ICS attachment
     if (process.env.RESEND_API_KEY) {
       try {
         const { Resend } = await import('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL ?? 'sales@kooltechsolutions.com';
+
+        const icsContent = generateIcsInvite({
+          id: resolvedBookingId,
+          name,
+          email,
+          service,
+          scheduledAt: scheduled_at_date.toISOString(),
+          meetingLink,
+          notes: message || "",
+        });
+
+        const attachments = [
+          {
+            filename: 'invite.ics',
+            content: Buffer.from(icsContent),
+          },
+        ];
+
+        // Admin notification
         await resend.emails.send({
           from: 'KoolTech AI Voice <onboarding@resend.dev>',
-          to: [process.env.ADMIN_NOTIFICATION_EMAIL ?? 'sales@kooltechsolutions.com'],
+          to: [adminEmail],
           subject: `🎙️ Voice Agent Lead: ${name}`,
           html: `<h2>Voice Agent Booking</h2>
-            <p><strong>Agent:</strong> ${name}</p>
+            <p><strong>Name:</strong> ${name}</p>
             <p><strong>Email:</strong> ${email}</p>
             <p><strong>Service:</strong> ${service}</p>
-            <p><strong>Slot:</strong> ${date} at ${time}</p>`,
+            <p><strong>Slot:</strong> ${date} at ${time}</p>
+            ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}">${meetingLink}</a></p>` : ""}`,
+          attachments,
+        });
+
+        // Client notification
+        await resend.emails.send({
+          from: 'KoolTech Solutions <onboarding@resend.dev>',
+          to: [email],
+          subject: `Confirmed: Your KoolTech Solutions Demo`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #00d4ff;">Demo Confirmed!</h2>
+              <p>Hi ${name},</p>
+              <p>Your live platform demo with KoolTech Solutions is confirmed for:</p>
+              <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="font-size: 1.25rem; font-weight: bold; color: #0A1628;">${date} at ${time}</p>
+                ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}" style="color: #00d4ff; font-weight: bold;">Join Video Call</a></p>` : ""}
+              </div>
+              <p>We've attached a calendar invite (.ics) to this email to add it to your calendar.</p>
+              ${meetingLink ? "<p>You can use the Google Meet link above to join the call at the scheduled time.</p>" : "<p>We'll send you a meeting link 15 minutes before the session starts.</p>"}
+              <p>If you need to reschedule, please reply to this email.</p>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+              <p style="font-size: 12px; color: #888;">KoolTech Solutions — Enterprise IT Managed Services</p>
+            </div>
+          `,
+          attachments,
         });
       } catch (e) {
         console.error('[Agent] Email error:', e);
       }
     }
 
-    return `Demo booked successfully. Booking ID: ${data.id}. Confirmation sent to ${email}.`;
+    return `Demo booked successfully. Booking ID: ${resolvedBookingId}. Confirmation sent to ${email}.`;
   }
 
   @llm.aiCallable({ description: 'Get available booking slots for the next N days.' })
