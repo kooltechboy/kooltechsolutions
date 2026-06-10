@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles, RotateCcw, Shield, Zap, Calendar, Activity, TrendingUp, Phone, PhoneOff, Copy, Check, RefreshCw } from "lucide-react";
+import { MessageCircle, X, Mic, Send, Bot, ChevronDown, Sparkles, RotateCcw, Shield, Zap, Calendar, Activity, TrendingUp, Phone, PhoneOff, Copy, Check, RefreshCw, AlertTriangle, UserCheck } from "lucide-react";
 import { useChat } from '@ai-sdk/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -135,6 +135,11 @@ export default function AIChatWidget() {
   const [livekitToken, setLivekitToken] = useState("");
   const [isConnectingVoice, setIsConnectingVoice] = useState(false);
 
+  // Escalation State
+  const [escalated, setEscalated] = useState(false);
+  const [escalationId, setEscalationId] = useState<string | null>(null);
+  const [escalationPriority, setEscalationPriority] = useState<string>("normal");
+
   const [sessionId] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem("kts_ai_session_id") || crypto.randomUUID();
@@ -175,6 +180,20 @@ export default function AIChatWidget() {
     },
     onFinish: (message) => {
       localStorage.setItem(`kts_messages_${sessionId}`, JSON.stringify([...messages, message]));
+      // Detect escalation tool result in message tool invocations
+      if (message.toolInvocations) {
+        for (const tool of message.toolInvocations) {
+          if (tool.toolName === 'escalateToHuman' && tool.state === 'result') {
+            const result = (tool as any).result;
+            if (result?.escalationId) {
+              setEscalated(true);
+              setEscalationId(result.escalationId);
+            } else if (result?.success === true) {
+              setEscalated(true);
+            }
+          }
+        }
+      }
     }
   });
 
@@ -307,6 +326,25 @@ export default function AIChatWidget() {
                 </button>
               </div>
             </div>
+
+            {/* Escalation Banner */}
+            {escalated && !minimized && (
+              <div className="mx-4 mt-3 mb-0 rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                  <UserCheck size={16} />
+                  <span>Human Specialist Notified</span>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Our team has your full conversation and will respond based on priority SLA.
+                  You can continue chatting here while you wait.
+                </p>
+                {escalationId && (
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    Ref: {escalationId.slice(0, 16)}...
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Voice or Text Area */}
             {!minimized && voiceMode && livekitToken ? (

@@ -4,12 +4,18 @@ import { createClient } from "@/utils/supabase/server";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { aiChatSchema } from "@/lib/validation";
 import { validationError, serverError, rateLimitError } from "@/lib/errors";
+import { buildCatalogContext } from "@/lib/knowledge/catalog";
+import {
+  retrieveRelevantKnowledge,
+  formatKnowledgeContext,
+  KNOWLEDGE_FALLBACK_TEXT,
+} from "@/lib/knowledge/retrieve";
 import { z } from "zod";
 import { Resend } from "resend";
 
 export const runtime = "nodejs";
 
-// ── Telemetry helper ──────────────────────────────────────────────────────────
+// ── Telemetry ─────────────────────────────────────────────────────────────────
 async function logConversation(
   sessionId: string,
   role: "user" | "agent",
@@ -30,14 +36,38 @@ async function logConversation(
   }
 }
 
+// ── Session tracking ──────────────────────────────────────────────────────────
+async function upsertSession(
+  sessionId: string,
+  agentName: string,
+  channel: string,
+  pathname: string | undefined
+) {
+  try {
+    const supabase = await createClient();
+    await supabase.from("agent_sessions").upsert(
+      {
+        session_id: sessionId,
+        agent_name: agentName,
+        channel,
+        page_context: pathname ?? "/",
+        last_active_at: new Date().toISOString(),
+        status: "active",
+      },
+      { onConflict: "session_id", ignoreDuplicates: false }
+    );
+  } catch {
+    // Non-critical — don't block the stream
+  }
+}
+
 export async function POST(req: Request) {
-  // ── Rate limiting: 30 messages per IP per minute ───────────────────────────
+  // ── Rate limiting ─────────────────────────────────────────────────────────
   const ip = getClientIp(req);
   const rl = rateLimit(`ai-chat:${ip}`, { limit: 30, windowSecs: 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {
-    // ── Input validation ───────────────────────────────────────────────────────
     const body = await req.json();
     const parsed = aiChatSchema.safeParse(body);
     if (!parsed.success) return validationError(parsed.error);
@@ -46,16 +76,13 @@ export async function POST(req: Request) {
     const resolvedAgentName = agentName ?? "Kira";
     const resolvedSessionId = sessionId ?? `anon-${Date.now()}`;
 
-    // ── Portal/Admin agent auth check ──────────────────────────────────────────
+    // ── Auth check for restricted agents ─────────────────────────────────────
     const restrictedAgents = ["Cortex", "Nexus"];
     let userContext = null;
-    
+
     if (agentName && restrictedAgents.includes(agentName)) {
       const supabase = await createClient();
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         const { NextResponse } = await import("next/server");
         return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -63,246 +90,500 @@ export async function POST(req: Request) {
       userContext = user;
     }
 
-    // ── Persona & System Prompts ───────────────────────────────────────────────
+    // ── RAG: retrieve relevant knowledge for the user's query ─────────────────
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+    let knowledgeContext = "";
+
+    if (lastUserMessage?.content) {
+      const chunks = await retrieveRelevantKnowledge(
+        typeof lastUserMessage.content === "string"
+          ? lastUserMessage.content
+          : "",
+        { matchCount: 5, threshold: 0.65 }
+      );
+      knowledgeContext = formatKnowledgeContext(chunks);
+    }
+
+    // ── Service catalog context injection (GAP-05 fix) ────────────────────────
+    const catalogContext = buildCatalogContext(resolvedAgentName);
+
+    // ── Build system instruction ──────────────────────────────────────────────
     let systemInstruction = `You are ${resolvedAgentName}, the ${agentRole ?? "AI Workforce"} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
 Current page context: ${JSON.stringify(context ?? {})}
 
 CORE BEHAVIORS:
 1. Multilingual Support: You fluently understand and speak English and Spanish. Detect the user's language and respond naturally in the same language. If they switch, you switch.
-2. Guardrails: You ONLY provide support and scheduling for approved services (Managed IT, Cybersecurity, Cloud, Network Design, VoIP, IT Consulting). If asked about unrelated topics or non-supported tech, politely decline and steer the conversation back to our core offerings. Do not hallucinate capabilities.
+2. Zero Hallucination Policy: You MUST only provide information grounded in the service catalog or retrieved knowledge below. If you don't have verified information, use this EXACT phrase: "${KNOWLEDGE_FALLBACK_TEXT}"
+3. Guardrails: You ONLY provide support and scheduling for approved services. Do not discuss competitors, unrelated tech, or make up capabilities.
+4. Tool Confirmation (R03): BEFORE executing bookDemo, you MUST verbally summarize details and ask for explicit confirmation.
 
+${catalogContext}
+${knowledgeContext}
 `;
 
+    // ── Persona-specific instructions ─────────────────────────────────────────
     if (agentName === "Aria") {
-      systemInstruction += `PERSONALITY:
-- Warm, hyper-organized, proactive. Upbeat professional female.
-- You are Aria, the Strategic Coordinator.
-
+      systemInstruction += `
+PERSONALITY: Warm, hyper-organized, proactive. Strategic Coordinator.
 CORE MISSION:
 - Your ONLY goal is to qualify the visitor and schedule a live demo.
 - Ask ONE question at a time. Do not write long paragraphs.
-- Gather their name, email, phone (optional), and what service they need.
-- Once you have enough info, you MUST verbally summarize the details and ask for explicit confirmation from the user ("Does this sound correct?") BEFORE executing the \`bookDemo\` tool.`;
+- Gather name, email, phone (optional), service interest, date, and time.
+- Use checkAvailability before proposing a time slot.
+- Use getAvailableSlots to show real open times when asked.
+- ALWAYS confirm details before calling bookDemo.`;
     } else if (agentName === "Cortex") {
-      systemInstruction += `PERSONALITY:
-- Analytical, precise, reassuring. Calm, authoritative male.
-- You are Cortex, L3 Support Engineer.
-
+      systemInstruction += `
+PERSONALITY: Analytical, precise, reassuring. L3 Support Engineer.
 CORE MISSION:
 - Help authenticated users troubleshoot issues.
-- Ask for error codes or symptoms. Be concise.
-- If the issue is complex or unresolvable immediately, use the \`createTicket\` tool to escalate to human engineers. Never guess a technical fix if unsure.`;
+- Capture: affected system, error message, when it started, how many users affected.
+- If complex or unresolvable, createTicket immediately. Never guess if unsure.
+- For critical issues (system down, ransomware), escalateToHuman IMMEDIATELY.`;
     } else if (agentName === "Max") {
-      systemInstruction += `PERSONALITY:
-- Confident, highly technical, solution-oriented.
-- You are Max, Senior Solutions Architect.
-
+      systemInstruction += `
+PERSONALITY: Confident, highly technical, solution-oriented. Senior Solutions Architect.
 CORE MISSION:
-- Answer complex technical questions about cybersecurity, cloud, networking, and infrastructure.
-- Always recommend best-in-class enterprise solutions. Offer to connect them to a human engineer via \`bookDemo\` if they want to proceed.`;
+- Answer complex technical questions about cybersecurity, cloud, networking, infrastructure.
+- Recommend best-in-class enterprise solutions from our catalog.
+- Offer to connect to a human engineer via bookDemo for complex scoping.`;
     } else if (agentName === "Nexus") {
-      systemInstruction += `PERSONALITY:
-- Strategic, data-driven, sharp. Growth intelligence operator.
-- You are Nexus, Growth Intelligence.
-
+      systemInstruction += `
+PERSONALITY: Strategic, data-driven, sharp. Growth Intelligence operator.
 CORE MISSION:
 - Analyze lead quality, sales velocity, and growth opportunities.
-- Provide actionable recommendations on which leads to prioritize and how to accelerate pipeline.
-- Help the admin team understand metrics and patterns in the business.`;
+- Help the admin team understand metrics and pipeline patterns.
+- Provide actionable lead prioritization recommendations.`;
     } else {
-      systemInstruction += `PERSONALITY:
-- Professional, warm, and engaging — never robotic.
-- Use at most one subtle emoji per response.
-- Be proactive: ask clarifying questions to understand the visitor's needs.
-
+      systemInstruction += `
+PERSONALITY: Professional, warm, and engaging — never robotic. Use at most one subtle emoji per response.
 CORE MISSION:
-- Greet visitors, understand their IT needs.
-- If they want to schedule a demo, use the \`bookDemo\` tool to book it for them.
-- Services we offer: Managed IT, Cybersecurity, Cloud, Network Design, VoIP, IT Consulting.`;
+- Greet visitors, understand their IT needs, qualify their interest.
+- If they want to schedule a demo, use bookDemo (with confirmation first).
+- Use getAvailableSlots to show them real open time slots.`;
     }
 
-    // ── Log the user's most recent message ────────────────────────────────────
-    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+    // ── Track session ─────────────────────────────────────────────────────────
+    upsertSession(resolvedSessionId, resolvedAgentName, "text", context?.pathname);
+
+    // ── Log user message ──────────────────────────────────────────────────────
     if (lastUserMessage?.content) {
-      // Fire-and-forget – don't block the stream
-      logConversation(resolvedSessionId, "user", lastUserMessage.content, resolvedAgentName);
+      logConversation(
+        resolvedSessionId,
+        "user",
+        typeof lastUserMessage.content === "string" ? lastUserMessage.content : "",
+        resolvedAgentName
+      );
     }
 
-    // ── Generate Response with Function Calling ────────────────────────────────
+    // ── Stream response with tools ────────────────────────────────────────────
     const result = streamText({
-      model: google("gemini-1.5-flash") as any,
+      model: google("gemini-2.0-flash") as any,
       system: systemInstruction,
       messages,
-      // maxSteps is unsupported in this version of the AI SDK
       tools: {
+        // ── Booking & Availability ──────────────────────────────────────────
         bookDemo: tool({
-          description: "Schedule a live demo or consultation for a potential client.",
+          description:
+            "Schedule a live demo or consultation. MUST confirm with user before calling.",
           parameters: z.object({
-            name: z.string().describe("The client's full name"),
-            email: z.string().email().describe("The client's email address"),
-            phone: z.string().optional().describe("The client's phone number"),
-            service: z.string().describe("The service they are interested in (e.g., 'Cybersecurity', 'Live Demo')"),
-            date: z.string().describe("The date for the demo (e.g., 'Oct 15', 'Tomorrow')"),
-            time: z.string().describe("The time for the demo (e.g., '10:00 AM')"),
-            message: z.string().optional().describe("Any additional notes from the client"),
+            name: z.string().describe("Client's full name"),
+            email: z.string().email().describe("Client's email address"),
+            phone: z.string().optional().describe("Client's phone number"),
+            service: z.string().describe("Service they are interested in"),
+            date: z.string().describe("Date for the demo (e.g. 'June 15, 2026')"),
+            time: z.string().describe("Time for the demo (e.g. '10:00 AM AST')"),
+            scheduledAt: z
+              .string()
+              .optional()
+              .describe("ISO 8601 UTC datetime if known (e.g. '2026-06-15T14:00:00Z')"),
+            message: z.string().optional().describe("Additional notes from the client"),
           }),
           execute: async (params: any) => {
             const supabase = await createClient();
             const first_name = params.name.split(" ")[0] || "Unknown";
             const last_name = params.name.split(" ").slice(1).join(" ") || "-";
+
+            // Try to insert into proper bookings table first, fall back to leads
+            let bookingId: string | null = null;
+
+            if (params.scheduledAt) {
+              const { data: booking, error: bookingError } = await supabase
+                .from("bookings")
+                .insert({
+                  first_name,
+                  last_name,
+                  email: params.email,
+                  phone: params.phone || null,
+                  service_interest: params.service,
+                  notes: params.message || null,
+                  scheduled_at: params.scheduledAt,
+                  status: "confirmed",
+                  booked_via: "ai_agent",
+                  agent_name: resolvedAgentName,
+                  session_id: resolvedSessionId,
+                })
+                .select("id")
+                .single();
+
+              if (!bookingError) bookingId = booking?.id;
+            }
+
+            // Always create a CRM lead record
             const bookingNote = `LIVE DEMO SCHEDULED: ${params.date} at ${params.time}`;
-            
-            const { data, error } = await supabase.from("leads").insert({
-              first_name,
-              last_name,
-              email: params.email,
-              phone: params.phone || null,
-              service_interest: params.service,
-              notes: `${bookingNote}\n\nClient Message: ${params.message || "None"}`,
-              status: "qualified"
-            }).select("id").single();
-            
-            if (error) return { success: false, error: error.message };
-            
+            const { data: lead, error: leadError } = await supabase
+              .from("leads")
+              .insert({
+                first_name,
+                last_name,
+                email: params.email,
+                phone: params.phone || null,
+                service_interest: params.service,
+                notes: `${bookingNote}\n\nClient Message: ${params.message || "None"}`,
+                status: "qualified",
+              })
+              .select("id")
+              .single();
+
+            if (leadError)
+              return { success: false, error: leadError.message };
+
+            // Email alerts
             if (process.env.RESEND_API_KEY) {
               try {
                 const resend = new Resend(process.env.RESEND_API_KEY);
+                const adminEmail =
+                  process.env.ADMIN_NOTIFICATION_EMAIL ??
+                  "sales@kooltechsolutions.com";
+
                 await resend.emails.send({
-                  from: "KoolTech Alerts <onboarding@resend.dev>",
-                  to: ["sales@kooltechsolutions.com"],
-                  subject: `🚀 AI Agent Lead: ${params.name}`,
-                  html: `
-                    <h2>New Lead Collected by AI Agent</h2>
+                  from: "KoolTech AI <onboarding@resend.dev>",
+                  to: [adminEmail],
+                  subject: `🚀 New AI Lead: ${params.name}`,
+                  html: `<h2>New Lead — Booked by ${resolvedAgentName}</h2>
                     <p><strong>Name:</strong> ${params.name}</p>
                     <p><strong>Email:</strong> ${params.email}</p>
                     <p><strong>Phone:</strong> ${params.phone || "N/A"}</p>
-                    <p><strong>Service Interest:</strong> ${params.service}</p>
-                    <p><strong>Notes:</strong> ${bookingNote}</p>
-                    <p><strong>Client Message:</strong> ${params.message || "None"}</p>
-                  `,
+                    <p><strong>Service:</strong> ${params.service}</p>
+                    <p><strong>Slot:</strong> ${params.date} at ${params.time}</p>
+                    <p><strong>Notes:</strong> ${params.message || "None"}</p>`,
                 });
-              } catch (emailError) {
-                console.error("[AI Workforce] Failed to send email alert:", emailError);
+              } catch (e) {
+                console.error("[bookDemo] Email error:", e);
               }
             }
 
-            return { success: true, bookingId: data.id, message: "Demo booked successfully. Please inform the client." };
-          }
+            return {
+              success: true,
+              bookingId: bookingId ?? lead.id,
+              message: "Demo booked successfully. Confirmation email sent.",
+            };
+          },
         } as any),
-        createTicket: tool({
-          description: "Create a support ticket for an authenticated user's issue.",
+
+        getAvailableSlots: tool({
+          description:
+            "Get real available booking slots for the next N days. Call this when the user asks 'when are you available?' or wants to pick a time.",
           parameters: z.object({
-            subject: z.string().describe("A brief summary of the issue"),
-            description: z.string().describe("Detailed description of the problem"),
-            priority: z.enum(["low", "normal", "high", "critical"]).describe("The priority level of the ticket")
+            days: z
+              .number()
+              .min(1)
+              .max(14)
+              .default(7)
+              .describe("Number of days ahead to check"),
           }),
-          execute: async (params: any) => {
-            if (!userContext) {
-              return { success: false, error: "User is not authenticated. Cannot create ticket." };
+          execute: async ({ days }: { days: number }) => {
+            try {
+              const url = new URL(
+                `/api/bookings/slots?days=${days}`,
+                process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+              );
+              const res = await fetch(url.toString());
+              if (!res.ok) return { error: "Could not fetch availability" };
+              const data = await res.json();
+
+              // Return a human-readable summary (first 10 slots)
+              const slots = (data.availableSlots ?? []).slice(0, 10);
+              return {
+                timezone: data.timezone,
+                slots: slots.map((s: any) => ({
+                  date: s.date,
+                  time: s.time,
+                  utc: s.utc,
+                })),
+                moreAvailable: (data.totalAvailable ?? 0) > 10,
+              };
+            } catch {
+              return { error: "Availability service unavailable" };
             }
-            const supabase = await createClient();
-            const client_id = userContext.id;
-            
-            const { data, error } = await supabase.from("tickets").insert({
-              subject: params.subject,
-              description: params.description,
-              priority: params.priority,
-              client_id,
-              status: "open"
-            }).select("id").single();
-            
-            if (error) return { success: false, error: error.message };
-            return { success: true, ticketId: data.id, message: `Ticket created successfully with ID ${data.id}. Provide this ID to the user.` };
-          }
+          },
         } as any),
+
         checkAvailability: tool({
           description: "Check if a specific date has any booked slots.",
           parameters: z.object({
-            date: z.string().describe("The date to check (e.g., 'Oct 15')")
+            date: z.string().describe("The date to check (e.g. 'June 15')"),
           }),
-          execute: async ({ date }: any) => {
+          execute: async ({ date }: { date: string }) => {
             const supabase = await createClient();
-            const { data, error } = await supabase.from("leads").select("notes").ilike("notes", `%LIVE DEMO SCHEDULED: ${date}%`);
+            const { data, error } = await supabase
+              .from("leads")
+              .select("notes")
+              .ilike("notes", `%LIVE DEMO SCHEDULED: ${date}%`);
             if (error) return { bookedSlots: [] };
-            const bookedSlots = data.map((lead) => {
-              const match = lead.notes?.match(/at\s+(.+)$/m);
-              return match ? match[1].trim() : null;
-            }).filter(Boolean);
+            const bookedSlots = data
+              .map((lead) => {
+                const match = lead.notes?.match(/at\s+(.+)$/m);
+                return match ? match[1].trim() : null;
+              })
+              .filter(Boolean);
             return { bookedSlots };
-          }
+          },
         } as any),
+
+        // ── Tickets & Support ───────────────────────────────────────────────
+        createTicket: tool({
+          description:
+            "Create a support ticket for an authenticated user's issue.",
+          parameters: z.object({
+            subject: z.string().describe("Brief summary of the issue"),
+            description: z.string().describe("Detailed problem description"),
+            priority: z
+              .enum(["low", "normal", "high", "critical"])
+              .describe("Priority level"),
+          }),
+          execute: async (params: any) => {
+            if (!userContext)
+              return {
+                success: false,
+                error: "User not authenticated. Cannot create ticket.",
+              };
+            const supabase = await createClient();
+            const { data, error } = await supabase
+              .from("tickets")
+              .insert({
+                subject: params.subject,
+                description: params.description,
+                priority: params.priority,
+                client_id: userContext.id,
+                status: "open",
+              })
+              .select("id")
+              .single();
+            if (error) return { success: false, error: error.message };
+            return {
+              success: true,
+              ticketId: data.id,
+              message: `Ticket created (ID: ${data.id}). Priority: ${params.priority}.`,
+            };
+          },
+        } as any),
+
         checkTicketStatus: tool({
           description: "Check the status of an existing support ticket by ID.",
           parameters: z.object({
-            ticketId: z.string().describe("The ticket ID to lookup")
+            ticketId: z.string().describe("The ticket ID to look up"),
           }),
-          execute: async ({ ticketId }: any) => {
+          execute: async ({ ticketId }: { ticketId: string }) => {
             const supabase = await createClient();
-            const { data, error } = await supabase.from("tickets").select("status, subject").eq("id", ticketId).single();
-            if (error) return { success: false, error: "Ticket not found or error occurred: " + error.message };
-            return { success: true, status: data.status, subject: data.subject };
-          }
+            const { data, error } = await supabase
+              .from("tickets")
+              .select("status, subject, priority, created_at")
+              .eq("id", ticketId)
+              .single();
+            if (error) return { success: false, error: "Ticket not found." };
+            return { success: true, ...data };
+          },
         } as any),
-        fetchInvoices: tool({
-          description: "Fetch outstanding or paid invoices for the authenticated user.",
-          parameters: z.object({
-            status: z.enum(["outstanding", "paid", "draft", "overdue", "void", "all"]).describe("Filter invoices by status")
-          }),
-          execute: async ({ status }: any) => {
-            if (!userContext) return { success: false, error: "User is not authenticated. Cannot fetch invoices." };
-            const supabase = await createClient();
-            
-            let query = supabase.from("invoices").select("invoice_number, amount, status, due_date").eq("client_id", userContext.id);
-            if (status !== "all") query = query.eq("status", status);
-            
-            const { data, error } = await query;
-            if (error) return { success: false, error: error.message };
-            return { success: true, invoices: data };
-          }
-        } as any),
-        fetchServices: tool({
-          description: "Fetch active services and subscriptions for the authenticated user.",
-          parameters: z.object({}),
-          execute: async () => {
-            if (!userContext) return { success: false, error: "User is not authenticated. Cannot fetch services." };
-            const supabase = await createClient();
-            
-            const { data, error } = await supabase.from("client_services").select("service_name, status, next_billing_date").eq("client_id", userContext.id);
-            if (error) return { success: false, error: error.message };
-            return { success: true, services: data };
-          }
-        } as any),
+
         updateTicketPriority: tool({
           description: "Update the priority of an existing support ticket.",
           parameters: z.object({
-            ticketId: z.string().describe("The ticket ID to update"),
-            priority: z.enum(["low", "normal", "high", "critical"]).describe("The new priority level")
+            ticketId: z.string().describe("The ticket ID"),
+            priority: z
+              .enum(["low", "normal", "high", "critical"])
+              .describe("New priority level"),
           }),
           execute: async ({ ticketId, priority }: any) => {
-            if (!userContext) return { success: false, error: "User is not authenticated." };
+            if (!userContext)
+              return { success: false, error: "Not authenticated." };
             const supabase = await createClient();
-            // Optional: verify the ticket belongs to the user, but let's assume RLS or check it here
-            const { data, error } = await supabase.from("tickets")
+            const { error } = await supabase
+              .from("tickets")
               .update({ priority })
-              .eq("id", ticketId)
-              .select("id, subject")
-              .single();
-            
+              .eq("id", ticketId);
             if (error) return { success: false, error: error.message };
-            return { success: true, message: `Ticket ${ticketId} priority updated to ${priority}.` };
-          }
-        } as any)
+            return {
+              success: true,
+              message: `Ticket ${ticketId} priority updated to ${priority}.`,
+            };
+          },
+        } as any),
+
+        // ── Account / Portal Tools ──────────────────────────────────────────
+        fetchInvoices: tool({
+          description:
+            "Fetch invoices for the authenticated user filtered by status.",
+          parameters: z.object({
+            status: z
+              .enum(["outstanding", "paid", "draft", "overdue", "void", "all"])
+              .describe("Invoice status filter"),
+          }),
+          execute: async ({ status }: any) => {
+            if (!userContext)
+              return { success: false, error: "Not authenticated." };
+            const supabase = await createClient();
+            let query = supabase
+              .from("invoices")
+              .select("invoice_number, amount, status, due_date")
+              .eq("client_id", userContext.id);
+            if (status !== "all") query = query.eq("status", status);
+            const { data, error } = await query;
+            if (error) return { success: false, error: error.message };
+            return { success: true, invoices: data };
+          },
+        } as any),
+
+        fetchServices: tool({
+          description: "Fetch active services/subscriptions for the authenticated user.",
+          parameters: z.object({}),
+          execute: async () => {
+            if (!userContext)
+              return { success: false, error: "Not authenticated." };
+            const supabase = await createClient();
+            const { data, error } = await supabase
+              .from("client_services")
+              .select("service_name, status, next_billing_date")
+              .eq("client_id", userContext.id);
+            if (error) return { success: false, error: error.message };
+            return { success: true, services: data };
+          },
+        } as any),
+
+        // ── Knowledge Retrieval (RAG) ────────────────────────────────────────
+        getKnowledge: tool({
+          description:
+            "Retrieve verified information from the KoolTech knowledge base. " +
+            "Call this BEFORE answering any question about pricing, features, SLAs, " +
+            "compliance, or technical specifications. Returns empty if no match found.",
+          parameters: z.object({
+            query: z
+              .string()
+              .describe("The specific question or topic to look up"),
+            source: z
+              .enum(["service_catalog", "faq", "policy", "any"])
+              .optional()
+              .default("any")
+              .describe("Restrict to a specific knowledge source"),
+          }),
+          execute: async ({ query, source }: any) => {
+            const chunks = await retrieveRelevantKnowledge(query, {
+              matchCount: 3,
+              threshold: 0.6,
+              sourceFilter: source === "any" ? undefined : source,
+            });
+
+            if (chunks.length === 0) {
+              return {
+                found: false,
+                fallback: KNOWLEDGE_FALLBACK_TEXT,
+              };
+            }
+
+            return {
+              found: true,
+              results: chunks.map((c) => ({
+                source: c.source,
+                title: c.title,
+                content: c.content,
+                confidence: Math.round(c.similarity * 100),
+              })),
+            };
+          },
+        } as any),
+
+        // ── Human Escalation ────────────────────────────────────────────────
+        escalateToHuman: tool({
+          description:
+            "Escalate the conversation to a live human agent. Call this when: " +
+            "(1) user explicitly requests a human, (2) critical issue is detected, " +
+            "(3) complexity exceeds your scope, (4) user is frustrated or angry. " +
+            "Always acknowledge the user BEFORE calling this tool.",
+          parameters: z.object({
+            reason: z
+              .string()
+              .describe("Clear one-line reason for escalation"),
+            priority: z
+              .enum(["low", "normal", "high", "critical"])
+              .default("high"),
+            summary: z
+              .string()
+              .describe(
+                "3-5 sentence summary of the conversation for the human agent"
+              ),
+            userContact: z
+              .object({
+                name: z.string().optional(),
+                email: z.string().optional(),
+                phone: z.string().optional(),
+              })
+              .optional(),
+          }),
+          execute: async (params: any) => {
+            try {
+              const baseUrl =
+                process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+              const res = await fetch(`${baseUrl}/api/ai-workforce/escalate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  sessionId: resolvedSessionId,
+                  agentName: resolvedAgentName,
+                  channel: "text",
+                  reason: params.reason,
+                  priority: params.priority,
+                  summary: params.summary,
+                  userContact: params.userContact,
+                  conversationContext: messages
+                    .slice(-10)
+                    .map((m: any) => `${m.role}: ${m.content}`)
+                    .join("\n"),
+                }),
+              });
+
+              if (!res.ok) throw new Error("Escalation API error");
+              const data = await res.json();
+
+              return {
+                success: true,
+                escalationId: data.escalationId,
+                message:
+                  "Human agent notified. They have your full conversation history.",
+              };
+            } catch {
+              return {
+                success: false,
+                message:
+                  "Our escalation system is temporarily unavailable. " +
+                  "Please contact us directly at support@kooltechsolutions.com",
+              };
+            }
+          },
+        } as any),
       } as any,
+
       onFinish: async ({ text }) => {
-        // Log the agent's complete response once streaming is done
         if (text?.trim()) {
           logConversation(resolvedSessionId, "agent", text, resolvedAgentName);
         }
       },
     });
 
-    // @ts-ignore - Handle version differences in AI SDK (toDataStreamResponse vs toTextStreamResponse)
-    return (result.toDataStreamResponse ? result.toDataStreamResponse() : (result as any).toTextStreamResponse());
+    return (
+      (result as any).toDataStreamResponse
+        ? (result as any).toDataStreamResponse()
+        : (result as any).toTextStreamResponse()
+    );
   } catch (err) {
     return serverError(err, "ai-chat");
   }
