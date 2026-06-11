@@ -8,6 +8,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+// Auto-summarization threshold: after this many messages the oldest ones are condensed
+const MAX_MESSAGES_BEFORE_COMPRESS = 15;
+
 // LiveKit Imports
 import { LiveKitRoom, RoomAudioRenderer, VoiceAssistantControlBar, BarVisualizer, useVoiceAssistant } from '@livekit/components-react';
 import "@livekit/components-styles";
@@ -139,6 +142,8 @@ export default function AIChatWidget() {
   const [escalated, setEscalated] = useState(false);
   const [escalationId, setEscalationId] = useState<string | null>(null);
   const [escalationPriority, setEscalationPriority] = useState<string>("normal");
+  const [isCompressing, setIsCompressing] = useState(false);
+  const compressedRef = useRef(false);
 
   const [sessionId] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -236,6 +241,52 @@ export default function AIChatWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // ── Auto-compression: condense old messages when threshold is reached ───────
+  useEffect(() => {
+    if (
+      isLoading ||
+      isCompressing ||
+      compressedRef.current ||
+      messages.length < MAX_MESSAGES_BEFORE_COMPRESS
+    ) return;
+
+    const compressMessages = async () => {
+      setIsCompressing(true);
+      try {
+        const res = await fetch('/api/ai-workforce/compress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            agentName: agent.name,
+            messages: messages
+              .filter((m) => m.role !== 'system')
+              .map((m) => ({ role: m.role, content: typeof m.content === 'string' ? m.content : '' })),
+          }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.compressed && data.summaryMessage && data.recentMessages) {
+          // Rebuild message list: initial greeting + summary + recent
+          const initialMsg = messages[0];
+          const rebuilt = [initialMsg, data.summaryMessage, ...data.recentMessages.map((m: any, i: number) => ({
+            id: `recent-${i}`,
+            ...m,
+          }))];
+          setMessages(rebuilt);
+          localStorage.setItem(`kts_messages_${sessionId}`, JSON.stringify(rebuilt));
+          compressedRef.current = true; // Only compress once per session reload
+        }
+      } catch (err) {
+        console.warn('[AIChatWidget] Compression error:', err);
+      } finally {
+        setIsCompressing(false);
+      }
+    };
+
+    compressMessages();
+  }, [messages.length, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle Voice Connection
   const toggleVoiceMode = async () => {

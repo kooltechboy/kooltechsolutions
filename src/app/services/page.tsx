@@ -4,6 +4,7 @@ import Footer from "@/components/layout/Footer";
 import { Shield, Cloud, Network, Monitor, Headphones, Award, ArrowRight, Zap, CheckCircle2, Server, Lock, Globe } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/components/shared/LanguageProvider";
+import CallNowButton from "@/components/ai/CallNowButton";
 
 export default function ServicesPage() {
   const { t } = useLanguage();
@@ -276,16 +277,22 @@ export default function ServicesPage() {
           </div>
         </section>
 
-        {/* Call to Action */}
         <section style={{ padding: "8rem 0", textAlign: "center" }}>
           <div className="container">
             <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "2.5rem", color: "white", marginBottom: "1.5rem" }}>{t("servPage.ctaTitle")}</h2>
             <p style={{ color: "var(--color-neutral-400)", maxWidth: "600px", margin: "0 auto 3rem", fontSize: "1.1rem" }}>
               {t("servPage.ctaSubtitle")}
             </p>
-            <Link href="/contact" className="btn-primary" style={{ padding: "1rem 3rem", fontSize: "1rem" }}>
-              {t("servPage.ctaButton")}
-            </Link>
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap", alignItems: "center" }}>
+              <Link href="/contact" className="btn-primary" style={{ padding: "1rem 3rem", fontSize: "1rem" }}>
+                {t("servPage.ctaButton")}
+              </Link>
+              <CallNowButton
+                agent={{ name: "Max", role: "Senior Solutions Architect", color: "#00E676" }}
+                variant="pill"
+                label="Speak with Max Now"
+              />
+            </div>
           </div>
         </section>
 

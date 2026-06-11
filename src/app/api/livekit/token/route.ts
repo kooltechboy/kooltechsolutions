@@ -1,6 +1,6 @@
 import { AccessToken, AgentDispatchClient } from "livekit-server-sdk";
 import { NextResponse } from "next/server";
-import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { rateLimitAsync, getClientIp } from "@/lib/rateLimit";
 import { rateLimitError } from "@/lib/errors";
 import { createClient } from "@/utils/supabase/server";
 
@@ -23,7 +23,7 @@ function isAuthRequiredAgent(name: string): boolean {
 export async function POST(req: Request) {
   // ── Rate limiting: 20 token requests per IP per minute ────────────────────
   const ip = getClientIp(req);
-  const rl = rateLimit(`livekit-token:${ip}`, { limit: 20, windowSecs: 60 });
+  const rl = await rateLimitAsync(`livekit-token:${ip}`, { limit: 20, windowSecs: 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

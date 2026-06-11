@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { streamText, tool } from "ai";
 import { createClient } from "@/utils/supabase/server";
-import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { rateLimitAsync, getClientIp } from "@/lib/rateLimit";
 import { aiChatSchema } from "@/lib/validation";
 import { validationError, serverError, rateLimitError } from "@/lib/errors";
 import { buildCatalogContext } from "@/lib/knowledge/catalog";
@@ -102,9 +102,9 @@ function parseBookingDateTime(dateStr: string, timeStr: string): Date {
 }
 
 export async function POST(req: Request) {
-  // ── Rate limiting ─────────────────────────────────────────────────────────
+  // ── Rate limiting (Upstash Redis when available, in-memory fallback) ───────
   const ip = getClientIp(req);
-  const rl = rateLimit(`ai-chat:${ip}`, { limit: 30, windowSecs: 60 });
+  const rl = await rateLimitAsync(`ai-chat:${ip}`, { limit: 30, windowSecs: 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

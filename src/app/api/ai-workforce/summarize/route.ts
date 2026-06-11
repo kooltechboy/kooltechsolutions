@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
-import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { rateLimitAsync, getClientIp } from "@/lib/rateLimit";
 import {
   validationError,
   serverError,
@@ -33,7 +33,7 @@ const summarizeSchema = z.object({
 export async function POST(req: Request) {
   // ── Rate limiting: 20 per IP per hour ─────────────────────────────────────
   const ip = getClientIp(req);
-  const rl = rateLimit(`ai-summarize:${ip}`, { limit: 20, windowSecs: 60 * 60 });
+  const rl = await rateLimitAsync(`ai-summarize:${ip}`, { limit: 20, windowSecs: 60 * 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Calendar } from "lucide-react";
 import BookingModal from "@/components/shared/BookingModal";
 import { useLanguage } from "@/components/shared/LanguageProvider";
+import CallNowButton from "@/components/ai/CallNowButton";
 
 const services = [
   { value: "Free Vulnerability Assessment", labelKey: "contactServices.vulnerability" },
@@ -112,17 +113,24 @@ function ContactContent() {
                   <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6, marginBottom: "1rem" }}>
                     {t("contact.demoDesc")}
                   </p>
-                  <button 
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setBookingOpen(true);
-                    }} 
-                    className="btn-primary" 
-                    style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}
-                  >
-                    {t("contact.demoButton")}
-                  </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setBookingOpen(true);
+                      }} 
+                      className="btn-primary" 
+                      style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}
+                    >
+                      {t("contact.demoButton")}
+                    </button>
+                    <CallNowButton
+                      agent={{ name: "Aria", role: "Strategic Coordinator", color: "#FFB300" }}
+                      variant="banner"
+                      label="📞 Talk to Aria Now (Voice)"
+                    />
+                  </div>
                 </div>
 
                 <div className="badge badge-success" style={{ marginTop: "1.5rem", display: "flex", gap: "0.5rem", padding: "0.75rem 1rem", borderRadius: "12px", fontSize: "0.8125rem" }}>
