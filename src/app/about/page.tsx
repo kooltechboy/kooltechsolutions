@@ -15,15 +15,7 @@ export default function AboutPage() {
     { icon: Heart, title: t("about.valuesTitle"), color: "#FF4444", desc: t("about.valuesDesc") },
   ];
 
-  const milestones = [
-    { year: "2014", event: t("about.m2014") },
-    { year: "2016", event: t("about.m2016") },
-    { year: "2018", event: t("about.m2018") },
-    { year: "2020", event: t("about.m2020") },
-    { year: "2022", event: t("about.m2022") },
-    { year: "2024", event: t("about.m2024") },
-    { year: "2026", event: t("about.m2026") },
-  ];
+
 
   const team = [
     { name: "Daniel J Williams", title: "CEO & Founder", emoji: "👨‍💼", bio: t("about.teamBio") },
@@ -87,33 +79,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Timeline */}
-        <section className="section">
-          <div className="container">
-            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-              <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>{t("about.journeyBadge")}</div>
-              <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(1.5rem, 3vw, 2.25rem)", color: "white" }}>
-                {t("about.journeyTitle")} <span className="gradient-text">{t("about.journeyGradient")}</span>
-              </h2>
-            </div>
-            <div className="timeline-container" style={{ position: "relative", maxWidth: "640px", margin: "0 auto" }}>
-              <div className="timeline-line" style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "1px", background: "rgba(0,212,255,0.15)", transform: "translateX(-50%)" }} />
-              {milestones.map((m, i) => (
-                <div key={m.year} className="timeline-item" style={{
-                  display: "flex", gap: "1.5rem", marginBottom: "2rem",
-                  flexDirection: i % 2 === 0 ? "row" : "row-reverse", alignItems: "center",
-                }}>
-                  <div className="timeline-content" style={{ flex: 1, textAlign: i % 2 === 0 ? "right" : "left" }}>
-                    <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "var(--color-accent-500)", fontSize: "0.875rem" }}>{m.year}</div>
-                    <div style={{ color: "var(--color-neutral-300, #CBD5E1)", fontSize: "0.875rem" }}>{m.event}</div>
-                  </div>
-                  <div className="timeline-dot" style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--color-accent-500)", flexShrink: 0, boxShadow: "0 0 12px rgba(0,212,255,0.5)" }} />
-                  <div className="timeline-spacer" style={{ flex: 1 }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+
 
         <CTASection />
       </main>
