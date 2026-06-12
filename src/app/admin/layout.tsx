@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   LayoutDashboard, Users, Ticket, BarChart3, DollarSign,
   PenSquare, Plug, Bot, Monitor, Shield, Zap, Settings, Database,
-  LogOut, Bell, ChevronDown, Menu, X, Server
+  LogOut, Bell, ChevronDown, Menu, X, Server, Calendar
 } from "lucide-react";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 
@@ -25,6 +25,7 @@ const navGroups = [
       { icon: Users, label: "Clients", href: "/admin/clients" },
       { icon: Ticket, label: "Tickets", href: "/admin/tickets" },
       { icon: BarChart3, label: "CRM & Pipeline", href: "/admin/crm" },
+      { icon: Calendar, label: "Bookings", href: "/admin/bookings" },
       { icon: DollarSign, label: "Invoices", href: "/admin/invoices" },
     ],
   },

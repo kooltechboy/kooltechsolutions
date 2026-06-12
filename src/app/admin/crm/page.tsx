@@ -34,6 +34,7 @@ interface Lead {
 
 export default function CRMPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,18 +43,27 @@ export default function CRMPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    async function fetchLeads() {
-      const { data, error } = await supabase
+    async function fetchLeadsAndBookings() {
+      const { data: leadsData, error: leadsError } = await supabase
         .from('leads')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (!error && data) {
-        setLeads(data);
+      if (!leadsError && leadsData) {
+        setLeads(leadsData);
       }
+
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('*');
+      
+      if (!bookingsError && bookingsData) {
+        setBookings(bookingsData);
+      }
+      
       setLoading(false);
     }
-    fetchLeads();
+    fetchLeadsAndBookings();
   }, [supabase]);
 
   async function updateLeadStatus(id: string, newStatus: string) {
@@ -80,7 +90,7 @@ export default function CRMPage() {
       );
   };
 
-  const demoCount = leads.filter(l => l.notes?.includes("LIVE DEMO")).length;
+  const demoCount = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length;
   const wonValue = leads.filter(l => l.status === 'won').length * 12000;
 
   if (loading) {
@@ -206,7 +216,15 @@ export default function CRMPage() {
                   
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {stageLeads.map(lead => {
-                      const isDemo = lead.notes?.includes("LIVE DEMO");
+                      const leadBookings = bookings.filter(b => 
+                        (b.lead_id === lead.id || b.email.toLowerCase() === lead.email.toLowerCase()) && 
+                        b.status !== 'cancelled'
+                      );
+                      const isDemo = leadBookings.length > 0;
+                      const upcomingBooking = leadBookings
+                        .filter(b => b.status === 'confirmed' || b.status === 'pending')
+                        .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())[0];
+
                       const leadIdHash = lead.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
                       const score = isDemo ? 95 : 40 + (leadIdHash % 41);
                       return (
@@ -230,9 +248,16 @@ export default function CRMPage() {
                             {lead.company_name || 'Prospect'}
                           </div>
                           
-                          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem" }}>
-                            {isDemo && (
-                              <span style={{ background: "rgba(0,212,255,0.1)", color: "#00d4ff", padding: "0.25rem 0.625rem", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 800 }}>DEMO</span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1.25rem" }}>
+                            {upcomingBooking && (
+                              <span style={{ background: "rgba(0,212,255,0.1)", color: "#00d4ff", padding: "0.25rem 0.625rem", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 800 }}>
+                                DEMO: {new Date(upcomingBooking.scheduled_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                            {!upcomingBooking && isDemo && (
+                              <span style={{ background: "rgba(168,85,247,0.1)", color: "#a855f7", padding: "0.25rem 0.625rem", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 800 }}>
+                                DEMO COMPLETED
+                              </span>
                             )}
                             <span style={{ background: "rgba(255,255,255,0.03)", color: "var(--color-neutral-300)", padding: "0.25rem 0.625rem", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 700 }}>
                               {lead.service_interest || 'General'}

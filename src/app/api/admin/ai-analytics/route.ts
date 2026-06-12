@@ -16,10 +16,10 @@ export async function GET() {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    // Fetch all logs from the last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    // Fetch all logs from the last 30 days
     const { data: logs, error: logsError } = await supabase
       .from("agent_logs")
       .select("session_id, role, content, agent_name, created_at")
@@ -32,99 +32,166 @@ export async function GET() {
 
     const allLogs = logs || [];
 
-    // ── Compute analytics ─────────────────────────────────────────────────────
+    // Fetch sessions
+    const { data: sessions, error: sessionsError } = await supabase
+      .from("agent_sessions")
+      .select("*")
+      .gte("started_at", thirtyDaysAgo.toISOString());
 
-    // Unique sessions
-    const sessionSet = new Set(allLogs.map((l) => l.session_id));
-    const totalSessions = sessionSet.size;
-
-    // Total messages
-    const totalMessages = allLogs.length;
-    const userMessages = allLogs.filter((l) => l.role === "user").length;
-    const agentMessages = allLogs.filter((l) => l.role === "agent").length;
-
-    // Messages per agent
-    const agentCounts: Record<string, { user: number; agent: number; sessions: Set<string> }> = {};
-    for (const log of allLogs) {
-      const name = log.agent_name || "Unknown";
-      if (!agentCounts[name]) {
-        agentCounts[name] = { user: 0, agent: 0, sessions: new Set() };
-      }
-      agentCounts[name].sessions.add(log.session_id);
-      if (log.role === "user") agentCounts[name].user++;
-      else agentCounts[name].agent++;
+    if (sessionsError) {
+      return NextResponse.json({ error: sessionsError.message }, { status: 500 });
     }
 
-    const messagesPerAgent = Object.entries(agentCounts).map(([name, data]) => ({
-      agent: name,
-      userMessages: data.user,
-      agentMessages: data.agent,
-      totalMessages: data.user + data.agent,
-      sessions: data.sessions.size,
-    }));
+    const allSessions = sessions || [];
 
-    // Avg messages per session
+    // Fetch bookings from AI
+    const { data: aiBookings } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("booked_via", "ai_agent");
+
+    // ── Per-Agent Metrics ───────────────────────────────────────────────────
+    const agentMetrics: Record<string, {
+      totalSessions: number;
+      totalMessages: number;
+      totalDurationSecs: number;
+      escalations: number;
+      compressionEvents: number;
+    }> = {};
+
+    const agents = ["kira", "aria", "cortex", "max", "nexus"];
+    agents.forEach((agent) => {
+      agentMetrics[agent] = {
+        totalSessions: 0,
+        totalMessages: 0,
+        totalDurationSecs: 0,
+        escalations: 0,
+        compressionEvents: 0,
+      };
+    });
+
+    // Populate from agent_sessions
+    allSessions.forEach((sess) => {
+      const agentKey = sess.agent_name.toLowerCase();
+      if (!agentMetrics[agentKey]) {
+        agentMetrics[agentKey] = {
+          totalSessions: 0,
+          totalMessages: 0,
+          totalDurationSecs: 0,
+          escalations: 0,
+          compressionEvents: 0,
+        };
+      }
+      const metrics = agentMetrics[agentKey];
+      metrics.totalSessions++;
+      metrics.totalMessages += sess.message_count || 0;
+      
+      const start = new Date(sess.started_at).getTime();
+      const end = new Date(sess.last_active_at).getTime();
+      metrics.totalDurationSecs += Math.max(0, (end - start) / 1000);
+
+      if (sess.status === "escalated" || sess.escalation_id) {
+        metrics.escalations++;
+      }
+    });
+
+    // Count compression events from logs
+    allLogs.forEach((log) => {
+      const agentKey = (log.agent_name || "kira").toLowerCase();
+      if (agentMetrics[agentKey]) {
+        if (log.content?.includes("earlier messages compressed") || log.content?.includes("Conversation context so far")) {
+          agentMetrics[agentKey].compressionEvents++;
+        }
+      }
+    });
+
+    const perAgentStats = Object.entries(agentMetrics).map(([name, data]) => {
+      const avgLengthSecs = data.totalSessions > 0 ? Math.round(data.totalDurationSecs / data.totalSessions) : 0;
+      const escalationRate = data.totalSessions > 0 ? Math.round((data.escalations / data.totalSessions) * 100) : 0;
+      return {
+        agent: name.charAt(0).toUpperCase() + name.slice(1),
+        totalSessions: data.totalSessions,
+        avgSessionLength: `${Math.floor(avgLengthSecs / 60)}m ${avgLengthSecs % 60}s`,
+        escalationRate: `${escalationRate}%`,
+        compressionEvents: data.compressionEvents,
+      };
+    });
+
+    // ── 7-Day Trend Chart ────────────────────────────────────────────────────
+    const dates: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().split("T")[0]);
+    }
+
+    const trendData = dates.map((date) => {
+      const daySessions = allSessions.filter((s) => s.started_at.split("T")[0] === date);
+      const row: Record<string, any> = { date };
+      agents.forEach((agent) => {
+        const nameCapitalized = agent.charAt(0).toUpperCase() + agent.slice(1);
+        row[nameCapitalized] = daySessions.filter((s) => s.agent_name.toLowerCase() === agent).length;
+      });
+      return row;
+    });
+
+    // ── Top Questions/Intents ───────────────────────────────────────────────
+    const intentCounts: Record<string, number> = {
+      "Pricing Inquiries": 0,
+      "Booking & Demos": 0,
+      "Technical Support": 0,
+      "Services Catalog": 0,
+      "General Info / Greeting": 0,
+      "ITFlow Sync & Integrations": 0,
+    };
+
+    allLogs.forEach((log) => {
+      if (log.role === "user" && log.content) {
+        const text = log.content.toLowerCase();
+        if (text.includes("price") || text.includes("cost") || text.includes("billing") || text.includes("pricing")) {
+          intentCounts["Pricing Inquiries"]++;
+        } else if (text.includes("book") || text.includes("demo") || text.includes("schedule") || text.includes("calendar")) {
+          intentCounts["Booking & Demos"]++;
+        } else if (text.includes("support") || text.includes("error") || text.includes("ticket") || text.includes("issue") || text.includes("fix") || text.includes("help")) {
+          intentCounts["Technical Support"]++;
+        } else if (text.includes("service") || text.includes("offer") || text.includes("what do you do") || text.includes("capabilities")) {
+          intentCounts["Services Catalog"]++;
+        } else if (text.includes("itflow") || text.includes("sync") || text.includes("integrate") || text.includes("api")) {
+          intentCounts["ITFlow Sync & Integrations"]++;
+        } else {
+          intentCounts["General Info / Greeting"]++;
+        }
+      }
+    });
+
+    const topIntents = Object.entries(intentCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // ── Basic Stats ─────────────────────────────────────────────────────────
+    const totalSessions = new Set(allLogs.map((l) => l.session_id)).size;
+    const totalMessages = allLogs.length;
     const avgMessagesPerSession = totalSessions > 0 ? Math.round(totalMessages / totalSessions) : 0;
 
-    // Today's stats
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayLogs = allLogs.filter((l) => new Date(l.created_at) >= todayStart);
     const todaySessions = new Set(todayLogs.map((l) => l.session_id)).size;
     const todayMessages = todayLogs.length;
 
-    // Busiest hours (last 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentLogs = allLogs.filter((l) => new Date(l.created_at) >= sevenDaysAgo);
-    const hourBuckets: number[] = new Array(24).fill(0);
-    for (const log of recentLogs) {
-      const hour = new Date(log.created_at).getHours();
-      hourBuckets[hour]++;
-    }
-    const busiestHours = hourBuckets.map((count, hour) => ({
-      hour: `${hour.toString().padStart(2, "0")}:00`,
-      messages: count,
-    }));
-
-    // Tool executions (look for tool-related content in agent messages)
-    const toolKeywords = ["Demo booked successfully", "Ticket created successfully", "booked slots", "Ticket"];
-    const toolExecutions = allLogs
-      .filter(
-        (l) =>
-          l.role === "agent" &&
-          toolKeywords.some((kw) => l.content?.toLowerCase().includes(kw.toLowerCase()))
-      )
-      .slice(0, 10)
-      .map((l) => ({
-        sessionId: l.session_id,
-        agent: l.agent_name,
-        content: l.content.substring(0, 120),
-        timestamp: l.created_at,
-      }));
-
-    // Bookings triggered (approximate)
-    const bookingsTriggered = allLogs.filter(
-      (l) => l.role === "agent" && l.content?.toLowerCase().includes("demo booked successfully")
-    ).length;
-
-    const ticketsCreated = allLogs.filter(
-      (l) => l.role === "agent" && l.content?.toLowerCase().includes("ticket created successfully")
-    ).length;
-
     return NextResponse.json({
       totalSessions,
       totalMessages,
-      userMessages,
-      agentMessages,
       avgMessagesPerSession,
       todaySessions,
       todayMessages,
-      bookingsTriggered,
-      ticketsCreated,
-      messagesPerAgent,
-      busiestHours,
-      toolExecutions,
+      bookingsTriggered: aiBookings?.length || 0,
+      ticketsCreated: allLogs.filter(
+        (l) => l.role === "agent" && l.content?.toLowerCase().includes("ticket created successfully")
+      ).length,
+      perAgentStats,
+      trendData,
+      topIntents,
     });
   } catch (err) {
     console.error("[AI Analytics] Error:", err);

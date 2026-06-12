@@ -245,8 +245,45 @@ export default function AIWorkforceDashboard() {
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [agentStats, setAgentStats] = useState<Record<string, number>>({});
+
+  // New States for Sessions & Escalations
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [escalations, setEscalations] = useState<any[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedTranscript, setSelectedTranscript] = useState<any[]>([]);
+  const [loadingTranscript, setLoadingTranscript] = useState(false);
+  const [viewingTranscript, setViewingTranscript] = useState(false);
+
   const feedRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+
+  const fetchSessions = useCallback(async () => {
+    try {
+      // Get non-closed sessions
+      const { data: sessData, error: sessError } = await supabase
+        .from("agent_sessions")
+        .select("*")
+        .neq("status", "closed")
+        .order("last_active_at", { ascending: false });
+
+      if (!sessError && sessData) {
+        setSessions(sessData);
+      }
+
+      // Get pending escalations
+      const { data: escData, error: escError } = await supabase
+        .from("escalations")
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (!escError && escData) {
+        setEscalations(escData);
+      }
+    } catch (err) {
+      console.error("Error fetching sessions:", err);
+    }
+  }, [supabase]);
 
   const fetchLogs = useCallback(async () => {
     const { data, error } = await supabase
@@ -268,8 +305,29 @@ export default function AIWorkforceDashboard() {
       }
       setAgentStats(stats);
     }
+
+    await fetchSessions();
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, fetchSessions]);
+
+  const fetchTranscript = async (sessionId: string) => {
+    setLoadingTranscript(true);
+    setSelectedSessionId(sessionId);
+    setViewingTranscript(true);
+
+    const { data, error } = await supabase
+      .from("agent_logs")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
+
+    if (!error && data) {
+      setSelectedTranscript(data);
+    } else {
+      setSelectedTranscript([]);
+    }
+    setLoadingTranscript(false);
+  };
 
   useEffect(() => {
     fetchLogs();
@@ -292,6 +350,20 @@ export default function AIWorkforceDashboard() {
           setLastRefreshed(new Date());
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "agent_sessions" },
+        () => {
+          fetchSessions();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "escalations" },
+        () => {
+          fetchSessions();
+        }
+      )
       .subscribe((status) => {
         setRealtimeConnected(status === "SUBSCRIBED");
       });
@@ -299,7 +371,7 @@ export default function AIWorkforceDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, fetchSessions]);
 
   // Auto-scroll feed on new log (only if near bottom)
   useEffect(() => {
@@ -373,9 +445,40 @@ export default function AIWorkforceDashboard() {
                 color: "white",
                 fontFamily: "Syne, sans-serif",
                 marginBottom: "0.25rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                flexWrap: "wrap",
               }}
             >
               AI Workforce Console
+              {escalations.length > 0 && (
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    background: "#f59e0b",
+                    color: "#0f172a",
+                    padding: "0.2rem 0.6rem",
+                    borderRadius: "999px",
+                    boxShadow: "0 0 10px rgba(245, 158, 11, 0.4)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "#0f172a",
+                      animation: "pulse 1.5s ease-in-out infinite",
+                    }}
+                  />
+                  {escalations.length} {escalations.length === 1 ? "Escalation" : "Escalations"}
+                </span>
+              )}
             </h1>
             <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
               Monitor your 5 autonomous digital employees in real time.
@@ -563,71 +666,249 @@ export default function AIWorkforceDashboard() {
 
         {/* Main panel */}
         <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "2rem" }}>
-          {/* Live Activity Feed */}
-          <div className="glass-card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "1.25rem",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-                <Activity size={18} color="#00D4FF" />
-                <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700 }}>
-                  Autonomous Activity Stream
-                </h3>
-              </div>
-              <span
+          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            {/* Live Activity Feed */}
+            <div className="glass-card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column" }}>
+              <div
                 style={{
-                  color: "#475569",
-                  fontSize: "0.7rem",
-                  background: "rgba(255,255,255,0.04)",
-                  padding: "0.25rem 0.6rem",
-                  borderRadius: "6px",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1.25rem",
                 }}
               >
-                {logs.length} entries
-              </span>
-            </div>
-
-            <div
-              ref={feedRef}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.625rem",
-                maxHeight: "520px",
-                overflowY: "auto",
-                paddingRight: "0.25rem",
-              }}
-            >
-              {logs.length === 0 ? (
-                <div
+                <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                  <Activity size={18} color="#00D4FF" />
+                  <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700 }}>
+                    Autonomous Activity Stream
+                  </h3>
+                </div>
+                <span
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "4rem 2rem",
-                    gap: "1rem",
                     color: "#475569",
+                    fontSize: "0.7rem",
+                    background: "rgba(255,255,255,0.04)",
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(255,255,255,0.06)",
                   }}
                 >
-                  <Brain size={40} color="#1e3a5f" />
-                  <p style={{ textAlign: "center", fontSize: "0.875rem", lineHeight: 1.6 }}>
-                    Waiting for agent telemetry…
-                    <br />
-                    <span style={{ fontSize: "0.75rem", color: "#334155" }}>
-                      Start a chat with any AI agent on the website to see logs appear here in real time.
-                    </span>
-                  </p>
+                  {logs.length} entries
+                </span>
+              </div>
+
+              <div
+                ref={feedRef}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.625rem",
+                  maxHeight: "520px",
+                  overflowY: "auto",
+                  paddingRight: "0.25rem",
+                }}
+              >
+                {logs.length === 0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "4rem 2rem",
+                      gap: "1rem",
+                      color: "#475569",
+                    }}
+                  >
+                    <Brain size={40} color="#1e3a5f" />
+                    <p style={{ textAlign: "center", fontSize: "0.875rem", lineHeight: 1.6 }}>
+                      Waiting for agent telemetry…
+                      <br />
+                      <span style={{ fontSize: "0.75rem", color: "#334155" }}>
+                        Start a chat with any AI agent on the website to see logs appear here in real time.
+                      </span>
+                    </p>
+                  </div>
+                ) : (
+                  logs.map((log) => <LogEntry key={log.id} log={log} />)
+                )}
+              </div>
+            </div>
+
+            {/* Active Sessions Panel */}
+            <div className="glass-card" style={{ padding: "1.5rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1.25rem",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                  <MessageSquare size={18} color="#00D4FF" />
+                  <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700 }}>
+                    Active AI Sessions
+                  </h3>
                 </div>
-              ) : (
-                logs.map((log) => <LogEntry key={log.id} log={log} />)
-              )}
+                <span
+                  style={{
+                    color: "#475569",
+                    fontSize: "0.7rem",
+                    background: "rgba(255,255,255,0.04)",
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  {sessions.length} active
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {sessions.length === 0 ? (
+                  <div style={{ padding: "2rem 1rem", textAlign: "center", color: "#64748b", fontSize: "0.8rem" }}>
+                    No active sessions at the moment.
+                  </div>
+                ) : (
+                  sessions.map((sess) => {
+                    const isEscalated = sess.status === "escalated";
+                    const matchingEsc = isEscalated
+                      ? escalations.find((e) => e.session_id === sess.session_id)
+                      : null;
+                    const previewText = matchingEsc
+                      ? matchingEsc.reason || matchingEsc.summary
+                      : sess.page_context || "Main Website";
+
+                    const agent = getAgentMeta(sess.agent_name);
+
+                    return (
+                      <div
+                        key={sess.id}
+                        style={{
+                          padding: "1rem",
+                          borderRadius: "10px",
+                          background: isEscalated
+                            ? "rgba(234,179,8,0.08)"
+                            : "rgba(255,255,255,0.015)",
+                          border: isEscalated
+                            ? "1px solid rgba(234,179,8,0.25)"
+                            : "1px solid rgba(255,255,255,0.04)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0.5rem",
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <div
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: "6px",
+                                background: `${agent.color}18`,
+                                border: `1px solid ${agent.color}30`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <agent.icon size={12} color={agent.color} />
+                            </div>
+                            <span style={{ color: "white", fontWeight: 600, fontSize: "0.8rem" }}>
+                              {sess.agent_name}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "0.6rem",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.08em",
+                                background: "rgba(255,255,255,0.06)",
+                                color: "#94a3b8",
+                                padding: "0.1rem 0.4rem",
+                                borderRadius: "999px",
+                              }}
+                            >
+                              {sess.channel}
+                            </span>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <span
+                              style={{
+                                fontSize: "0.6rem",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                padding: "0.15rem 0.45rem",
+                                borderRadius: "999px",
+                                background: isEscalated
+                                  ? "rgba(234,179,8,0.2)"
+                                  : "rgba(0,229,118,0.12)",
+                                color: isEscalated ? "#eab308" : "#00E676",
+                              }}
+                            >
+                              {sess.status}
+                            </span>
+                            <button
+                              onClick={() => fetchTranscript(sess.session_id)}
+                              style={{
+                                background: "rgba(0,212,255,0.1)",
+                                border: "1px solid rgba(0,212,255,0.2)",
+                                borderRadius: "6px",
+                                color: "#00D4FF",
+                                padding: "0.2rem 0.5rem",
+                                fontSize: "0.7rem",
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                              }}
+                            >
+                              View Transcript
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Client details / Metadata */}
+                        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", fontSize: "0.75rem", color: "#64748b" }}>
+                          {sess.user_name && (
+                            <span>
+                              <strong>User:</strong> {sess.user_name}
+                            </span>
+                          )}
+                          {sess.user_email && (
+                            <span>
+                              <strong>Email:</strong> {sess.user_email}
+                            </span>
+                          )}
+                          <span>
+                            <strong>Messages:</strong> {sess.message_count || 0}
+                          </span>
+                          <span>
+                            <strong>Active:</strong> {new Date(sess.last_active_at).toLocaleTimeString()}
+                          </span>
+                        </div>
+
+                        {/* Conversation preview / Escalation reason */}
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            color: isEscalated ? "#fef08a" : "#94a3b8",
+                            fontStyle: "italic",
+                            background: "rgba(0,0,0,0.15)",
+                            padding: "0.4rem 0.6rem",
+                            borderRadius: "6px",
+                            borderLeft: isEscalated ? "2px solid #eab308" : "2px solid #00d4ff",
+                          }}
+                        >
+                          {isEscalated ? `Escalation Reason: ${previewText}` : `Page Context: ${previewText}`}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
 
@@ -820,6 +1101,197 @@ export default function AIWorkforceDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Transcript Modal */}
+      {viewingTranscript && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.75)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "2rem",
+          }}
+          onClick={() => setViewingTranscript(false)}
+        >
+          <div
+            style={{
+              background: "rgba(10,22,40,0.98)",
+              border: "1px solid rgba(0,212,255,0.15)",
+              borderRadius: "16px",
+              width: "100%",
+              maxWidth: "680px",
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5), 0 0 40px rgba(0,212,255,0.1)",
+              animation: "fadeInUp 0.2s ease-out",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "1.25rem 1.5rem",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <h3 style={{ color: "white", fontSize: "1.1rem", fontWeight: 700, margin: 0 }}>
+                  Session Transcript
+                </h3>
+                <p style={{ color: "#64748b", fontSize: "0.75rem", margin: "0.15rem 0 0 0", wordBreak: "break-all" }}>
+                  ID: {selectedSessionId}
+                </p>
+              </div>
+              <button
+                onClick={() => setViewingTranscript(false)}
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 30,
+                  height: 30,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: "1.5rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "1rem",
+              }}
+            >
+              {loadingTranscript ? (
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "200px" }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      border: "2px solid rgba(0,212,255,0.15)",
+                      borderTop: "2px solid #00D4FF",
+                      borderRadius: "50%",
+                      animation: "spin 0.8s linear infinite",
+                    }}
+                  />
+                </div>
+              ) : selectedTranscript.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#64748b", padding: "4rem 0" }}>
+                  No messages found in this session.
+                </div>
+              ) : (
+                selectedTranscript.map((msg, idx) => {
+                  const isUser = msg.role === "user";
+                  const isAgent = msg.role === "agent";
+                  const bubbleBg = isUser
+                    ? "rgba(0,212,255,0.06)"
+                    : isAgent
+                    ? "rgba(255,255,255,0.03)"
+                    : "rgba(255,255,255,0.01)";
+                  const bubbleBorder = isUser
+                    ? "1px solid rgba(0,212,255,0.15)"
+                    : isAgent
+                    ? "1px solid rgba(255,255,255,0.06)"
+                    : "1px solid rgba(255,255,255,0.02)";
+
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        alignSelf: isUser ? "flex-end" : "flex-start",
+                        maxWidth: "85%",
+                        background: bubbleBg,
+                        border: bubbleBorder,
+                        borderRadius: "12px",
+                        padding: "0.75rem 1rem",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          color: isUser ? "#00D4FF" : "#94a3b8",
+                          marginBottom: "0.25rem",
+                          gap: "1rem",
+                        }}
+                      >
+                        <span>{isUser ? "User" : msg.agent_name || "Agent"}</span>
+                        <span style={{ color: "#475569", fontWeight: 400 }}>
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, color: "white", fontSize: "0.85rem", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                        {msg.content}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "1rem 1.5rem",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => setViewingTranscript(false)}
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "8px",
+                  padding: "0.5rem 1.25rem",
+                  color: "#94a3b8",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                  e.currentTarget.style.color = "#94a3b8";
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
