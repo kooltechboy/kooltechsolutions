@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS public.service_catalog (
 
 INSERT INTO public.service_catalog (category, category_icon, category_description, name, code, price, price_type, priority, description) VALUES
   ('Managed IT', 'Monitor', 'Comprehensive endpoint management and proactive maintenance', 'Basic MSP Plan', 'MSP-BASIC', '$49', 'per endpoint/mo', 'Normal', 'Monitoring, patching, and helpdesk access for one endpoint.'),
-  ('Managed IT', 'Monitor', 'Comprehensive endpoint management and proactive maintenance', 'Enterprise MSP Plan', 'MSP-ENT', '$89', 'per endpoint/mo', 'High', 'Full RMM management, priority support, and SLA guarantee.'),
+  ('Managed IT', 'Monitor', 'Comprehensive endpoint management and proactive maintenance', 'Enterprise MSP Plan', 'MSP-ENT', '$89', 'per endpoint/mo', 'High', 'Full endpoint monitoring, priority support, and SLA guarantee.'),
   ('Cybersecurity', 'Shield', 'Advanced threat detection and zero-trust security architecture', 'Endpoint Detection & Response', 'SEC-EDR', '$12', 'per endpoint/mo', 'High', 'Real-time malware detection, quarantine and forensics.'),
   ('Cybersecurity', 'Shield', 'Advanced threat detection and zero-trust security architecture', 'SIEM-as-a-Service', 'SEC-SIEM', '$299', 'per month', 'High', 'Centralized log management, threat correlation and alerting via Wazuh.'),
   ('Cloud Services', 'Cloud', 'Scalable cloud infrastructure design and management', 'Cloud Migration', 'CLD-MIG', '$2,500', 'one-time', 'Normal', 'Full assessment, planning, and execution of cloud migration.'),

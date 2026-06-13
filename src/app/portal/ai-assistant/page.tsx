@@ -203,7 +203,7 @@ export default function AIAssistantPage() {
               <HardDrive size={16} color="var(--color-success)" /> Telemetry Sync
             </h3>
             <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.5 }}>
-              Kira automatically reviews database snapshots and RMM node statuses to troubleshoot performance anomalies.
+              Kira automatically reviews database snapshots and endpoint health telemetry to troubleshoot performance anomalies.
             </p>
           </div>
         </div>

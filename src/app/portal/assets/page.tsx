@@ -213,7 +213,7 @@ export default function AssetsPage() {
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-white font-bold font-syne tracking-tight uppercase">Managed Fleet</h2>
-                {loading && <div className="w-4 h-4 border-2 border-[#00D4FF] border-t-transparent rounded-full animate-spin" title="Syncing with RMM/ITFlow..." />}
+                {loading && <div className="w-4 h-4 border-2 border-[#00D4FF] border-t-transparent rounded-full animate-spin" title="Syncing with Wazuh/ITFlow..." />}
               </div>
               <p className="text-neutral-500 text-xs mt-1">Real-time asset discovery and diagnostic metrics</p>
             </div>

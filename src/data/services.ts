@@ -25,7 +25,7 @@ export const serviceCatalog: ServiceCategory[] = [
       { id: "1", name: "Tier 1: Essential IT & Patch Management", code: "MRR-T1-ESS-M", price: "$25.00", priceType: "Monthly", description: "24/7 proactive endpoint health monitoring, automated OS and 3rd party software patching, and remote helpdesk access." },
       { id: "2", name: "Tier 2: Advanced Endpoint Defense (MDR)", code: "MRR-T2-MDR-M", price: "$39.00", priceType: "Monthly", description: "All Tier 1 features, plus managed EDR for ransomware tracking, real-time vulnerability dashboards, and a secure team password vault." },
       { id: "3", name: "Tier 3: The Autonomous AI SOC", code: "MRR-T3-SOC-M", price: "$59.00", priceType: "Monthly", description: "All Tier 2 features, plus 24/7 AI driven threat analysis, automated network isolation for compromised devices, and dedicated analyst review." },
-      { id: "co-managed", name: "Co-Managed Enterprise Security Stack", code: "MRR-COMIT-M", price: "$35.00", priceType: "Monthly", description: "We provide your internal IT department with our enterprise-grade toolkit (RMM, EDR, Automated Patching) and act as Tier 3 escalation support." }
+      { id: "co-managed", name: "Co-Managed Enterprise Security Stack", code: "MRR-COMIT-M", price: "$35.00", priceType: "Monthly", description: "We provide your internal IT department with our enterprise-grade toolkit (Monitoring, EDR, Automated Patching) and act as Tier 3 escalation support." }
     ]
   },
   {

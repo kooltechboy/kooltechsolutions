@@ -44,7 +44,7 @@ export const aiWorkforce: AIAgent[] = [
       "Software Reset Assistance"
     ],
     capabilities: [
-      { title: "Deep Integration", desc: "Connects to your RMM and Ticketing tools for real-time system checks." },
+      { title: "Deep Integration", desc: "Connects to your monitoring and ticketing tools for real-time system checks." },
       { title: "Step-by-Step Guides", desc: "Provides interactive, visual instructions to end-users via chat or voice." },
       { title: "Proactive Alerts", desc: "Identifies recurring issues and alerts the human team before they escalate." }
     ],
