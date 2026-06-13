@@ -70,6 +70,7 @@ export default function TicketDetailPage() {
         .from('ticket_messages')
         .select('*, sender:sender_id(first_name, last_name, role)')
         .eq('ticket_id', id)
+        .eq('is_internal_note', false)
         .order('created_at', { ascending: true });
       
       if (msgs) setMessages(msgs as PortalTicketMessage[]);
@@ -85,8 +86,26 @@ export default function TicketDetailPage() {
     // Subscribe to new messages
     const channel = supabase
       .channel(`ticket-${id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${id}` }, (payload: PostgresChangesPayload) => {
-        setMessages(prev => [...prev, payload.new]);
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${id}` }, async (payload: PostgresChangesPayload) => {
+        const newMessage = payload.new;
+        if (newMessage.is_internal_note) return;
+
+        // Fetch sender metadata dynamically to avoid showing "You" for admin messages in real-time
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, role')
+          .eq('id', newMessage.sender_id)
+          .single();
+
+        const messageWithSender = {
+          ...newMessage,
+          sender: senderProfile || null
+        };
+
+        setMessages(prev => {
+          if (prev.some(m => m.id === messageWithSender.id)) return prev;
+          return [...prev, messageWithSender];
+        });
       })
       .subscribe();
 
@@ -135,6 +154,13 @@ export default function TicketDetailPage() {
     if (!user) return;
     await supabase.from('tickets').update({ status: 'resolved', updated_at: new Date().toISOString() }).eq('id', id).eq('client_id', user.id);
     setTicket(prev => prev ? { ...prev, status: 'resolved' } : prev);
+  }
+
+  async function handleReopen() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('tickets').update({ status: 'open', updated_at: new Date().toISOString() }).eq('id', id).eq('client_id', user.id);
+    setTicket(prev => prev ? { ...prev, status: 'open' } : prev);
   }
 
   if (!ticket) {
@@ -288,7 +314,7 @@ export default function TicketDetailPage() {
             </p>
           </div>
 
-          {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
+          {ticket.status !== 'resolved' && ticket.status !== 'closed' ? (
             <button
               onClick={handleMarkResolved}
               style={{
@@ -302,6 +328,21 @@ export default function TicketDetailPage() {
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.08)')}
             >
               ✓ Mark as Resolved
+            </button>
+          ) : (
+            <button
+              onClick={handleReopen}
+              style={{
+                width: '100%', padding: '0.875rem', borderRadius: '10px',
+                background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.3)',
+                color: 'var(--color-accent-500)', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.15)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.08)')}
+            >
+              ⟲ Reopen Ticket
             </button>
           )}
         </div>

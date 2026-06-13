@@ -95,6 +95,26 @@ export default function ClientTicketsPage() {
     fetchMyTickets();
   }, [supabase, refreshKey]);
 
+  // Subscribe to ticket list changes for real-time status and update notifications
+  useEffect(() => {
+    let channel: any;
+    async function subscribeTickets() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      channel = supabase
+        .channel('client-tickets-list-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `client_id=eq.${user.id}` }, () => {
+          setRefreshKey(k => k + 1);
+        })
+        .subscribe();
+    }
+    subscribeTickets();
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
   // Fetch Messages for Selected Ticket
   useEffect(() => {
     if (!selectedTicketId) {
@@ -106,6 +126,7 @@ export default function ClientTicketsPage() {
         .from('ticket_messages')
         .select('*, sender:sender_id(first_name, last_name, role)')
         .eq('ticket_id', selectedTicketId)
+        .eq('is_internal_note', false)
         .order('created_at', { ascending: true });
       if (msgs) setMessages(msgs as TicketMessage[]);
     }
@@ -114,8 +135,26 @@ export default function ClientTicketsPage() {
     // Supabase Realtime for Messages
     const channel = supabase
       .channel(`ticket-${selectedTicketId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${selectedTicketId}` }, (payload) => {
-        setMessages(prev => [...prev, payload.new as TicketMessage]);
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${selectedTicketId}` }, async (payload) => {
+        const newMessage = payload.new as TicketMessage;
+        if (newMessage.is_internal_note) return;
+
+        // Fetch sender metadata dynamically to avoid showing "You" for admin messages in real-time
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, role')
+          .eq('id', newMessage.sender_id)
+          .single();
+
+        const messageWithSender = {
+          ...newMessage,
+          sender: senderProfile || null
+        };
+
+        setMessages(prev => {
+          if (prev.some(m => m.id === messageWithSender.id)) return prev;
+          return [...prev, messageWithSender];
+        });
       })
       .subscribe();
 
@@ -326,9 +365,19 @@ export default function ClientTicketsPage() {
             <div className="flex-1 flex flex-col h-full animate-in fade-in duration-300">
               {/* Detail Header */}
               <div className="p-6 border-b border-white/10 bg-white/[0.02] shrink-0">
-                <div className="flex justify-between items-start gap-4">
+                <div className="flex justify-between items-center gap-4">
                   <div>
-                    <h2 className="text-xl font-bold text-white mb-2">{selectedTicket.subject}</h2>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-xl font-bold text-white">{selectedTicket.subject}</h2>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        selectedTicket.status === 'open' ? 'bg-[#00D4FF]/10 text-[#00D4FF]' :
+                        selectedTicket.status === 'in_progress' ? 'bg-amber-400/10 text-amber-400' :
+                        selectedTicket.status === 'resolved' ? 'bg-[#00E676]/10 text-[#00E676]' :
+                        'bg-white/5 text-neutral-400'
+                      }`}>
+                        {selectedTicket.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
                       <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-[#00D4FF]"/> ID: {selectedTicket.id.slice(0, 8)}</span>
                       <span className="flex items-center gap-1.5"><Clock size={14}/> {new Date(selectedTicket.created_at).toLocaleString()}</span>
@@ -336,6 +385,39 @@ export default function ClientTicketsPage() {
                         <span className="flex items-center gap-1.5 text-[#ef4444]"><AlertCircle size={14}/> CRITICAL</span>
                       )}
                     </div>
+                  </div>
+                  <div>
+                    {selectedTicket.status === 'closed' || selectedTicket.status === 'resolved' ? (
+                      <button
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from('tickets')
+                            .update({ status: 'open', updated_at: new Date().toISOString() })
+                            .eq('id', selectedTicket.id);
+                          if (!error) {
+                            setRefreshKey(k => k + 1);
+                          }
+                        }}
+                        className="px-4 py-2 rounded-xl bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20 hover:bg-[#00D4FF]/20 transition-all font-bold text-[10px] uppercase tracking-wider"
+                      >
+                        Reopen Ticket
+                      </button>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from('tickets')
+                            .update({ status: 'closed', updated_at: new Date().toISOString() })
+                            .eq('id', selectedTicket.id);
+                          if (!error) {
+                            setRefreshKey(k => k + 1);
+                          }
+                        }}
+                        className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all font-bold text-[10px] uppercase tracking-wider"
+                      >
+                        Close Ticket
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
