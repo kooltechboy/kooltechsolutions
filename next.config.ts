@@ -55,22 +55,22 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // Scripts: self + Google AdSense + Next.js inline scripts
-              "script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com",
+              // Scripts: self + Google AdSense + Next.js inline scripts + eval for development hot-reloading + Google AdTraffic
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://*.adtrafficquality.google",
               // Styles: self + Google Fonts + inline (needed for framer-motion & CSS-in-JS)
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               // Fonts: self + Google Fonts CDN
               "font-src 'self' https://fonts.gstatic.com data:",
-              // Images: self + data URIs + Supabase storage + Google AdSense
-              "img-src 'self' data: blob: https://*.supabase.co https://pagead2.googlesyndication.com https://www.google.com",
-              // API connections: self + Supabase + Google AI + Resend + AdSense
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.resend.com https://pagead2.googlesyndication.com",
+              // Images: self + data URIs + Supabase storage + Google AdSense + Unsplash placeholders + Google AdTraffic
+              "img-src 'self' data: blob: https://*.supabase.co https://pagead2.googlesyndication.com https://www.google.com https://*.unsplash.com https://images.unsplash.com https://source.unsplash.com https://*.adtrafficquality.google",
+              // API connections: self + Supabase + Google AI + Resend + AdSense + Google AdTraffic
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.resend.com https://pagead2.googlesyndication.com https://*.adtrafficquality.google",
               // Media: self only (voice recognition uses device mic, no external media)
               "media-src 'self'",
               // Workers: self + blob (Next.js service worker)
               "worker-src 'self' blob:",
-              // Frames: none
-              "frame-src 'none'",
+              // Frames: self + Google AdSense / doubleclick + Google AdTraffic / Google
+              "frame-src 'self' https://googleads.g.doubleclick.net https://*.doubleclick.net https://tpc.googlesyndication.com https://*.adtrafficquality.google https://www.google.com",
               // Form submissions: self only
               "form-action 'self'",
               // Upgrade insecure requests in production
