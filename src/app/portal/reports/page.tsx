@@ -1,18 +1,69 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   BarChart3, TrendingUp, Shield, Clock, Download, ShieldCheck, Activity, 
   Zap, AlertCircle, Loader2, CheckCircle2, ArrowUpRight, ChevronRight,
   Target, ZapOff, Globe
 } from "lucide-react";
 
-const months = ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"];
-const ticketData = [3, 7, 4, 6, 2, 5, 1];
-const uptimeData = [99.8, 99.9, 100, 99.7, 99.9, 100, 99.99];
-const maxTickets = Math.max(...ticketData);
-
 export default function ReportsPage() {
+  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [metrics, setMetrics] = useState<{
+    healthScore: number;
+    uptime: string;
+    kpis: {
+      uptime: string;
+      avgResponse: string;
+      automation: string;
+      threatsBlocked: string;
+    };
+    charts: {
+      months: string[];
+      ticketData: number[];
+      uptimeData: number[];
+    };
+    milestones: {
+      id: string;
+      subj: string;
+      priority: string;
+      response: string;
+      resolution: string;
+      met: boolean;
+    }[];
+  }>({
+    healthScore: 92,
+    uptime: "99.99%",
+    kpis: {
+      uptime: "99.99%",
+      avgResponse: "12m",
+      automation: "84%",
+      threatsBlocked: "1.4k"
+    },
+    charts: {
+      months: ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"],
+      ticketData: [3, 7, 4, 6, 2, 5, 1],
+      uptimeData: [99.8, 99.9, 100, 99.7, 99.9, 100, 99.99]
+    },
+    milestones: []
+  });
+
+  useEffect(() => {
+    async function loadMetrics() {
+      try {
+        const res = await fetch("/api/portal/metrics");
+        const data = await res.json();
+        if (res.ok && data) {
+          setMetrics(data);
+        }
+      } catch (err) {
+        console.error("Failed to load metrics:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMetrics();
+  }, []);
 
   const handleExport = () => {
     setExporting(true);
@@ -21,6 +72,19 @@ export default function ReportsPage() {
       window.print();
     }, 1500);
   };
+
+  if (loading) {
+    return (
+      <div style={{ height: "60vh", display: "flex", flexDirection: "column", gap: "1rem", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 className="animate-spin" color="var(--color-accent-500)" size={48} />
+        <p style={{ color: "var(--color-neutral-500)", fontFamily: "Syne, sans-serif", fontSize: "0.875rem", fontWeight: "bold", letterSpacing: "0.08em" }} className="animate-pulse">
+          COMPILING REPORT METRICS...
+        </p>
+      </div>
+    );
+  }
+
+  const maxTickets = Math.max(1, ...metrics.charts.ticketData);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -58,13 +122,13 @@ export default function ReportsPage() {
                 stroke="#00E676" 
                 strokeWidth="10" 
                 strokeDasharray="364.4" 
-                strokeDashoffset="36.4" 
+                strokeDashoffset={364.4 * (1 - metrics.healthScore / 100)} 
                 strokeLinecap="round" 
                 className="transition-all duration-1000 ease-out"
               />
             </svg>
             <div className="absolute flex flex-col items-center">
-              <span className="text-4xl font-black text-white font-syne">92</span>
+              <span className="text-4xl font-black text-white font-syne">{metrics.healthScore}</span>
               <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Health</span>
             </div>
           </div>
@@ -95,10 +159,10 @@ export default function ReportsPage() {
       {/* KPI Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: Activity, label: "Network Uptime", value: "99.99%", color: "text-[#00E676]", bg: "bg-[#00E676]/10", sub: "Enterprise SLA" },
-          { icon: Clock, label: "Avg Response", value: "12m", color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", sub: "High Priority" },
-          { icon: Zap, label: "Automation", value: "84%", color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", sub: "Auto-Remediated" },
-          { icon: Shield, label: "Cyber Blocked", value: "1.4k", color: "text-[#FF4444]", bg: "bg-[#FF4444]/10", sub: "Threats Prevented" },
+          { icon: Activity, label: "Network Uptime", value: metrics.kpis.uptime, color: "text-[#00E676]", bg: "bg-[#00E676]/10", sub: "Enterprise SLA" },
+          { icon: Clock, label: "Avg Response", value: metrics.kpis.avgResponse, color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", sub: "High Priority" },
+          { icon: Zap, label: "Automation", value: metrics.kpis.automation, color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", sub: "Auto-Remediated" },
+          { icon: Shield, label: "Cyber Blocked", value: metrics.kpis.threatsBlocked, color: "text-[#FF4444]", bg: "bg-[#FF4444]/10", sub: "Threats Prevented" },
         ].map(kpi => (
           <div key={kpi.label} className="glass-card p-6 border border-white/5 bg-white/[0.02] flex flex-col gap-4">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${kpi.bg} ${kpi.color} border border-white/5`}>
@@ -124,7 +188,7 @@ export default function ReportsPage() {
             <Target className="text-neutral-700" size={24} />
           </div>
           <div className="flex items-end gap-3 h-[240px]">
-            {ticketData.map((val, i) => (
+            {metrics.charts.ticketData.map((val, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-4 h-full group">
                 <div className="flex-1 w-full flex items-flex-end relative">
                   <div 
@@ -136,7 +200,7 @@ export default function ReportsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{months[i]}</div>
+                <div className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{metrics.charts.months[i]}</div>
               </div>
             ))}
           </div>
@@ -152,9 +216,9 @@ export default function ReportsPage() {
             <Activity className="text-neutral-700" size={24} />
           </div>
           <div className="space-y-6">
-            {uptimeData.map((val, i) => (
+            {metrics.charts.uptimeData.map((val, i) => (
               <div key={i} className="flex items-center gap-6">
-                <div className="w-10 text-[10px] font-black text-neutral-500 uppercase tracking-widest">{months[i]}</div>
+                <div className="w-10 text-[10px] font-black text-neutral-500 uppercase tracking-widest">{metrics.charts.months[i]}</div>
                 <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden border border-white/10 shadow-inner">
                   <div 
                     className={`h-full transition-all duration-1000 ${
@@ -191,12 +255,7 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {[
-                  { id: "INC-291", subj: "Primary ISP Failover Triggered", priority: "Critical", response: "2m", resolution: "Auto", met: true },
-                  { id: "INC-284", subj: "Cloud Storage Capacity Alert", priority: "High", response: "12m", resolution: "45m", met: true },
-                  { id: "INC-280", subj: "User VPN Authentication Loop", priority: "Normal", response: "15m", resolution: "1h 12m", met: true },
-                  { id: "INC-277", subj: "Workstation Firmware Update", priority: "Low", response: "1h 05m", resolution: "4h 20m", met: true },
-                ].map(row => (
+                {metrics.milestones.map(row => (
                   <tr key={row.id} className="group hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-5">
                       <div className="text-white font-bold">{row.subj}</div>

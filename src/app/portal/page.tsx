@@ -30,6 +30,12 @@ export default function PortalDashboard() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState({ openTickets: 0, activeServices: 0, outstanding: 0, uptime: "99.99%" });
+  const [systemHealth, setSystemHealth] = useState<{ name: string; status: string }[]>([
+    { name: "Email Services", status: "Operational" },
+    { name: "Cloud Backup", status: "Operational" },
+    { name: "VPN Gateway", status: "Operational" },
+    { name: "Monitoring", status: "Operational" }
+  ]);
   const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
   const supabase = createClient();
 
@@ -78,11 +84,23 @@ export default function PortalDashboard() {
       setRecentTickets(ticketsData.slice(0, 3) as Ticket[]);
     }
 
+    let dynamicUptime = "99.99%";
+    try {
+      const res = await fetch("/api/portal/system-health");
+      const healthData = await res.json();
+      if (res.ok && healthData) {
+        if (healthData.health) setSystemHealth(healthData.health);
+        if (healthData.uptime) dynamicUptime = healthData.uptime;
+      }
+    } catch (err) {
+      console.error("Failed to fetch system health:", err);
+    }
+
     setStats({
       openTickets: openTicketsCount,
       activeServices: activeServicesCount,
       outstanding: totalOutstanding,
-      uptime: "99.99%"
+      uptime: dynamicUptime
     });
 
     setLoading(false);
@@ -196,16 +214,47 @@ export default function PortalDashboard() {
 
           <div className="kpi-card">
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-success)" }} className="pulse-online" />
+              <div 
+                style={{ 
+                  width: 8, 
+                  height: 8, 
+                  borderRadius: "50%", 
+                  background: systemHealth.every(h => h.status === "Operational") 
+                    ? "var(--color-success)" 
+                    : systemHealth.some(h => h.status === "Offline") 
+                    ? "#FF4444" 
+                    : "#FFB300"
+                }} 
+                className={systemHealth.every(h => h.status === "Operational") ? "pulse-online" : ""} 
+              />
               <span style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>System Health</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {["Email Services", "Cloud Backup", "VPN Gateway", "Monitoring"].map(s => (
-                <div key={s} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>{s}</span>
-                  <span className="badge badge-success" style={{ fontSize: "0.65rem", padding: "0.15rem 0.5rem" }}>Operational</span>
-                </div>
-              ))}
+              {systemHealth.map(s => {
+                const isOp = s.status === "Operational";
+                const isDeg = s.status === "Degraded";
+                const badgeClass = isOp 
+                  ? "badge badge-success" 
+                  : isDeg 
+                  ? "badge badge-warning" 
+                  : "badge badge-danger";
+                
+                return (
+                  <div key={s.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>{s.name}</span>
+                    <span className={badgeClass} style={{ 
+                      fontSize: "0.65rem", 
+                      padding: "0.15rem 0.5rem",
+                      background: isOp ? "rgba(0, 230, 118, 0.1)" : isDeg ? "rgba(255, 179, 0, 0.1)" : "rgba(255, 68, 68, 0.1)",
+                      color: isOp ? "#00E676" : isDeg ? "#FFB300" : "#FF4444",
+                      border: `1px solid ${isOp ? "rgba(0, 230, 118, 0.2)" : isDeg ? "rgba(255, 179, 0, 0.2)" : "rgba(255, 68, 68, 0.2)"}`,
+                      borderRadius: "4px",
+                      fontWeight: 600,
+                      textTransform: "uppercase"
+                    }}>{s.status}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

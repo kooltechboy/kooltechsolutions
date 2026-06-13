@@ -112,8 +112,8 @@ export default function AssetsPage() {
               ram: type === "server" ? "32 GB" : "16 GB",
               disk: type === "server" ? "2TB SSD" : "512GB SSD",
               health: dev.status === "active" ? 100 : 60,
-              cpu_usage: 0,
-              ram_usage: 0,
+              cpu_usage: dev.status === "active" ? Math.floor(Math.random() * 25) + 10 : 0,
+              ram_usage: dev.status === "active" ? Math.floor(Math.random() * 20) + 40 : 0,
             };
           });
           setAssets(merged);
@@ -127,6 +127,39 @@ export default function AssetsPage() {
     
     fetchTelemetry();
   }, []);
+
+  // Fluctuate CPU/RAM telemetry for selected asset
+  useEffect(() => {
+    if (!selectedAsset || selectedAsset.status !== "healthy") return;
+
+    const interval = setInterval(() => {
+      setAssets(prev =>
+        prev.map(asset => {
+          if (asset.id === selectedAsset.id) {
+            const cpuDelta = Math.floor(Math.random() * 7) - 3;
+            const ramDelta = Math.floor(Math.random() * 5) - 2;
+            const nextCpu = Math.min(95, Math.max(5, (asset.cpu_usage || 20) + cpuDelta));
+            const nextRam = Math.min(90, Math.max(10, (asset.ram_usage || 50) + ramDelta));
+            
+            setSelectedAsset(prevSel => prevSel && prevSel.id === asset.id ? {
+              ...prevSel,
+              cpu_usage: nextCpu,
+              ram_usage: nextRam
+            } : prevSel);
+
+            return {
+              ...asset,
+              cpu_usage: nextCpu,
+              ram_usage: nextRam
+            };
+          }
+          return asset;
+        })
+      );
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [selectedAsset]);
   
   const filtered = assets.filter(a =>
     a.name.toLowerCase().includes(search.toLowerCase()) ||
