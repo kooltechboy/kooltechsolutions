@@ -165,151 +165,159 @@ export default function TicketDetailPage() {
 
   if (!ticket) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--color-neutral-500)' }}>
-        <p>Ticket not found.</p>
-        <Link href="/portal/tickets" style={{ color: 'var(--color-accent-500)', fontWeight: 600, fontSize: '0.875rem' }}>← Back to tickets</Link>
+      <div className="text-center py-16 px-4 text-neutral-500">
+        <p className="mb-4 text-sm font-bold uppercase tracking-widest">Ticket not found</p>
+        <Link href="/portal/tickets" className="text-[#00D4FF] hover:text-cyan-400 font-bold text-xs uppercase tracking-wider transition-colors">
+          ← Back to tickets
+        </Link>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100vh - 120px)" }}>
+    <div className="max-w-[1200px] mx-auto flex flex-col h-[calc(100vh-120px)] animate-in fade-in duration-500">
       {/* Header */}
-      <div style={{ marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-        <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <ArrowLeft size={18} /> Back
+      <div className="flex items-center gap-6 mb-6 shrink-0">
+        <button 
+          onClick={() => router.back()} 
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all font-bold text-xs uppercase tracking-wider shadow-lg"
+        >
+          <ArrowLeft size={14} /> Back
         </button>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <h1 style={{ color: "white", fontSize: "1.5rem", fontWeight: 800, fontFamily: "Syne, sans-serif" }}>{ticket.subject}</h1>
-            <span style={{ 
-              padding: "0.25rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 700, 
-              background: "rgba(0,212,255,0.1)", color: "var(--color-accent-500)", textTransform: "uppercase" 
-            }}>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-3 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-syne truncate">{ticket.subject}</h1>
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+              ticket.status === 'open' ? 'bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/25 shadow-[0_0_8px_rgba(0,212,255,0.08)]' :
+              ticket.status === 'in_progress' ? 'bg-amber-400/10 text-amber-400 border-amber-400/25' :
+              ticket.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' :
+              'bg-white/5 text-neutral-400 border-white/10'
+            }`}>
               {ticket.status.replace('_', ' ')}
             </span>
           </div>
-          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Ticket #{ticket.id.slice(0, 8)} · Opened on {new Date(ticket.created_at).toLocaleDateString()}</p>
+          <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest">
+            Ticket #{ticket.id.toUpperCase()} · Opened on {new Date(ticket.created_at).toLocaleString()}
+          </p>
         </div>
       </div>
 
-      <div className="portal-ticket-grid" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "1.5rem", flex: 1, minHeight: 0 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 flex-1 min-h-0">
         {/* Chat Area */}
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
-          <div ref={scrollRef} style={{ flex: 1, padding: "1.5rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        <div className="glass-card rounded-2xl border border-white/10 bg-[#0A1628]/80 flex flex-col overflow-hidden shadow-2xl relative">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-black/20">
             {/* Original Description */}
-            <div style={{ display: "flex", gap: "1rem" }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <User size={20} color="var(--color-neutral-400)" />
+            <div className="flex gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 shadow-lg">
+                <User size={18} className="text-neutral-400" />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                  <span style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>You (Opening Request)</span>
-                  <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{new Date(ticket.created_at).toLocaleTimeString()}</span>
+              <div className="bg-gradient-to-br from-white/[0.03] to-transparent border border-white/10 rounded-2xl rounded-tl-none p-5 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed shadow-lg flex-1">
+                <div className="text-[10px] font-black text-neutral-400 mb-2.5 uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" /> Original Request
                 </div>
-                <div style={{ color: "var(--color-neutral-300)", fontSize: "0.9375rem", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                  {ticket.description}
-                </div>
+                {ticket.description}
               </div>
             </div>
 
-            <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.05)" }} />
+            <hr className="border-t border-white/5" />
 
             {/* Message Thread */}
             {messages.map((msg, idx) => {
               const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
               const isAdmin = senderObj?.role === 'admin' || senderObj?.role === 'agent';
               return (
-                <div key={idx} style={{ display: "flex", gap: "1rem" }}>
-                  <div style={{ 
-                    width: 40, height: 40, borderRadius: "50%", 
-                    background: isAdmin ? "rgba(0,212,255,0.1)" : "rgba(255,255,255,0.05)", 
-                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 
-                  }}>
-                    {isAdmin ? <ShieldCheck size={20} color="var(--color-accent-500)" /> : <User size={20} color="var(--color-neutral-400)" />}
+                <div key={idx} className={`flex gap-4 max-w-3xl ${isAdmin ? 'animate-in slide-in-from-left-2' : 'flex-row-reverse self-end ml-auto animate-in slide-in-from-right-2'} duration-300`}>
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg border transition-all ${
+                    isAdmin 
+                      ? 'bg-gradient-to-br from-indigo-500/20 to-purple-600/20 text-[#00D4FF] border-[#00D4FF]/30 shadow-[#00D4FF]/5' 
+                      : 'bg-gradient-to-br from-white/10 to-white/5 text-neutral-300 border-white/10'
+                  }`}>
+                    {isAdmin ? <ShieldCheck size={18} className="animate-pulse" /> : <User size={18} />}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                      <span style={{ color: isAdmin ? "var(--color-accent-500)" : "white", fontWeight: 600, fontSize: "0.875rem" }}>
+                  <div className={`border rounded-2xl p-5 text-sm leading-relaxed shadow-xl max-w-xl transition-all hover:scale-[1.005] duration-200 ${
+                    isAdmin 
+                      ? 'bg-gradient-to-br from-indigo-950/40 to-[#0A1628]/80 border-[#00D4FF]/25 text-neutral-200 rounded-tl-none shadow-indigo-500/5' 
+                      : 'bg-gradient-to-br from-cyan-950/30 to-[#0A1628]/80 border-white/10 text-neutral-200 rounded-tr-none'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${
+                        isAdmin ? 'text-[#00D4FF]' : 'text-neutral-400'
+                      }`}>
                         {isAdmin ? `${senderObj?.first_name || ''} (KoolTech Support)` : 'You'}
                       </span>
-                      <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>{new Date(msg.created_at).toLocaleTimeString()}</span>
+                      <span className="text-[9px] text-neutral-500 font-medium">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                    <div style={{ color: "var(--color-neutral-300)", fontSize: "0.9375rem", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                      {msg.message}
-                    </div>
+                    <div className="whitespace-pre-wrap text-neutral-300 text-[0.875rem]">{msg.message}</div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
 
           {/* Input Area */}
-          <div style={{ padding: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.2)" }}>
-            <form onSubmit={handleSendMessage} style={{ position: "relative" }}>
-              <textarea 
-                value={newMessage}
-                onChange={e => setNewMessage(e.target.value)}
-                placeholder="Type your response here..."
-                style={{ 
-                  width: "100%", padding: "1rem 3.5rem 1rem 1.25rem", borderRadius: "12px", 
-                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", 
-                  color: "white", outline: "none", resize: "none", fontSize: "0.9375rem" 
-                }}
-                rows={2}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
-              />
-              <button 
-                type="submit" 
-                disabled={sending || !newMessage.trim()}
-                style={{ 
-                  position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)",
-                  background: "var(--color-accent-500)", border: "none", width: 36, height: 36, 
-                  borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", opacity: (sending || !newMessage.trim()) ? 0.5 : 1
-                }}
-              >
-                {sending ? <Loader2 className="animate-spin" size={18} color="white" /> : <Send size={18} color="white" />}
-              </button>
-            </form>
-          </div>
+          {ticket.status !== 'closed' && (
+            <div className="p-4 border-t border-white/10 bg-black/40 shrink-0">
+              <form onSubmit={handleSendMessage} className="relative">
+                <textarea 
+                  value={newMessage}
+                  onChange={e => setNewMessage(e.target.value)}
+                  placeholder="Type your reply..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-4 pr-14 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/25 focus:border-[#00D4FF]/50 transition-all resize-none"
+                  rows={2}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
+                />
+                <button 
+                  type="submit" 
+                  disabled={sending || !newMessage.trim()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#00D4FF] hover:bg-cyan-400 text-black rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
+                >
+                  {sending ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                </button>
+              </form>
+            </div>
+          )}
         </div>
 
         {/* Sidebar Info */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div className="glass-card" style={{ padding: "1.5rem" }}>
-            <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700, marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Ticket Details</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div className="flex flex-col gap-6">
+          <div className="glass-card p-6 rounded-2xl border border-white/10 bg-white/[0.01] shadow-2xl">
+            <h3 className="text-white text-xs font-black uppercase tracking-wider mb-4 pb-2 border-b border-white/5">Ticket Details</h3>
+            <div className="space-y-4">
               <div>
-                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginBottom: "0.25rem" }}>Priority</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: ticket.priority === 'critical' ? '#ef4444' : 'white', fontWeight: 600, fontSize: "0.875rem" }}>
-                  <AlertCircle size={14} /> {ticket.priority.toUpperCase()}
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-wider mb-1">Priority</div>
+                <div className={`flex items-center gap-2 font-bold text-sm uppercase ${
+                  ticket.priority === 'critical' ? 'text-rose-400' :
+                  ticket.priority === 'high' ? 'text-amber-400' :
+                  ticket.priority === 'normal' ? 'text-blue-400' :
+                  'text-neutral-400'
+                }`}>
+                  <AlertCircle size={14} /> {ticket.priority}
                 </div>
               </div>
               <div>
-                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginBottom: "0.25rem" }}>Assigned Engineer</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "white", fontWeight: 500, fontSize: "0.875rem" }}>
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-wider mb-1">Assigned Engineer</div>
+                <div className="flex items-center gap-2 text-white font-bold text-sm">
                   {(() => {
                     const assigneeObj = Array.isArray(ticket.assigned_to) ? ticket.assigned_to[0] : ticket.assigned_to;
                     return assigneeObj ? (
-                      <><ShieldCheck size={14} color="var(--color-accent-500)" /> {assigneeObj.first_name || ''} {assigneeObj.last_name || ''}</>
+                      <><ShieldCheck size={14} className="text-[#00D4FF]" /> {assigneeObj.first_name || ''} {assigneeObj.last_name || ''}</>
                     ) : 'Unassigned';
                   })()}
                 </div>
               </div>
               <div>
-                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginBottom: "0.25rem" }}>Last Activity</div>
-                <div style={{ color: "white", fontSize: "0.875rem" }}>{new Date(ticket.updated_at).toLocaleDateString()}</div>
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-wider mb-1">Last Activity</div>
+                <div className="text-white font-bold text-sm">{new Date(ticket.updated_at).toLocaleDateString()}</div>
               </div>
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: "1.5rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-              <Bot size={20} color="var(--color-accent-500)" />
-              <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700 }}>Kira AI Summary</h3>
+          <div className="glass-card p-6 rounded-2xl border border-white/10 bg-white/[0.01] shadow-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <Bot size={18} className="text-[#00D4FF]" />
+              <h3 className="text-white text-xs font-black uppercase tracking-wider">Kira AI Summary</h3>
             </div>
-            <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.6 }}>
+            <p className="text-neutral-400 text-xs leading-relaxed">
               {ticket.description.slice(0, 180)}{ticket.description.length > 180 ? '...' : ''}
             </p>
           </div>
@@ -317,30 +325,14 @@ export default function TicketDetailPage() {
           {ticket.status !== 'resolved' && ticket.status !== 'closed' ? (
             <button
               onClick={handleMarkResolved}
-              style={{
-                width: '100%', padding: '0.875rem', borderRadius: '10px',
-                background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)',
-                color: '#10b981', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.15)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(16,185,129,0.08)')}
+              className="w-full py-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
             >
               ✓ Mark as Resolved
             </button>
           ) : (
             <button
               onClick={handleReopen}
-              style={{
-                width: '100%', padding: '0.875rem', borderRadius: '10px',
-                background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.3)',
-                color: 'var(--color-accent-500)', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.15)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.08)')}
+              className="w-full py-3.5 rounded-xl bg-[#00D4FF]/10 border border-[#00D4FF]/30 text-[#00D4FF] hover:bg-[#00D4FF]/20 hover:border-[#00D4FF]/50 transition-all font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
             >
               ⟲ Reopen Ticket
             </button>

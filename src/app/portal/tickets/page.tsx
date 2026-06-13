@@ -235,7 +235,7 @@ export default function ClientTicketsPage() {
         </div>
         <button 
           onClick={() => { setShowNewForm(true); setSelectedTicketId(null); }}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-[#0A1628] font-bold text-xs uppercase tracking-widest hover:bg-neutral-200 transition-all shadow-xl shadow-white/10"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#00D4FF] to-blue-600 text-white font-bold text-xs uppercase tracking-wider hover:from-[#00D4FF] hover:to-blue-500 hover:shadow-lg hover:shadow-cyan-500/25 hover:scale-[1.01] transition-all duration-300 shadow-xl shadow-cyan-500/10"
         >
           <Plus size={16} /> New Request
         </button>
@@ -271,28 +271,41 @@ export default function ClientTicketsPage() {
                 <div 
                   key={t.id}
                   onClick={() => { setSelectedTicketId(t.id); setShowNewForm(false); }}
-                  className={`p-4 rounded-xl cursor-pointer transition-all border ${
+                  className={`p-4 rounded-xl cursor-pointer transition-all duration-300 relative border ${
                     isActive 
-                      ? 'bg-[#00D4FF]/5 border-[#00D4FF]/30' 
-                      : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/10'
+                      ? 'bg-[#00D4FF]/10 border-[#00D4FF]/40 shadow-lg shadow-cyan-500/5' 
+                      : 'bg-white/[0.01] border-white/5 hover:bg-white/[0.04] hover:border-white/15 hover:shadow-lg hover:shadow-black/25'
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-black text-neutral-500 font-mono tracking-tighter uppercase">#{t.id.slice(0, 8)}</span>
-                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                      t.status === 'open' ? 'bg-[#00D4FF]/10 text-[#00D4FF]' :
-                      t.status === 'resolved' ? 'bg-[#00E676]/10 text-[#00E676]' :
-                      'bg-white/5 text-neutral-400'
+                  {/* Active Indicator Bar */}
+                  {isActive && (
+                    <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#00D4FF] rounded-r-full shadow-[0_0_10px_#00D4FF]" />
+                  )}
+                  <div className="flex justify-between items-center mb-2.5">
+                    <span className="text-[10px] font-black text-neutral-500 font-mono tracking-wider">#{t.id.slice(0, 8).toUpperCase()}</span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
+                      t.status === 'open' ? 'bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/25 shadow-[0_0_8px_rgba(0,212,255,0.08)]' :
+                      t.status === 'in_progress' ? 'bg-amber-400/10 text-amber-400 border-amber-400/25' :
+                      t.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' :
+                      'bg-white/5 text-neutral-400 border-white/10'
                     }`}>
                       {t.status.replace(/_/g, ' ')}
                     </span>
                   </div>
-                  <h3 className={`font-bold text-sm mb-2 line-clamp-1 ${isActive ? 'text-white' : 'text-neutral-300'}`}>{t.subject}</h3>
+                  <h3 className={`font-bold text-sm mb-2 line-clamp-1 transition-colors ${isActive ? 'text-white' : 'text-neutral-300 group-hover:text-white'}`}>{t.subject}</h3>
                   <div className="flex items-center justify-between text-neutral-500 text-[10px] font-bold uppercase tracking-widest">
                     <span className="flex items-center gap-1.5"><Clock size={12}/> {new Date(t.created_at).toLocaleDateString()}</span>
-                    {t.messageCount > 0 && (
-                      <span className="flex items-center gap-1.5"><MessageSquare size={12}/> {t.messageCount}</span>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <span className={`w-2 h-2 rounded-full ${
+                        t.priority === 'critical' ? 'bg-rose-500 shadow-[0_0_6px_#f43f5e]' :
+                        t.priority === 'high' ? 'bg-amber-400' :
+                        t.priority === 'normal' ? 'bg-blue-400' :
+                        'bg-neutral-500'
+                      }`} title={`Priority: ${t.priority}`} />
+                      {t.messageCount > 0 && (
+                        <span className="flex items-center gap-1"><MessageSquare size={12}/> {t.messageCount}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -322,7 +335,7 @@ export default function ClientTicketsPage() {
                     <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Incident Summary</label>
                     <input 
                       required
-                      className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-[#00D4FF]/50 transition-colors"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 focus:border-[#00D4FF]/50 transition-all duration-300"
                       value={form.subject}
                       onChange={e => setForm({...form, subject: e.target.value})}
                     />
@@ -330,7 +343,7 @@ export default function ClientTicketsPage() {
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Priority</label>
                     <select 
-                      className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-[#00D4FF]/50 transition-colors"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 focus:border-[#00D4FF]/50 transition-all duration-300"
                       value={form.priority}
                       onChange={e => setForm({...form, priority: e.target.value})}
                     >
@@ -344,7 +357,7 @@ export default function ClientTicketsPage() {
                     <textarea 
                       required
                       rows={8}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-[#00D4FF]/50 transition-colors resize-none"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 focus:border-[#00D4FF]/50 transition-all duration-300 resize-none"
                       value={form.description}
                       onChange={e => setForm({...form, description: e.target.value})}
                     />
@@ -352,7 +365,7 @@ export default function ClientTicketsPage() {
                   <button 
                     type="submit" 
                     disabled={submitting}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#00D4FF] to-blue-600 text-white font-black text-sm uppercase tracking-widest hover:shadow-lg hover:shadow-[#00D4FF]/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#00D4FF] to-blue-600 text-white font-black text-sm uppercase tracking-widest hover:from-[#00D4FF] hover:to-blue-500 hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-[1.005]"
                   >
                     {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />} 
                     Submit Ticket
@@ -425,12 +438,14 @@ export default function ClientTicketsPage() {
               {/* Chat Feed */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-black/20">
                 {/* Original Description */}
-                <div className="flex gap-4 max-w-3xl">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                <div className="flex gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 shadow-lg">
                     <User size={18} className="text-neutral-400" />
                   </div>
-                  <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
-                    <div className="text-xs font-bold text-white mb-2 uppercase tracking-widest">Original Request</div>
+                  <div className="bg-gradient-to-br from-white/[0.03] to-transparent border border-white/10 rounded-2xl rounded-tl-none p-5 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed shadow-lg">
+                    <div className="text-[10px] font-black text-neutral-400 mb-2.5 uppercase tracking-widest flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" /> Original Request
+                    </div>
                     {selectedTicket.description}
                   </div>
                 </div>
@@ -441,21 +456,28 @@ export default function ClientTicketsPage() {
                   const isAdmin = senderObj?.role === 'admin' || senderObj?.role === 'agent';
                   
                   return (
-                    <div key={idx} className={`flex gap-4 max-w-3xl ${isAdmin ? '' : 'flex-row-reverse self-end ml-auto'}`}>
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                        isAdmin ? 'bg-[#00D4FF]/10 text-[#00D4FF]' : 'bg-white/10 text-neutral-400'
-                      }`}>
-                        {isAdmin ? <ShieldCheck size={18} /> : <User size={18} />}
-                      </div>
-                      <div className={`border rounded-2xl p-4 text-sm leading-relaxed ${
+                    <div key={idx} className={`flex gap-4 max-w-3xl ${isAdmin ? 'animate-in slide-in-from-left-2' : 'flex-row-reverse self-end ml-auto animate-in slide-in-from-right-2'} duration-300`}>
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg border transition-all ${
                         isAdmin 
-                          ? 'bg-[#00D4FF]/5 border-[#00D4FF]/20 text-neutral-200 rounded-tl-none' 
-                          : 'bg-white/5 border-white/10 text-neutral-200 rounded-tr-none'
+                          ? 'bg-gradient-to-br from-indigo-500/20 to-purple-600/20 text-[#00D4FF] border-[#00D4FF]/30 shadow-[#00D4FF]/5' 
+                          : 'bg-gradient-to-br from-white/10 to-white/5 text-neutral-300 border-white/10'
                       }`}>
-                        <div className="text-xs font-bold text-white mb-1 uppercase tracking-widest opacity-60">
-                          {isAdmin ? `${senderObj?.first_name || 'Support'} (Engineer)` : 'You'}
+                        {isAdmin ? <ShieldCheck size={18} className="animate-pulse" /> : <User size={18} />}
+                      </div>
+                      <div className={`border rounded-2xl p-5 text-sm leading-relaxed shadow-xl max-w-xl transition-all hover:scale-[1.005] duration-200 ${
+                        isAdmin 
+                          ? 'bg-gradient-to-br from-indigo-950/40 to-[#0A1628]/80 border-[#00D4FF]/25 text-neutral-200 rounded-tl-none shadow-indigo-500/5' 
+                          : 'bg-gradient-to-br from-cyan-950/30 to-[#0A1628]/80 border-white/10 text-neutral-200 rounded-tr-none'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${
+                            isAdmin ? 'text-[#00D4FF]' : 'text-neutral-400'
+                          }`}>
+                            {isAdmin ? `${senderObj?.first_name || 'Support'} (Engineer)` : 'You'}
+                          </span>
+                          <span className="text-[9px] text-neutral-500 font-medium">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
-                        {msg.message}
+                        <div className="whitespace-pre-wrap text-neutral-300 text-[0.875rem]">{msg.message}</div>
                       </div>
                     </div>
                   );
@@ -471,13 +493,13 @@ export default function ClientTicketsPage() {
                       onChange={e => setNewMessage(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); }}}
                       placeholder="Type your reply..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-14 text-white text-sm focus:outline-none focus:border-[#00D4FF]/50 resize-none"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-4 pr-14 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/25 focus:border-[#00D4FF]/50 transition-all resize-none"
                       rows={2}
                     />
                     <button 
                       type="submit" 
                       disabled={sendingMsg || !newMessage.trim()}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#00D4FF] hover:bg-blue-400 text-black rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#00D4FF] hover:bg-cyan-400 text-black rounded-lg flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
                     >
                       {sendingMsg ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                     </button>
