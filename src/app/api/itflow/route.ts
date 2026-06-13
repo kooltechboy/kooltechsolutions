@@ -66,12 +66,40 @@ export async function GET(request: Request) {
     });
 
     try {
+      const supabase = await createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      // Fetch user profile to get company name and role
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, company_name")
+        .eq("id", user.id)
+        .single();
+
       const client = await getClientAndAuth();
       const data = await client.getItems<Record<string, unknown> | unknown[]>(endpoint, params);
       
       // Normalize data fields for client convenience if the endpoint is assets
       if (endpoint === 'assets' && isRecord(data) && Array.isArray(data.data)) {
-        data.data = data.data.filter(isRecord).map(normalizeAsset);
+        let normalized = data.data.filter(isRecord).map(normalizeAsset);
+
+        if (profile && profile.role !== "admin") {
+          const clientCompany = (profile.company_name || "").toLowerCase().trim();
+          normalized = normalized.filter((asset: any) => {
+            const assetCompany = (asset.assignment || "").toLowerCase().trim();
+            return (
+              clientCompany !== "" &&
+              (assetCompany === clientCompany ||
+                assetCompany.includes(clientCompany) ||
+                clientCompany.includes(assetCompany))
+            );
+          });
+        }
+
+        data.data = normalized;
       }
       
       return NextResponse.json(data);

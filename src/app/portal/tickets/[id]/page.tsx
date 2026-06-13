@@ -53,10 +53,14 @@ export default function TicketDetailPage() {
   const supabase = createClient();
 
   const fetchTicketData = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { data: ticketData } = await supabase
       .from('tickets')
       .select('*, assigned_to(first_name, last_name)')
       .eq('id', id)
+      .eq('client_id', user.id)
       .single();
     
     if (ticketData) {
@@ -127,7 +131,9 @@ export default function TicketDetailPage() {
   }
 
   async function handleMarkResolved() {
-    await supabase.from('tickets').update({ status: 'resolved', updated_at: new Date().toISOString() }).eq('id', id);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('tickets').update({ status: 'resolved', updated_at: new Date().toISOString() }).eq('id', id).eq('client_id', user.id);
     setTicket(prev => prev ? { ...prev, status: 'resolved' } : prev);
   }
 

@@ -48,13 +48,42 @@ export default function PortalDashboard() {
       .eq('client_id', user.id)
       .order('created_at', { ascending: false });
 
+    // 3. Fetch Services
+    const { data: servicesData } = await supabase
+      .from('client_services')
+      .select('*')
+      .eq('client_id', user.id);
+
+    // 4. Fetch Invoices for Outstanding Balance
+    const { data: invoicesData } = await supabase
+      .from('invoices')
+      .select('amount')
+      .eq('client_id', user.id)
+      .neq('status', 'paid');
+
+    let totalOutstanding = 0;
+    if (invoicesData) {
+      totalOutstanding = invoicesData.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    }
+
+    const openTicketsCount = ticketsData
+      ? ticketsData.filter(t => t.status !== 'closed' && t.status !== 'resolved').length
+      : 0;
+
+    const activeServicesCount = servicesData
+      ? servicesData.filter(s => s.status === 'active').length
+      : 0;
+
     if (ticketsData) {
       setRecentTickets(ticketsData.slice(0, 3) as Ticket[]);
-      setStats(prev => ({
-        ...prev,
-        openTickets: ticketsData.filter(t => t.status !== 'closed' && t.status !== 'resolved').length
-      }));
     }
+
+    setStats({
+      openTickets: openTicketsCount,
+      activeServices: activeServicesCount,
+      outstanding: totalOutstanding,
+      uptime: "99.99%"
+    });
 
     setLoading(false);
   }, [supabase]);
@@ -76,8 +105,8 @@ export default function PortalDashboard() {
 
   const kpis = [
     { icon: Ticket, label: "Open Tickets", value: stats.openTickets.toString(), color: "#FFB300", sub: "Needs attention" },
-    { icon: Server, label: "Active Services", value: "Managed IT", color: "#00D4FF", sub: "Service: Pro" },
-    { icon: DollarSign, label: "Outstanding", value: `$${stats.outstanding}`, color: "#00E676", sub: "Current balance" },
+    { icon: Server, label: "Active Services", value: stats.activeServices === 0 ? "None" : stats.activeServices === 1 ? "1 Active" : `${stats.activeServices} Active`, color: "#00D4FF", sub: stats.activeServices > 0 ? "Managed IT" : "Browse catalog" },
+    { icon: DollarSign, label: "Outstanding", value: `$${stats.outstanding.toLocaleString()}`, color: "#00E676", sub: stats.outstanding > 0 ? "Payment due" : "Paid in full" },
     { icon: Activity, label: "System Uptime", value: stats.uptime, color: "#A855F7", sub: "Last 30 days" },
   ];
 

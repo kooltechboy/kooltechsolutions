@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
+import { ITFlowClient } from "@/lib/itflow";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Wazuh data is fetched via the OpenSearch Dashboard's /api/console/proxy
@@ -167,7 +168,7 @@ export async function GET(_request: Request) {
 
       const agentBuckets = agentsRes.aggregations?.agents?.buckets ?? [];
 
-      const agents = agentBuckets.map((bucket) => {
+      let agents = agentBuckets.map((bucket) => {
         const src = bucket.latest?.hits?.hits?.[0]?._source ?? {};
         const os = src.os as Record<string, string> | undefined;
         return {
@@ -180,6 +181,67 @@ export async function GET(_request: Request) {
           lastKeepAlive: src.lastKeepAlive ?? null,
         };
       });
+
+      // Filter agents by ITFlow assets if user is a client (not admin)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, company_name")
+        .eq("id", user.id)
+        .single();
+
+      if (profile && profile.role !== "admin") {
+        const { data: dbConfig } = await supabase
+          .from("integration_configs")
+          .select("endpoint, api_key, status")
+          .eq("name", "ITFlow")
+          .maybeSingle();
+
+        const apiKey = dbConfig?.api_key || process.env.ITFLOW_API_KEY;
+        const apiUrl = dbConfig?.endpoint || process.env.ITFLOW_API_URL || "https://itflow.example.com/api";
+        const isConnected = dbConfig?.status === "Connected" || !!process.env.ITFLOW_API_KEY;
+
+        if (isConnected && apiKey && apiUrl) {
+          try {
+            const itflowClient = new ITFlowClient({ apiUrl, apiKey });
+            const itflowAssets = await itflowClient.getItems<any>("assets");
+
+            if (itflowAssets && itflowAssets.data && Array.isArray(itflowAssets.data)) {
+              const clientCompany = (profile.company_name || "").toLowerCase().trim();
+              const clientAssets = itflowAssets.data
+                .filter((item: any) => {
+                  const clientName = (item.client_name || "").toLowerCase().trim();
+                  return (
+                    clientCompany !== "" &&
+                    (clientName === clientCompany ||
+                      clientName.includes(clientCompany) ||
+                      clientCompany.includes(clientName))
+                  );
+                })
+                .map((item: any) => ({
+                  model: item.asset_model || item.asset_name || "",
+                  serial: item.asset_serial || "",
+                }));
+
+              // Only keep Wazuh agents that match the client's ITFlow assets
+              agents = agents.filter((dev: any) => {
+                return clientAssets.some((asset: any) => {
+                  return (
+                    (asset.model && dev.name && asset.model.toLowerCase() === dev.name.toLowerCase()) ||
+                    (asset.serial && dev.name && asset.serial.toLowerCase().includes(dev.name.toLowerCase()))
+                  );
+                });
+              });
+            } else {
+              agents = [];
+            }
+          } catch (itflowErr) {
+            console.error("Failed to query ITFlow assets in Wazuh route:", itflowErr);
+            agents = [];
+          }
+        } else {
+          agents = [];
+        }
+      }
 
       // Build summary from actual agent statuses (not aggregation doc counts)
       const summary = {
@@ -222,6 +284,13 @@ export async function GET(_request: Request) {
         );
       } catch (alertErr) {
         console.warn("Could not fetch Wazuh alerts:", alertErr);
+      }
+
+      if (profile && profile.role !== "admin") {
+        const agentNames = new Set(agents.map((a: any) => a.name.toLowerCase()));
+        recent_events = (recent_events as any[]).filter((evt: any) => {
+          return evt.agent_name && agentNames.has(evt.agent_name.toLowerCase());
+        });
       }
 
       return NextResponse.json({ agents, summary, recent_events });
