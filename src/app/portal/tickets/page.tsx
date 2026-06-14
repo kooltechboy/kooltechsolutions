@@ -371,6 +371,123 @@ export default function ClientTicketsPage() {
         ))}
       </div>
 
+      {/* ═══════════════════════════════════════════════ */}
+      {/* SUPPORT OPERATIONS CENTER — Always Visible Row */}
+      {/* ═══════════════════════════════════════════════ */}
+      <div className="shrink-0 space-y-3">
+
+        {/* Header + Status Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00D4FF]/20 to-blue-600/20 flex items-center justify-center text-[#00D4FF] border border-[#00D4FF]/30 shadow-lg shrink-0">
+              <LifeBuoy size={15} className="animate-spin-slow" style={{ animationDuration: '8s' }} />
+            </div>
+            <div>
+              <h3 className="text-[11px] font-black text-white uppercase tracking-widest">Support Operations Center</h3>
+              <p className="text-neutral-500 text-[9px]">Direct access to L3 security and cloud infrastructure support.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-emerald-500/[0.04] px-3 py-1.5 rounded-xl border border-emerald-500/20 self-start sm:self-auto shrink-0">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_6px_#10B981]"></span>
+            </span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">All Engineers Active</span>
+            <span className="hidden sm:inline text-[8px] text-neutral-500 font-medium">·</span>
+            <span className="hidden sm:inline text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Operational</span>
+          </div>
+        </div>
+
+        {/* 5-Tile Grid: SEV 1 · SEV 2 · SEV 3 · Business Hours · Emergency */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+
+          {/* SEV 1 */}
+          <div className="group relative bg-gradient-to-br from-rose-500/[0.07] to-[#0A1628]/80 hover:from-rose-500/[0.12] p-3.5 rounded-2xl border border-rose-500/20 hover:border-rose-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-rose-500/10 hover:scale-[1.02] flex flex-col gap-2 overflow-hidden">
+            <div className="absolute -top-3 -right-3 w-14 h-14 bg-rose-500/10 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-start justify-between gap-1">
+              <div className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center border border-rose-500/30 shadow-md shadow-rose-500/10 shrink-0">
+                <ShieldAlert size={16} className="text-rose-400" />
+              </div>
+              <span className="text-[7px] font-black bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded-lg border border-rose-500/30 tracking-widest shrink-0">&lt; 1 HR SLA</span>
+            </div>
+            <div>
+              <div className="text-[8px] font-black uppercase tracking-widest text-rose-400 mb-0.5">Severity 1</div>
+              <h4 className="text-xs font-black text-white leading-tight">Critical Impact</h4>
+              <p className="text-[8px] text-rose-400/70 font-bold uppercase tracking-wider mt-0.5">Production Down</p>
+            </div>
+            <p className="text-neutral-500 text-[9px] leading-relaxed hidden sm:block">Complete interruption. 24/7 pager escalation.</p>
+            <div className="h-0.5 w-full bg-rose-500/20 rounded-full overflow-hidden mt-auto">
+              <div className="h-full w-full bg-gradient-to-r from-rose-500 to-rose-400 rounded-full animate-pulse shadow-[0_0_6px_#f43f5e]" />
+            </div>
+          </div>
+
+          {/* SEV 2 */}
+          <div className="group relative bg-gradient-to-br from-amber-500/[0.06] to-[#0A1628]/80 hover:from-amber-500/[0.10] p-3.5 rounded-2xl border border-amber-400/20 hover:border-amber-400/50 transition-all duration-300 hover:shadow-xl hover:shadow-amber-400/10 hover:scale-[1.02] flex flex-col gap-2 overflow-hidden">
+            <div className="absolute -top-3 -right-3 w-14 h-14 bg-amber-400/8 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-start justify-between gap-1">
+              <div className="w-9 h-9 rounded-xl bg-amber-400/15 flex items-center justify-center border border-amber-400/30 shadow-md shadow-amber-400/10 shrink-0">
+                <AlertCircle size={16} className="text-amber-400" />
+              </div>
+              <span className="text-[7px] font-black bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded-lg border border-amber-400/30 tracking-widest shrink-0">&lt; 4 HR SLA</span>
+            </div>
+            <div>
+              <div className="text-[8px] font-black uppercase tracking-widest text-amber-400 mb-0.5">Severity 2</div>
+              <h4 className="text-xs font-black text-white leading-tight">High Impact</h4>
+              <p className="text-[8px] text-amber-300/70 font-bold uppercase tracking-wider mt-0.5">Operational Degradation</p>
+            </div>
+            <p className="text-neutral-500 text-[9px] leading-relaxed hidden sm:block">Major feature outage. High-priority business-hours queue.</p>
+            <div className="h-0.5 w-full bg-amber-400/20 rounded-full overflow-hidden mt-auto">
+              <div className="h-full w-3/4 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full shadow-[0_0_6px_#fbbf24]" />
+            </div>
+          </div>
+
+          {/* SEV 3 */}
+          <div className="group relative bg-gradient-to-br from-blue-500/[0.05] to-[#0A1628]/80 hover:from-blue-500/[0.09] p-3.5 rounded-2xl border border-blue-400/20 hover:border-blue-400/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-400/10 hover:scale-[1.02] flex flex-col gap-2 overflow-hidden">
+            <div className="absolute -top-3 -right-3 w-14 h-14 bg-blue-400/8 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-start justify-between gap-1">
+              <div className="w-9 h-9 rounded-xl bg-blue-400/15 flex items-center justify-center border border-blue-400/30 shadow-md shadow-blue-400/10 shrink-0">
+                <Clock size={16} className="text-blue-400" />
+              </div>
+              <span className="text-[7px] font-black bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded-lg border border-blue-400/30 tracking-widest shrink-0">&lt; 12 HR SLA</span>
+            </div>
+            <div>
+              <div className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-0.5">Severity 3</div>
+              <h4 className="text-xs font-black text-white leading-tight">Normal Impact</h4>
+              <p className="text-[8px] text-blue-300/70 font-bold uppercase tracking-wider mt-0.5">General / Maintenance</p>
+            </div>
+            <p className="text-neutral-500 text-[9px] leading-relaxed hidden sm:block">Config changes, billing, system updates. Standard order.</p>
+            <div className="h-0.5 w-full bg-blue-400/20 rounded-full overflow-hidden mt-auto">
+              <div className="h-full w-1/2 bg-gradient-to-r from-blue-500 to-blue-400 rounded-full shadow-[0_0_6px_#3b82f6]" />
+            </div>
+          </div>
+
+          {/* Business Hours */}
+          <div className="group bg-gradient-to-br from-white/[0.02] to-transparent p-3.5 rounded-2xl border border-white/8 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col gap-2">
+            <div className="w-9 h-9 rounded-xl bg-neutral-900 flex items-center justify-center border border-white/10 shadow-md group-hover:border-white/20 transition-colors shrink-0">
+              <Info size={16} className="text-neutral-400 group-hover:text-white transition-colors" />
+            </div>
+            <div>
+              <h5 className="text-xs font-black uppercase text-white tracking-wider">Business Hours</h5>
+              <p className="text-neutral-400 text-[10px] mt-1 leading-normal">Mon – Fri<br />8:00 AM – 6:00 PM AST</p>
+              <span className="inline-block mt-1.5 text-[8px] text-neutral-500 font-bold uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded-lg border border-white/8">Standard Queue</span>
+            </div>
+          </div>
+
+          {/* Emergency Hotline */}
+          <div className="group bg-gradient-to-br from-rose-500/[0.05] to-transparent p-3.5 rounded-2xl border border-rose-500/15 hover:border-rose-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/5 hover:scale-[1.01] flex flex-col gap-2">
+            <div className="w-9 h-9 rounded-xl bg-rose-500/10 flex items-center justify-center border border-rose-500/25 shadow-md group-hover:bg-rose-500/20 transition-colors shrink-0">
+              <PhoneCall size={16} className="text-rose-400" />
+            </div>
+            <div>
+              <h5 className="text-xs font-black uppercase text-rose-400 tracking-wider">Emergency</h5>
+              <p className="text-neutral-300 text-[10px] mt-1 font-bold leading-normal">+1 (868) 555-KOOL</p>
+              <span className="inline-block mt-1.5 text-[8px] text-rose-400 font-bold uppercase tracking-widest bg-rose-500/10 px-1.5 py-0.5 rounded-lg border border-rose-500/20">Sev 1 Only</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       {/* Split Pane Layout */}
       <div className="flex gap-6 flex-1 min-h-0">
         
@@ -879,154 +996,25 @@ export default function ClientTicketsPage() {
 
             </div>
           ) : (
-            /* DEFAULT: Support Command Center Welcome Panel */
-            <div className="flex-1 overflow-y-auto lg:overflow-y-hidden p-5 md:p-6 custom-scrollbar bg-black/10 animate-in fade-in duration-300">
-              <div className="max-w-6xl mx-auto space-y-4 w-full h-full flex flex-col justify-start">
-                
-                {/* Header */}
-                <div className="flex items-center gap-3 pb-3.5 border-b border-white/10">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D4FF]/20 to-blue-600/20 flex items-center justify-center text-[#00D4FF] border border-[#00D4FF]/30 shadow-lg shadow-cyan-500/10 shrink-0">
-                    <LifeBuoy size={20} className="animate-spin-slow" style={{ animationDuration: '8s' }} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-white font-syne tracking-tight uppercase">Support Operations Center</h2>
-                    <p className="text-neutral-400 text-[11px]">Direct access to L3 security and cloud infrastructure support.</p>
-                  </div>
+            /* DEFAULT: Select a ticket prompt */
+            <div className="flex-1 flex flex-col items-center justify-center gap-5 p-8 animate-in fade-in duration-300 bg-black/10">
+              <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-neutral-600 shadow-xl">
+                  <Ticket size={28} />
                 </div>
-
-                {/* Main Grid: Full width severity tiles, then contacts row */}
-                <div className="flex flex-col gap-5 flex-1 min-h-0">
-                  
-                  {/* Severity Tile Grid - Full Width */}
-                  <div className="flex flex-col gap-4">
-                    
-                    {/* Operations Pulse Bar */}
-                    <div className="bg-gradient-to-r from-emerald-500/[0.04] to-emerald-500/[0.01] p-3 rounded-xl border border-emerald-500/25 flex items-center justify-between shadow-lg relative overflow-hidden group shrink-0">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full filter blur-xl opacity-50 group-hover:opacity-80 transition-opacity" />
-                      <div className="flex items-center gap-2.5">
-                        <span className="relative flex h-2.5 w-2.5 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_#10B981]"></span>
-                        </span>
-                        <div>
-                          <div className="text-[11px] font-black uppercase tracking-wider text-emerald-400">All Engineers Active</div>
-                          <div className="text-[9px] text-neutral-400 mt-0.5">Average live chat response time is currently 4.8 minutes.</div>
-                        </div>
-                      </div>
-                      <span className="text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shadow-md shrink-0">Operational</span>
-                    </div>
-
-                    {/* Severity Level Tile Cards - Premium Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1">
-
-                      {/* SEV 1 Card */}
-                      <div className="group relative bg-gradient-to-br from-rose-500/[0.06] to-[#0A1628]/80 hover:from-rose-500/[0.10] p-4 rounded-2xl border border-rose-500/20 hover:border-rose-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-rose-500/10 hover:scale-[1.02] flex flex-col gap-3 overflow-hidden">
-                        {/* Glow accent */}
-                        <div className="absolute -top-4 -right-4 w-20 h-20 bg-rose-500/10 rounded-full blur-xl opacity-60 group-hover:opacity-90 transition-opacity" />
-                        {/* Icon + Badge row */}
-                        <div className="flex items-start justify-between">
-                          <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center border border-rose-500/30 shadow-lg shadow-rose-500/10 shrink-0">
-                            <ShieldAlert size={18} className="text-rose-400" />
-                          </div>
-                          <span className="text-[8px] font-black bg-rose-500/20 text-rose-400 px-2 py-1 rounded-lg border border-rose-500/30 tracking-widest shadow-sm shrink-0">&lt; 1 HR SLA</span>
-                        </div>
-                        {/* Title */}
-                        <div>
-                          <div className="text-[9px] font-black uppercase tracking-widest text-rose-400 mb-1">Severity 1</div>
-                          <h4 className="text-sm font-black text-white leading-tight">Critical Impact</h4>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-rose-400/80 mt-0.5">Production Down / Security Incident</p>
-                        </div>
-                        {/* Description */}
-                        <p className="text-neutral-400 text-[10px] leading-relaxed flex-1">
-                          Complete interruption of core business functions. Triggers immediate 24/7 pager escalation to senior engineering.
-                        </p>
-                        {/* Bottom indicator bar */}
-                        <div className="h-1 w-full bg-rose-500/20 rounded-full overflow-hidden">
-                          <div className="h-full w-full bg-gradient-to-r from-rose-500 to-rose-400 shadow-[0_0_8px_#f43f5e] rounded-full animate-pulse" />
-                        </div>
-                      </div>
-
-                      {/* SEV 2 Card */}
-                      <div className="group relative bg-gradient-to-br from-amber-500/[0.05] to-[#0A1628]/80 hover:from-amber-500/[0.09] p-4 rounded-2xl border border-amber-400/20 hover:border-amber-400/50 transition-all duration-300 hover:shadow-xl hover:shadow-amber-400/10 hover:scale-[1.02] flex flex-col gap-3 overflow-hidden">
-                        <div className="absolute -top-4 -right-4 w-20 h-20 bg-amber-400/8 rounded-full blur-xl opacity-60 group-hover:opacity-90 transition-opacity" />
-                        <div className="flex items-start justify-between">
-                          <div className="w-10 h-10 rounded-xl bg-amber-400/15 flex items-center justify-center border border-amber-400/30 shadow-lg shadow-amber-400/10 shrink-0">
-                            <AlertCircle size={18} className="text-amber-400" />
-                          </div>
-                          <span className="text-[8px] font-black bg-amber-400/20 text-amber-300 px-2 py-1 rounded-lg border border-amber-400/30 tracking-widest shadow-sm shrink-0">&lt; 4 HR SLA</span>
-                        </div>
-                        <div>
-                          <div className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-1">Severity 2</div>
-                          <h4 className="text-sm font-black text-white leading-tight">High Impact</h4>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-amber-300/80 mt-0.5">Operational Degradation / Major Bugs</p>
-                        </div>
-                        <p className="text-neutral-400 text-[10px] leading-relaxed flex-1">
-                          Impacting operations, major features, or multiple users. High-priority queue with business-hours scheduling.
-                        </p>
-                        <div className="h-1 w-full bg-amber-400/20 rounded-full overflow-hidden">
-                          <div className="h-full w-3/4 bg-gradient-to-r from-amber-500 to-amber-400 shadow-[0_0_8px_#fbbf24] rounded-full" />
-                        </div>
-                      </div>
-
-                      {/* SEV 3 Card */}
-                      <div className="group relative bg-gradient-to-br from-blue-500/[0.04] to-[#0A1628]/80 hover:from-blue-500/[0.08] p-4 rounded-2xl border border-blue-400/20 hover:border-blue-400/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-400/10 hover:scale-[1.02] flex flex-col gap-3 overflow-hidden">
-                        <div className="absolute -top-4 -right-4 w-20 h-20 bg-blue-400/8 rounded-full blur-xl opacity-60 group-hover:opacity-90 transition-opacity" />
-                        <div className="flex items-start justify-between">
-                          <div className="w-10 h-10 rounded-xl bg-blue-400/15 flex items-center justify-center border border-blue-400/30 shadow-lg shadow-blue-400/10 shrink-0">
-                            <Clock size={18} className="text-blue-400" />
-                          </div>
-                          <span className="text-[8px] font-black bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg border border-blue-400/30 tracking-widest shadow-sm shrink-0">&lt; 12 HR SLA</span>
-                        </div>
-                        <div>
-                          <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Severity 3</div>
-                          <h4 className="text-sm font-black text-white leading-tight">Normal Impact</h4>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-blue-300/80 mt-0.5">General Requests / Maintenance</p>
-                        </div>
-                        <p className="text-neutral-400 text-[10px] leading-relaxed flex-1">
-                          Non-critical requests, configuration changes, billing queries, or system updates. Addressed in standard ticketing order.
-                        </p>
-                        <div className="h-1 w-full bg-blue-400/20 rounded-full overflow-hidden">
-                          <div className="h-full w-1/2 bg-gradient-to-r from-blue-500 to-blue-400 shadow-[0_0_8px_#3b82f6] rounded-full" />
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-
-                  {/* Contact Info Row — Business Hours & Emergency Hotline as tiles */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-                    {/* Business Hours Tile */}
-                    <div className="group bg-gradient-to-br from-white/[0.02] to-transparent p-4 rounded-2xl border border-white/8 hover:border-white/20 transition-all duration-300 hover:shadow-lg flex items-start gap-4 hover:scale-[1.01]">
-                      <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center shrink-0 border border-white/10 shadow-md group-hover:border-white/20 transition-colors">
-                        <Info size={18} className="text-neutral-400 group-hover:text-white transition-colors" />
-                      </div>
-                      <div className="min-w-0">
-                        <h5 className="text-xs font-black uppercase text-white tracking-wider">Business Hours</h5>
-                        <p className="text-neutral-400 text-[11px] mt-1 leading-normal">
-                          Mon – Fri: 8:00 AM – 6:00 PM AST
-                        </p>
-                        <span className="inline-block mt-1.5 text-[9px] text-neutral-500 font-bold uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded-lg border border-white/8">Standard Queue</span>
-                      </div>
-                    </div>
-
-                    {/* Emergency Hotline Tile */}
-                    <div className="group bg-gradient-to-br from-rose-500/[0.04] to-transparent p-4 rounded-2xl border border-rose-500/15 hover:border-rose-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/5 flex items-start gap-4 hover:scale-[1.01]">
-                      <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0 border border-rose-500/25 shadow-md group-hover:bg-rose-500/20 transition-colors">
-                        <PhoneCall size={18} className="text-rose-400" />
-                      </div>
-                      <div className="min-w-0">
-                        <h5 className="text-xs font-black uppercase text-rose-400 tracking-wider">Emergency Hotline</h5>
-                        <p className="text-neutral-300 text-[11px] mt-1 font-bold">+1 (868) 555-KOOL</p>
-                        <span className="inline-block mt-1.5 text-[9px] text-rose-400 font-bold uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20">Sev 1 Production Down</span>
-                      </div>
-                    </div>
-
-                  </div>
+                <div>
+                  <h3 className="text-sm font-black text-neutral-400 uppercase tracking-widest">Select a Request</h3>
+                  <p className="text-neutral-600 text-xs mt-1.5 leading-relaxed">Choose a support ticket from the list on the left to view its details, chat history, and SLA status.</p>
                 </div>
-
+                <button
+                  onClick={() => setShowNewForm(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00D4FF]/10 border border-[#00D4FF]/25 text-[#00D4FF] text-xs font-black uppercase tracking-widest hover:bg-[#00D4FF] hover:text-black transition-all duration-200 cursor-pointer"
+                >
+                  <Plus size={13} /> Open New Request
+                </button>
               </div>
             </div>
+
           )}
         </div>
       </div>
