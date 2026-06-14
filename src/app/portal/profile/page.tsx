@@ -80,12 +80,12 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6" style={{ marginBottom: "1.5rem" }}>
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight mb-2 font-syne uppercase">
-            Account <span className="text-[#00D4FF]">Console</span>
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.25rem" }}>
+            Account <span className="gradient-text">Console</span>
           </h1>
-          <p className="text-neutral-400 text-sm max-w-md">
+          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
             Manage your professional identity and security parameters.
           </p>
         </div>
@@ -99,10 +99,31 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* KPI Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        {[
+          { icon: User, label: "Account Status", value: "Active", color: "#00E676", sub: "Billing current" },
+          { icon: Shield, label: "Security Score", value: "84%", color: "#A855F7", sub: "Identity secure" },
+          { icon: BadgeCheck, label: "Trust Tier", value: "Enterprise", color: "#00D4FF", sub: "SLA Connected" },
+          { icon: Key, label: "MFA Status", value: "Enabled", color: "#FFB300", sub: "Hardware Keys" },
+        ].map(kpi => (
+          <div key={kpi.label} className="kpi-card">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <kpi.icon size={20} color={kpi.color} />
+              </div>
+            </div>
+            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "1.75rem", fontWeight: 800, color: "white", lineHeight: 1 }}>{kpi.value}</div>
+            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginTop: "0.25rem" }}>{kpi.label}</div>
+            <div style={{ color: kpi.color, fontSize: "0.75rem", marginTop: "0.25rem" }}>{kpi.sub}</div>
+          </div>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Avatar & Trust */}
         <div className="space-y-6">
-          <div className="glass-card p-8 text-center space-y-4 border border-white/5 bg-white/[0.02]">
+          <div className="kpi-card text-center space-y-4">
             <div className="relative inline-block mx-auto">
               <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-[#00D4FF]/20 to-[#A855F7]/20 border border-white/10 flex items-center justify-center overflow-hidden">
                 <User size={64} className="text-white/40" />
@@ -124,7 +145,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="glass-card p-6 space-y-4 border border-white/5 bg-white/[0.01]">
+          <div className="kpi-card space-y-4">
             <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] px-1">Security Score</h3>
             <div className="space-y-4">
               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-500">
@@ -143,7 +164,7 @@ export default function ProfilePage() {
 
         {/* Right Column: Settings Form */}
         <div className="lg:col-span-2">
-          <form onSubmit={handleSave} className="glass-card p-8 border border-white/10 bg-white/[0.02] shadow-2xl rounded-[2rem] space-y-8">
+          <form onSubmit={handleSave} className="kpi-card space-y-8" style={{ padding: "2rem" }}>
             <div className="flex items-center gap-3 mb-2">
               <UserCheck size={20} className="text-[#00D4FF]" />
               <h2 className="text-lg font-bold text-white font-syne tracking-tight uppercase">Profile Information</h2>

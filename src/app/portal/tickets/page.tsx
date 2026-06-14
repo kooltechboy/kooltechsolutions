@@ -245,10 +245,10 @@ export default function ClientTicketsPage() {
     <div className="flex flex-col h-[calc(100vh-140px)] overflow-hidden max-w-[1600px] mx-auto animate-in fade-in duration-500 gap-6">
       
       {/* Header Panel */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0" style={{ marginBottom: "1.5rem" }}>
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)] flex items-center gap-1.5">
+            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-450 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)] flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -256,10 +256,10 @@ export default function ClientTicketsPage() {
               Live Link Active
             </span>
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight font-syne uppercase">
-            Support <span className="text-[#00D4FF]">Desk</span>
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.25rem" }}>
+            Support <span className="gradient-text">Desk</span>
           </h1>
-          <p className="text-neutral-400 text-xs mt-0.5">Direct, SLA-backed link to senior infrastructure engineering.</p>
+          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Direct, SLA-backed link to senior infrastructure engineering.</p>
         </div>
         <button 
           onClick={() => { setShowNewForm(true); }}
@@ -270,54 +270,24 @@ export default function ClientTicketsPage() {
       </div>
 
       {/* KPI stats summary block */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
-        {/* Card 1: Active */}
-        <div className="relative group overflow-hidden bg-gradient-to-br from-white/[0.02] to-transparent border border-white/10 hover:border-[#00D4FF]/35 rounded-2xl p-4 flex items-center gap-4 shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-          <div className="absolute -right-4 -bottom-4 w-12 h-12 rounded-full bg-[#00D4FF] filter blur-xl opacity-10 transition-opacity duration-300 group-hover:opacity-25" />
-          <div className="w-11 h-11 rounded-xl bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/25 flex items-center justify-center group-hover:bg-[#00D4FF]/20 transition-colors">
-            <Activity size={18} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }} className="shrink-0">
+        {[
+          { icon: Activity, label: "Active Requests", value: activeTickets.toString(), color: "#00D4FF", sub: "Live queue" },
+          { icon: CheckCircle2, label: "Resolved Requests", value: resolvedTickets.toString(), color: "#00E676", sub: "Archive" },
+          { icon: ShieldCheck, label: "SLA Standard", value: "100%", color: "#A855F7", sub: "SLA Compliant" },
+          { icon: Clock, label: "Avg First Response", value: "< 15m", color: "#FFB300", sub: "High priority" },
+        ].map(kpi => (
+          <div key={kpi.label} className="kpi-card">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <kpi.icon size={20} color={kpi.color} />
+              </div>
+            </div>
+            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "2rem", fontWeight: 800, color: "white", lineHeight: 1 }}>{kpi.value}</div>
+            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginTop: "0.25rem" }}>{kpi.label}</div>
+            <div style={{ color: kpi.color, fontSize: "0.75rem", marginTop: "0.25rem" }}>{kpi.sub}</div>
           </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Active Requests</div>
-            <div className="text-2xl font-black text-white mt-0.5 tracking-tight font-syne">{activeTickets}</div>
-          </div>
-        </div>
-
-        {/* Card 2: Resolved */}
-        <div className="relative group overflow-hidden bg-gradient-to-br from-white/[0.02] to-transparent border border-white/10 hover:border-emerald-500/35 rounded-2xl p-4 flex items-center gap-4 shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-          <div className="absolute -right-4 -bottom-4 w-12 h-12 rounded-full bg-emerald-500 filter blur-xl opacity-10 transition-opacity duration-300 group-hover:opacity-25" />
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-450 border border-emerald-500/25 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-            <CheckCircle2 size={18} className="text-emerald-400" />
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Resolved Requests</div>
-            <div className="text-2xl font-black text-white mt-0.5 tracking-tight font-syne">{resolvedTickets}</div>
-          </div>
-        </div>
-
-        {/* Card 3: SLA */}
-        <div className="relative group overflow-hidden bg-gradient-to-br from-white/[0.02] to-transparent border border-white/10 hover:border-violet-500/35 rounded-2xl p-4 flex items-center gap-4 shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-          <div className="absolute -right-4 -bottom-4 w-12 h-12 rounded-full bg-violet-500 filter blur-xl opacity-10 transition-opacity duration-300 group-hover:opacity-25" />
-          <div className="w-11 h-11 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/25 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-            <ShieldCheck size={18} />
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-wider text-neutral-400">SLA Standard</div>
-            <div className="text-2xl font-black text-white mt-0.5 tracking-tight font-syne">100%</div>
-          </div>
-        </div>
-
-        {/* Card 4: Avg Response */}
-        <div className="relative group overflow-hidden bg-gradient-to-br from-white/[0.02] to-transparent border border-white/10 hover:border-amber-500/35 rounded-2xl p-4 flex items-center gap-4 shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-          <div className="absolute -right-4 -bottom-4 w-12 h-12 rounded-full bg-amber-500 filter blur-xl opacity-10 transition-opacity duration-300 group-hover:opacity-25" />
-          <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/25 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
-            <Clock size={18} />
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Avg First Response</div>
-            <div className="text-2xl font-black text-white mt-0.5 tracking-tight font-syne">&lt; 15m</div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Split Pane Layout */}

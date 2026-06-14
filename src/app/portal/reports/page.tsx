@@ -98,12 +98,12 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6" style={{ marginBottom: "1.5rem" }}>
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight mb-2 font-syne uppercase">
-            Operational <span className="text-[#00D4FF]">Intelligence</span>
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.25rem" }}>
+            Operational <span className="gradient-text">Intelligence</span>
           </h1>
-          <p className="text-neutral-400 text-sm max-w-md">
+          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
             Real-time infrastructure health analytics and service performance metrics across your global footprint.
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Global Health Score */}
-      <div className="glass-card p-8 rounded-[2.5rem] border border-[#00E676]/20 bg-gradient-to-br from-[#00E676]/5 to-transparent flex flex-col lg:flex-row items-center gap-12">
+      <div className="kpi-card flex flex-col lg:flex-row items-center gap-12" style={{ padding: "2rem", borderRadius: "12px", border: "1px solid rgba(0, 230, 118, 0.2)" }}>
         <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 text-center sm:text-left w-full lg:w-auto">
           <div className="relative w-32 h-32 flex items-center justify-center flex-shrink-0">
             <svg className="w-full h-full transform -rotate-90 drop-shadow-[0_0_15px_rgba(0,230,118,0.3)]">
@@ -166,29 +166,29 @@ export default function ReportsPage() {
       </div>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         {[
-          { icon: Activity, label: "Network Uptime", value: metrics.kpis.uptime, color: "text-[#00E676]", bg: "bg-[#00E676]/10", sub: "Enterprise SLA" },
-          { icon: Clock, label: "Avg Response", value: metrics.kpis.avgResponse, color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", sub: "High Priority" },
-          { icon: Zap, label: "Automation", value: metrics.kpis.automation, color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", sub: "Auto-Remediated" },
-          { icon: Shield, label: "Cyber Blocked", value: metrics.kpis.threatsBlocked, color: "text-[#FF4444]", bg: "bg-[#FF4444]/10", sub: "Threats Prevented" },
+          { icon: Activity, label: "Network Uptime", value: metrics.kpis.uptime, color: "#00E676", sub: "Enterprise SLA" },
+          { icon: Clock, label: "Avg Response", value: metrics.kpis.avgResponse, color: "#00D4FF", sub: "High Priority" },
+          { icon: Zap, label: "Automation", value: metrics.kpis.automation, color: "#A855F7", sub: "Auto-Remediated" },
+          { icon: Shield, label: "Cyber Blocked", value: metrics.kpis.threatsBlocked, color: "#FF4444", sub: "Threats Prevented" },
         ].map(kpi => (
-          <div key={kpi.label} className="glass-card p-6 border border-white/5 bg-white/[0.02] flex flex-col gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${kpi.bg} ${kpi.color} border border-white/5`}>
-              <kpi.icon size={22} />
+          <div key={kpi.label} className="kpi-card">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <kpi.icon size={20} color={kpi.color} />
+              </div>
             </div>
-            <div>
-              <div className="text-3xl font-black text-white font-syne tracking-tight">{kpi.value}</div>
-              <div className="text-neutral-400 text-xs font-bold uppercase tracking-wider mt-1">{kpi.label}</div>
-              <div className="text-neutral-600 text-[10px] uppercase font-bold tracking-widest mt-2">{kpi.sub}</div>
-            </div>
+            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "2rem", fontWeight: 800, color: "white", lineHeight: 1 }}>{kpi.value}</div>
+            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginTop: "0.25rem" }}>{kpi.label}</div>
+            <div style={{ color: kpi.color, fontSize: "0.75rem", marginTop: "0.25rem" }}>{kpi.sub}</div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Support Velocity Chart */}
-        <div className="glass-card p-8 bg-white/[0.01] border border-white/5">
+        <div className="kpi-card" style={{ padding: "2rem" }}>
           <div className="flex justify-between items-center mb-10">
             <div>
               <h2 className="text-lg font-bold text-white font-syne tracking-tight uppercase">Support Velocity</h2>
@@ -220,7 +220,7 @@ export default function ReportsPage() {
         </div>
 
         {/* SLA Matrix */}
-        <div className="glass-card p-8 bg-white/[0.01] border border-white/5">
+        <div className="kpi-card" style={{ padding: "2rem" }}>
           <div className="flex justify-between items-center mb-10">
             <div>
               <h2 className="text-lg font-bold text-white font-syne tracking-tight uppercase">SLA Performance Matrix</h2>
@@ -256,7 +256,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Incident History Table */}
-        <div className="glass-card rounded-3xl overflow-hidden border border-white/10 xl:col-span-2">
+        <div className="kpi-card xl:col-span-2" style={{ padding: 0, overflow: "hidden" }}>
           <div className="p-6 border-b border-white/5 bg-white/[0.01] flex justify-between items-center">
             <h2 className="text-white font-bold font-syne tracking-tight uppercase">Recent SLA Milestones</h2>
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-neutral-500 text-[10px] font-black uppercase tracking-widest">

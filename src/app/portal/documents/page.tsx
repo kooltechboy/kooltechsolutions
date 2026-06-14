@@ -159,12 +159,12 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col sm:flex-row md:items-end justify-between gap-6" style={{ marginBottom: "1.5rem" }}>
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight mb-2 font-syne uppercase">
-            Document <span className="text-[#00D4FF]">Vault</span>
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.25rem" }}>
+            Document <span className="gradient-text">Vault</span>
           </h1>
-          <p className="text-neutral-400 text-sm max-w-md">
+          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
             Secure repository for contracts, compliance certifications, and enterprise runbooks.
           </p>
         </div>
@@ -174,6 +174,27 @@ export default function DocumentsPage() {
         >
           <Plus size={16} /> Secure Upload
         </button>
+      </div>
+
+      {/* KPI Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        {[
+          { icon: FileText, label: "Vault Items", value: allDocs.length.toString(), color: "#00D4FF", sub: "Active repository" },
+          { icon: Shield, label: "Encryption", value: "AES-256", color: "#A855F7", sub: "End-to-end active" },
+          { icon: Database, label: "User Uploads", value: documents.length.toString(), color: "#00E676", sub: "Vault files" },
+          { icon: Lock, label: "Vault Status", value: "Audited", color: "#FFB300", sub: "RBAC Protected" },
+        ].map(kpi => (
+          <div key={kpi.label} className="kpi-card">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <kpi.icon size={20} color={kpi.color} />
+              </div>
+            </div>
+            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "2rem", fontWeight: 800, color: "white", lineHeight: 1 }}>{kpi.value}</div>
+            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginTop: "0.25rem" }}>{kpi.label}</div>
+            <div style={{ color: kpi.color, fontSize: "0.75rem", marginTop: "0.25rem" }}>{kpi.sub}</div>
+          </div>
+        ))}
       </div>
 
       {/* Action Bar */}
@@ -216,7 +237,7 @@ export default function DocumentsPage() {
                 <div className="flex-1 h-px bg-white/5 ml-4" />
               </div>
 
-              <div className="glass-card rounded-3xl border border-white/5 bg-white/[0.01] overflow-hidden p-2">
+              <div className="kpi-card overflow-hidden p-2" style={{ padding: "0.5rem" }}>
                 {docs.map(doc => (
                   <DocRow key={doc.name} doc={doc} color={doc.catColor} bg={doc.catBg} border={doc.catBorder} />
                 ))}

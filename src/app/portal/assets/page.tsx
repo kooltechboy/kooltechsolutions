@@ -180,35 +180,32 @@ export default function AssetsPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-black text-white tracking-tight mb-2 font-syne uppercase">
-          Asset <span className="text-[#00D4FF]">Intelligence</span>
+      <div style={{ marginBottom: "1.5rem" }}>
+        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "0.25rem" }}>
+          Asset <span className="gradient-text">Intelligence</span>
         </h1>
-        <p className="text-neutral-400 text-sm max-w-md">
+        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
           Automated hardware lifecycle management and real-time health telemetry.
         </p>
       </div>
 
       {/* Summary Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         {[
-          { icon: HardDrive, label: "Managed Nodes", value: loading ? "—" : assets.length, color: "text-[#00D4FF]", bg: "bg-[#00D4FF]/10", sub: "Live connected endpoints" },
-          { icon: CheckCircle2, label: "Uptime Health", value: loading ? "—" : `${Math.round((healthy/Math.max(1, assets.length))*100)}%`, color: "text-[#00E676]", bg: "bg-[#00E676]/10", sub: "All operational" },
-          { icon: ShieldCheck, label: "Compliance", value: loading ? "—" : "100%", color: "text-[#A855F7]", bg: "bg-[#A855F7]/10", sub: "Security Patched" },
-          { icon: Clock, label: "Avg Fleet Age", value: "3.2y", color: "text-[#FFB300]", bg: "bg-[#FFB300]/10", sub: "Standard Refresh" },
+          { icon: HardDrive, label: "Managed Nodes", value: loading ? "—" : assets.length.toString(), color: "#00D4FF", sub: "Connected endpoints" },
+          { icon: CheckCircle2, label: "Uptime Health", value: loading ? "—" : `${Math.round((healthy/Math.max(1, assets.length))*100)}%`, color: "#00E676", sub: "All operational" },
+          { icon: ShieldCheck, label: "Compliance", value: loading ? "—" : "100%", color: "#A855F7", sub: "Security Patched" },
+          { icon: Clock, label: "Avg Fleet Age", value: "3.2y", color: "#FFB300", sub: "Standard Refresh" },
         ].map(kpi => (
-          <div key={kpi.label} className="glass-card p-6 border border-white/5 bg-white/[0.02] flex flex-col gap-4">
-            <div className="flex justify-between items-start">
-              <div className={`p-3 rounded-xl ${kpi.bg} ${kpi.color} border border-white/5`}>
-                <kpi.icon size={20} />
+          <div key={kpi.label} className="kpi-card">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "10px", background: `${kpi.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <kpi.icon size={20} color={kpi.color} />
               </div>
-              <div className={`${kpi.color} text-[10px] font-black uppercase tracking-widest`}>Live</div>
             </div>
-            <div>
-              <div className="text-3xl font-black text-white font-syne tracking-tight">{kpi.value}</div>
-              <div className="text-neutral-400 text-xs font-bold uppercase tracking-wider mt-1">{kpi.label}</div>
-              <div className="text-neutral-600 text-[10px] uppercase font-bold tracking-widest mt-2">{kpi.sub}</div>
-            </div>
+            <div style={{ fontFamily: "Syne, sans-serif", fontSize: "2rem", fontWeight: 800, color: "white", lineHeight: 1 }}>{kpi.value}</div>
+            <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginTop: "0.25rem" }}>{kpi.label}</div>
+            <div style={{ color: kpi.color, fontSize: "0.75rem", marginTop: "0.25rem" }}>{kpi.sub}</div>
           </div>
         ))}
       </div>
@@ -216,7 +213,7 @@ export default function AssetsPage() {
       {/* Main Inventory Layout */}
       <div className="flex gap-6 min-h-[500px]">
         {/* Active List */}
-        <div className="flex-1 glass-card rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-white/[0.02] flex flex-col min-w-0">
+        <div className="flex-1 kpi-card overflow-hidden flex flex-col min-w-0" style={{ padding: 0 }}>
           <div className="p-6 border-b border-white/5 bg-white/[0.01] flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
             <div>
               <div className="flex items-center gap-3">
