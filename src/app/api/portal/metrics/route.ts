@@ -52,7 +52,7 @@ export async function GET(request: Request) {
     }
 
     // Calculate Average Response Time
-    let avgResponseMins = 12; // default fallback if no responses
+    let avgResponseMins: number | null = null;
     if (tickets && tickets.length > 0) {
       const ticketIds = tickets.map(t => t.id);
       
@@ -85,11 +85,24 @@ export async function GET(request: Request) {
       }
     }
 
-    // ── 2. Query ITFlow and Wazuh to count client assets and active threats ──
+    // ── 2. Query Database and Integrations for Real Metrics ──
+    
+    // Fetch live infrastructure nodes to compute health score, node uptime, and node SLA matrix
+    const { data: nodes } = await supabase
+      .from("infrastructure_nodes")
+      .select("*");
+
+    // Fetch security events to get actual count of blocked events
+    const { data: blockedEvents } = await supabase
+      .from("security_events")
+      .select("id")
+      .eq("status", "Blocked");
+
+    const threatsBlocked = blockedEvents ? blockedEvents.length : 0;
+
     let clientAssetsCount = 0;
     let healthyAssetsCount = 0;
-    let threatsBlocked = 0;
-    let wazuhAgentsList: any[] = [];
+    let hasITFlowAssets = false;
 
     const { data: dbConfig } = await supabase
       .from("integration_configs")
@@ -118,42 +131,52 @@ export async function GET(request: Request) {
             );
           });
 
-          clientAssetsCount = clientAssets.length;
-          healthyAssetsCount = clientAssetsCount; // default
+          if (clientAssets.length > 0) {
+            clientAssetsCount = clientAssets.length;
+            healthyAssetsCount = clientAssetsCount; // default
+            hasITFlowAssets = true;
 
-          // Now match with Wazuh to get live alerts and status
-          // In local dev/testing, we can fetch Wazuh agents
-          const wazuhRes = await fetch(`${request.url.split("/api/")[0]}/api/wazuh`, {
-            headers: {
-              cookie: request.headers.get("cookie") || ""
-            }
-          });
-          if (wazuhRes.ok) {
-            const wazuhData = await wazuhRes.json();
-            if (wazuhData && Array.isArray(wazuhData.agents)) {
-              wazuhAgentsList = wazuhData.agents;
-              healthyAssetsCount = wazuhAgentsList.filter(a => a.status === "active").length;
-              if (wazuhData.recent_events) {
-                threatsBlocked = wazuhData.recent_events.length;
+            // Match with Wazuh to get active agent status
+            const wazuhRes = await fetch(`${request.url.split("/api/")[0]}/api/wazuh`, {
+              headers: {
+                cookie: request.headers.get("cookie") || ""
+              }
+            });
+            if (wazuhRes.ok) {
+              const wazuhData = await wazuhRes.json();
+              if (wazuhData && Array.isArray(wazuhData.agents)) {
+                const wazuhAgentsList = wazuhData.agents;
+                healthyAssetsCount = wazuhAgentsList.filter((a: any) => a.status === "active").length;
               }
             }
           }
         }
       } catch (itflowErr) {
-        console.error("Failed to query assets in metrics route:", itflowErr);
+        console.error("Failed to query ITFlow assets in metrics route:", itflowErr);
       }
     }
 
-    // Default calculations if no assets exist
-    if (clientAssetsCount === 0) {
-      clientAssetsCount = 3;
-      healthyAssetsCount = 3;
-      threatsBlocked = 4;
+    // Fall back to infrastructure_nodes if ITFlow is disconnected or returns no assets
+    if (!hasITFlowAssets && nodes && nodes.length > 0) {
+      clientAssetsCount = nodes.length;
+      healthyAssetsCount = nodes.filter(n => n.status === "Online").length;
     }
 
     const healthScore = clientAssetsCount > 0 
       ? Math.round((healthyAssetsCount / clientAssetsCount) * 100)
-      : 95;
+      : 100;
+
+    // Calculate Uptime (average uptime of all infrastructure nodes)
+    let avgUptimeVal = 99.99;
+    if (nodes && nodes.length > 0) {
+      const uptimes = nodes
+        .map(n => parseFloat(n.uptime.replace("%", "")))
+        .filter(u => !isNaN(u));
+      if (uptimes.length > 0) {
+        avgUptimeVal = uptimes.reduce((sum, u) => sum + u, 0) / uptimes.length;
+      }
+    }
+    const uptimeStr = `${avgUptimeVal.toFixed(2)}%`;
 
     // SLA recent milestones (incidents): map unresolved tickets or high severity events
     const milestones = tickets 
@@ -161,34 +184,28 @@ export async function GET(request: Request) {
           id: `INC-${t.id.slice(0, 4).toUpperCase()}`,
           subj: t.subject,
           priority: t.priority.charAt(0).toUpperCase() + t.priority.slice(1),
-          response: `${avgResponseMins}m`,
+          response: avgResponseMins !== null ? `${avgResponseMins}m` : "N/A",
           resolution: t.status === "resolved" || t.status === "closed" ? "Resolved" : "Active",
           met: true
         }))
       : [];
 
-    if (milestones.length === 0) {
-      milestones.push(
-        { id: "INC-9912", subj: "Primary ISP Failover Triggered", priority: "Critical", response: "2m", resolution: "Auto", met: true },
-        { id: "INC-9908", subj: "Cloud Storage Capacity Alert", priority: "High", response: "12m", resolution: "45m", met: true }
-      );
-    }
-
     return NextResponse.json({
       healthScore,
-      uptime: "99.99%",
+      uptime: uptimeStr,
       kpis: {
-        uptime: "99.99%",
-        avgResponse: `${avgResponseMins}m`,
+        uptime: uptimeStr,
+        avgResponse: avgResponseMins !== null ? `${avgResponseMins}m` : "N/A",
         automation: tickets && tickets.length > 0
           ? `${Math.round((tickets.filter(t => t.status === "resolved").length / tickets.length) * 100)}%`
-          : "84%",
+          : "N/A",
         threatsBlocked: threatsBlocked.toString()
       },
       charts: {
         months: dynamicMonths,
         ticketData: dynamicCounts,
-        uptimeData: [99.8, 99.9, 100, 99.7, 99.9, 100, 99.99].slice(0, dynamicMonths.length)
+        nodes: nodes ? nodes.map(n => n.name) : [],
+        nodeUptimes: nodes ? nodes.map(n => parseFloat(n.uptime.replace("%", "")) || 99.99) : []
       },
       milestones
     });
