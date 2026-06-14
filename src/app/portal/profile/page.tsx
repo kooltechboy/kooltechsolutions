@@ -128,7 +128,7 @@ export default function ProfilePage() {
               <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-[#00D4FF]/20 to-[#A855F7]/20 border border-white/10 flex items-center justify-center overflow-hidden">
                 <User size={64} className="text-white/40" />
               </div>
-              <button className="absolute -bottom-2 -right-2 p-2.5 rounded-xl bg-[#00D4FF] text-[#0A1628] shadow-xl border border-white/20 hover:scale-110 transition-transform">
+              <button className="absolute bottom-0 right-0 p-2.5 rounded-xl bg-[#00D4FF] text-[#0A1628] shadow-xl border border-white/20 hover:scale-110 transition-transform">
                 <Camera size={16} />
               </button>
             </div>
@@ -192,7 +192,7 @@ export default function ProfilePage() {
                 <div className="relative">
                   <Building size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600" />
                   <input 
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all font-medium"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/20 transition-all font-medium"
                     value={profile?.company_name || ""} 
                     onChange={e => profile && setProfile({...profile, company_name: e.target.value})}
                   />
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                 <div className="relative">
                   <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-800" />
                   <input 
-                    className="w-full bg-white/[0.01] border border-white/5 rounded-2xl p-4 pl-12 text-neutral-600 cursor-not-allowed font-medium"
+                    className="w-full bg-white/[0.01] border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-neutral-600 cursor-not-allowed font-medium"
                     value={profile?.email || ""} 
                     disabled
                   />
@@ -213,25 +213,25 @@ export default function ProfilePage() {
             </div>
 
             <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="flex items-center gap-4">
-                <button type="button" className="text-[10px] font-black text-neutral-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2">
+              <div className="flex items-center gap-4 shrink-0">
+                <button type="button" className="text-[10px] font-black text-neutral-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2 shrink-0 whitespace-nowrap">
                   <Key size={14} /> Reset Credentials
                 </button>
-                <button type="button" className="text-[10px] font-black text-neutral-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2">
+                <button type="button" className="text-[10px] font-black text-neutral-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2 shrink-0 whitespace-nowrap">
                   <CreditCard size={14} /> Payment Portal
                 </button>
               </div>
 
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 sm:gap-6 shrink-0">
                 {success && (
-                  <span className="text-[#00E676] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-in slide-in-from-right-4">
+                  <span className="text-[#00E676] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-in slide-in-from-right-4 shrink-0 whitespace-nowrap">
                     <CheckCircle2 size={16} /> Registry Updated
                   </span>
                 )}
                 <button 
                   type="submit" 
                   disabled={saving} 
-                  className="px-10 py-4 rounded-2xl bg-white text-[#0A1628] font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5 flex items-center gap-3 disabled:opacity-50"
+                  className="px-10 py-4 rounded-2xl bg-white text-[#0A1628] font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5 flex items-center gap-3 disabled:opacity-50 shrink-0 whitespace-nowrap"
                 >
                   {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                   Commit Changes
