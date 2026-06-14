@@ -1,11 +1,12 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   Ticket, AlertCircle, CheckCircle2, Clock, Search, Plus, Loader2, 
   MessageSquare, Shield, Zap, X, User, Activity, LifeBuoy, Send, 
   ShieldCheck, Bot, Info, PhoneCall, ShieldAlert, ChevronRight,
-  ArrowLeft, ChevronLeft
+  ArrowLeft, ChevronLeft, Paperclip, ExternalLink, Smile, Meh, Frown
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -67,8 +68,88 @@ export default function ClientTicketsPage() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Gaps Analysis additions (Zendesk/Linear/Jira features)
+  const [csatRating, setCsatRating] = useState<string | null>(null);
+  const [csatComment, setCsatComment] = useState('');
+  const [csatSubmitted, setCsatSubmitted] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [slaCountdown, setSlaCountdown] = useState<string>('Calculating...');
+  const [slaColor, setSlaColor] = useState<string>('text-[#00D4FF] bg-[#00D4FF]/10 border-[#00D4FF]/20');
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+
+  // Load CSAT status from localStorage for selected ticket
+  useEffect(() => {
+    if (selectedTicketId) {
+      const stored = localStorage.getItem(`ticket-csat-${selectedTicketId}`);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setCsatRating(parsed.rating);
+          setCsatComment(parsed.comment);
+          setCsatSubmitted(true);
+        } catch {
+          setCsatSubmitted(false);
+        }
+      } else {
+        setCsatSubmitted(false);
+        setCsatRating(null);
+        setCsatComment('');
+      }
+    }
+  }, [selectedTicketId]);
+
+  // SLA Timer Engine
+  useEffect(() => {
+    if (!selectedTicketId || !tickets.length) return;
+    const selectedTicket = tickets.find(t => t.id === selectedTicketId);
+    if (!selectedTicket) return;
+
+    // SLA is met if there are any engineer/agent messages in the thread
+    const hasAgentReply = messages.some(msg => {
+      const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
+      return senderObj?.role === 'admin' || senderObj?.role === 'agent';
+    });
+
+    if (hasAgentReply || selectedTicket.status === 'resolved' || selectedTicket.status === 'closed') {
+      setSlaCountdown('SLA Met');
+      setSlaColor('text-emerald-450 bg-emerald-500/10 border-emerald-500/20');
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const createdTime = new Date(selectedTicket.created_at).getTime();
+      let targetDuration = 12 * 60 * 60 * 1000; // 12 hours normal (Sev 3)
+      if (selectedTicket.priority === 'critical') {
+        targetDuration = 1 * 60 * 60 * 1000; // 1 hour critical (Sev 1)
+      } else if (selectedTicket.priority === 'high') {
+        targetDuration = 4 * 60 * 60 * 1000; // 4 hours high (Sev 2)
+      }
+
+      const targetTime = createdTime + targetDuration;
+      const now = Date.now();
+      const diff = targetTime - now;
+
+      if (diff <= 0) {
+        setSlaCountdown('SLA Breached');
+        setSlaColor('text-rose-450 bg-rose-500/10 border-rose-500/20');
+      } else {
+        const hours = Math.floor(diff / (60 * 60 * 1000));
+        const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
+        const seconds = Math.floor((diff % (60 * 1000)) / 1000);
+        
+        let countdownStr = '';
+        if (hours > 0) countdownStr += `${hours}h `;
+        countdownStr += `${minutes}m ${seconds}s`;
+        
+        setSlaCountdown(countdownStr);
+        setSlaColor(hours === 0 && minutes < 30 ? 'text-amber-450 bg-amber-400/10 border-amber-400/20 animate-pulse' : 'text-[#00D4FF] bg-[#00D4FF]/10 border-[#00D4FF]/20');
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [selectedTicketId, tickets, messages]);
 
   // Fetch Tickets List
   useEffect(() => {
@@ -395,146 +476,391 @@ export default function ClientTicketsPage() {
         <div className={`flex-1 flex-col min-w-0 glass-card rounded-2xl border border-white/10 bg-[#0A1628]/80 overflow-hidden shadow-2xl relative ${!selectedTicketId ? 'hidden md:flex' : 'flex'}`}>
           
           {selectedTicket ? (
-            /* Ticket Detail View */
-            <div className="flex-1 flex flex-col h-full animate-in fade-in duration-300">
-              {/* Detail Header */}
-              <div className="p-6 border-b border-white/10 bg-white/[0.02] shrink-0">
-                <button 
-                  onClick={() => setSelectedTicketId(null)}
-                  className="md:hidden flex items-center gap-1 text-neutral-400 hover:text-white mb-4 text-[10px] font-black uppercase tracking-widest transition-colors cursor-pointer"
-                >
-                  <ArrowLeft size={14} className="mr-0.5" /> Back to Requests
-                </button>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3 mb-2">
-                      <h2 className="text-lg md:text-xl font-bold text-white leading-tight">{selectedTicket.subject}</h2>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                        selectedTicket.status === 'open' ? 'bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/25 shadow-[0_0_8px_rgba(0,212,255,0.08)]' :
-                        selectedTicket.status === 'in_progress' ? 'bg-amber-400/10 text-amber-400 border-amber-400/25' :
-                        selectedTicket.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-450 border-emerald-500/25' :
-                        'bg-white/5 text-neutral-400 border-white/10'
-                      }`}>
-                        {selectedTicket.status.replace(/_/g, ' ')}
-                      </span>
+            /* Ticket Detail View with Linear/Zendesk/Jira Gaps Features */
+            <div className="flex-1 flex h-full animate-in fade-in duration-300 min-w-0">
+              
+              {/* CHAT FEED SECTION */}
+              <div className="flex-1 flex flex-col h-full min-w-0">
+                {/* Detail Header */}
+                <div className="p-6 border-b border-white/10 bg-white/[0.02] shrink-0">
+                  <button 
+                    onClick={() => setSelectedTicketId(null)}
+                    className="md:hidden flex items-center gap-1 text-neutral-400 hover:text-white mb-4 text-[10px] font-black uppercase tracking-widest transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft size={14} className="mr-0.5" /> Back to Requests
+                  </button>
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <h2 className="text-lg md:text-xl font-bold text-white leading-tight">{selectedTicket.subject}</h2>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                          selectedTicket.status === 'open' ? 'bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/25 shadow-[0_0_8px_rgba(0,212,255,0.08)]' :
+                          selectedTicket.status === 'in_progress' ? 'bg-amber-400/10 text-amber-400 border-amber-400/25' :
+                          selectedTicket.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-450 border-emerald-500/25' :
+                          'bg-white/5 text-neutral-400 border-white/10'
+                        }`}>
+                          {selectedTicket.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-[#00D4FF]"/> ID: {selectedTicket.id.slice(0, 8).toUpperCase()}</span>
+                        <span className="flex items-center gap-1.5"><Clock size={13}/> {new Date(selectedTicket.created_at).toLocaleString()}</span>
+                        {selectedTicket.priority === 'critical' && (
+                          <span className="flex items-center gap-1.5 text-rose-450"><AlertCircle size={13} className="animate-pulse"/> CRITICAL</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                      <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-[#00D4FF]"/> ID: {selectedTicket.id.slice(0, 8).toUpperCase()}</span>
-                      <span className="flex items-center gap-1.5"><Clock size={13}/> {new Date(selectedTicket.created_at).toLocaleString()}</span>
-                      {selectedTicket.priority === 'critical' && (
-                        <span className="flex items-center gap-1.5 text-rose-450"><AlertCircle size={13} className="animate-pulse"/> CRITICAL</span>
+                    
+                    <div className="shrink-0">
+                      {selectedTicket.status === 'closed' || selectedTicket.status === 'resolved' ? (
+                        <button
+                          onClick={async () => {
+                            const { error } = await supabase
+                              .from('tickets')
+                              .update({ status: 'open', updated_at: new Date().toISOString() })
+                              .eq('id', selectedTicket.id);
+                            if (!error) {
+                              setRefreshKey(k => k + 1);
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#00D4FF]/20 to-blue-600/20 text-[#00D4FF] border border-[#00D4FF]/30 hover:from-[#00D4FF] hover:to-blue-600 hover:text-black hover:border-transparent transition-all font-black text-[10px] uppercase tracking-wider cursor-pointer shadow-lg shadow-cyan-500/5 hover:scale-[1.02]"
+                        >
+                          Reopen Ticket
+                        </button>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            const { error } = await supabase
+                              .from('tickets')
+                              .update({ status: 'closed', updated_at: new Date().toISOString() })
+                              .eq('id', selectedTicket.id);
+                            if (!error) {
+                              setRefreshKey(k => k + 1);
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white hover:border-transparent transition-all font-black text-[10px] uppercase tracking-wider cursor-pointer shadow-lg shadow-rose-500/5 hover:scale-[1.02]"
+                        >
+                          Close Ticket
+                        </button>
                       )}
                     </div>
                   </div>
-                  
-                  <div className="shrink-0">
-                    {selectedTicket.status === 'closed' || selectedTicket.status === 'resolved' ? (
-                      <button
-                        onClick={async () => {
-                          const { error } = await supabase
-                            .from('tickets')
-                            .update({ status: 'open', updated_at: new Date().toISOString() })
-                            .eq('id', selectedTicket.id);
-                          if (!error) {
-                            setRefreshKey(k => k + 1);
-                          }
-                        }}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#00D4FF]/20 to-blue-600/20 text-[#00D4FF] border border-[#00D4FF]/30 hover:from-[#00D4FF] hover:to-blue-600 hover:text-black hover:border-transparent transition-all font-black text-[10px] uppercase tracking-wider cursor-pointer shadow-lg shadow-cyan-500/5 hover:scale-[1.02]"
-                      >
-                        Reopen Ticket
-                      </button>
+                </div>
+                
+                {/* Chat Feed */}
+                <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-black/20">
+                  {/* Original Description */}
+                  <div className="flex gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="w-10 h-10 rounded-2xl bg-neutral-900 border border-white/10 flex items-center justify-center shrink-0 shadow-lg">
+                      <User size={18} className="text-neutral-400" />
+                    </div>
+                    <div className="bg-gradient-to-br from-white/[0.02] to-transparent border border-white/10 rounded-2xl rounded-tl-none p-5 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed shadow-lg flex-1">
+                      <div className="text-[9px] font-black text-[#00D4FF] mb-3 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00D4FF] shadow-[0_0_6px_#00D4FF]" /> Original Request Description
+                      </div>
+                      <div className="text-[13px] text-neutral-300 leading-relaxed font-sans">{selectedTicket.description}</div>
+                    </div>
+                  </div>
+
+                  {/* Messages */}
+                  {messages.map((msg, idx) => {
+                    const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
+                    const isAdmin = senderObj?.role === 'admin' || senderObj?.role === 'agent';
+                    
+                    return (
+                      <div key={idx} className={`flex gap-4 max-w-3xl ${isAdmin ? 'animate-in slide-in-from-left-2' : 'flex-row-reverse self-end ml-auto animate-in slide-in-from-right-2'} duration-300`}>
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg border transition-all ${
+                          isAdmin 
+                            ? 'bg-gradient-to-br from-indigo-500/20 to-purple-600/20 text-[#00D4FF] border-[#00D4FF]/30 shadow-[#00D4FF]/5' 
+                            : 'bg-gradient-to-br from-white/10 to-white/5 text-neutral-300 border-white/10'
+                        }`}>
+                          {isAdmin ? <ShieldCheck size={18} className="animate-pulse" /> : <User size={18} />}
+                        </div>
+                        <div className={`border rounded-2xl p-5 text-sm leading-relaxed shadow-xl max-w-xl transition-all hover:scale-[1.005] duration-200 ${
+                          isAdmin 
+                            ? 'bg-gradient-to-br from-indigo-950/30 to-[#0A1628]/90 border-indigo-500/25 text-neutral-200 rounded-tl-none shadow-indigo-500/5' 
+                            : 'bg-gradient-to-br from-cyan-950/20 to-[#0A1628]/90 border-cyan-500/20 text-neutral-200 rounded-tr-none'
+                        }`}>
+                          <div className="flex items-center gap-2.5 mb-2.5">
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${
+                              isAdmin ? 'text-[#00D4FF]' : 'text-neutral-400'
+                            }`}>
+                              {isAdmin ? `${senderObj?.first_name || 'Support'} (Engineer)` : 'You'}
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-bold tracking-tight">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className="whitespace-pre-wrap text-neutral-300 text-[13px] leading-relaxed">{msg.message}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Reply Form / CSAT survey widget */}
+                {selectedTicket.status !== 'closed' && selectedTicket.status !== 'resolved' ? (
+                  <div className="p-4 border-t border-white/10 bg-black/40 shrink-0">
+                    <form onSubmit={handleSendMessage} className="relative">
+                      <div className="relative flex items-end gap-3 bg-black/40 border border-white/10 hover:border-white/20 focus-within:border-[#00D4FF]/45 rounded-xl p-2 transition-all shadow-inner">
+                        
+                        {/* Attach Document popover */}
+                        <div className="relative shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                              showAttachmentMenu ? 'bg-[#00D4FF] text-black' : 'text-neutral-500 hover:text-white hover:bg-white/5'
+                            }`}
+                            title="Attach Document from Vault"
+                          >
+                            <Paperclip size={15} />
+                          </button>
+
+                          {showAttachmentMenu && (
+                            <div className="absolute bottom-11 left-0 z-50 w-72 bg-[#0A1628] border border-white/15 rounded-xl shadow-2xl p-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                              <div className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2 px-1">Attach Vault Document</div>
+                              <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
+                                {[
+                                  { name: "Master Service Agreement (MSA)", type: "PDF" },
+                                  { name: "Service Level Agreement (SLA)", type: "PDF" },
+                                  { name: "Compliance Posture Report (HIPAA)", type: "PDF" },
+                                  { name: "Penetration Test Results (Confidential)", type: "PDF", restricted: true },
+                                ].map(doc => (
+                                  <button
+                                    key={doc.name}
+                                    type="button"
+                                    disabled={doc.restricted}
+                                    onClick={() => {
+                                      setNewMessage(prev => {
+                                        const attachmentStr = `[Vault Document Link: ${doc.name}]`;
+                                        if (!prev.trim()) return attachmentStr;
+                                        return prev.endsWith(' ') ? `${prev}${attachmentStr}` : `${prev} ${attachmentStr}`;
+                                      });
+                                      setShowAttachmentMenu(false);
+                                    }}
+                                    className={`w-full text-left p-2 rounded-lg text-[11px] flex items-center justify-between transition-colors ${
+                                      doc.restricted 
+                                        ? 'text-neutral-600 cursor-not-allowed bg-black/10' 
+                                        : 'text-neutral-300 hover:text-white hover:bg-white/5 cursor-pointer'
+                                    }`}
+                                  >
+                                    <span className="truncate pr-2">{doc.name}</span>
+                                    <span className={`text-[7px] font-mono font-bold uppercase px-1 py-0.5 rounded border shrink-0 ${
+                                      doc.restricted ? 'border-red-500/20 text-red-500/50' : 'border-white/10 text-neutral-500'
+                                    }`}>
+                                      {doc.restricted ? 'Restricted' : doc.type}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Reply input textarea */}
+                        <textarea 
+                          value={newMessage}
+                          onChange={e => setNewMessage(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); }}}
+                          placeholder="Type your reply..."
+                          className="flex-1 bg-transparent border-0 focus:outline-none text-white text-sm resize-none placeholder:text-neutral-600 py-2.5 max-h-24 min-h-[40px] custom-scrollbar focus:ring-0"
+                          rows={1}
+                        />
+
+                        {/* Send button */}
+                        <button 
+                          type="submit" 
+                          disabled={sendingMsg || !newMessage.trim()}
+                          className="w-9 h-9 bg-gradient-to-r from-[#00D4FF] to-blue-600 text-black hover:shadow-lg hover:shadow-cyan-500/20 rounded-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:scale-105 shrink-0"
+                        >
+                          {sendingMsg ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} />}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  /* Interactive CSAT Survey */
+                  <div className="p-4 border-t border-white/10 bg-black/40 shrink-0">
+                    {csatSubmitted ? (
+                      <div className="glass-card bg-emerald-500/[0.02] border-emerald-500/20 rounded-xl p-5 text-center space-y-2 animate-in zoom-in-95 duration-200">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-450 mx-auto">
+                          <CheckCircle2 size={20} className="animate-bounce" />
+                        </div>
+                        <h4 className="text-sm font-black uppercase text-white tracking-wider">Feedback Submitted</h4>
+                        <p className="text-neutral-400 text-xs">
+                          Thank you! Your rating of <span className="font-extrabold text-[#00E676]">{csatRating}</span> helps us maintain our 100% SLA standard.
+                        </p>
+                        {csatComment && (
+                          <div className="text-[11px] text-neutral-450 bg-black/35 p-3 rounded-lg border border-white/5 italic max-w-md mx-auto">
+                            &ldquo;{csatComment}&rdquo;
+                          </div>
+                        )}
+                      </div>
                     ) : (
+                      <div className="glass-card bg-[#00D4FF]/[0.02] border-[#00D4FF]/15 rounded-xl p-5 space-y-4 animate-in fade-in duration-200">
+                        <div className="text-center">
+                          <h4 className="text-xs font-black uppercase text-white tracking-wider">Support Satisfaction Survey</h4>
+                          <p className="text-neutral-500 text-[10px] mt-0.5">This request has been resolved. How would you rate your support experience?</p>
+                        </div>
+
+                        <div className="flex justify-center gap-3">
+                          {[
+                            { rating: 'Excellent', icon: Smile, color: 'text-emerald-450 border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15' },
+                            { rating: 'Neutral', icon: Meh, color: 'text-amber-450 border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/15' },
+                            { rating: 'Unsatisfactory', icon: Frown, color: 'text-rose-450 border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/15' },
+                          ].map(opt => (
+                            <button
+                              key={opt.rating}
+                              type="button"
+                              onClick={() => setCsatRating(opt.rating)}
+                              className={`flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-wider transition-all flex-1 cursor-pointer hover:scale-[1.02] ${opt.color} ${
+                                csatRating === opt.rating ? 'ring-2 ring-[#00D4FF] scale-105 border-transparent shadow-[0_0_12px_rgba(0,212,255,0.15)] bg-white/5 font-extrabold text-white' : ''
+                              }`}
+                            >
+                              <opt.icon size={18} />
+                              {opt.rating}
+                            </button>
+                          ))}
+                        </div>
+
+                        {csatRating && (
+                          <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-200">
+                            <textarea
+                              value={csatComment}
+                              onChange={e => setCsatComment(e.target.value)}
+                              placeholder="Add comments here (optional)..."
+                              className="w-full bg-black/45 border border-white/10 hover:border-white/20 focus:border-[#00D4FF]/40 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/10 transition-all text-xs resize-none placeholder:text-neutral-600 shadow-inner"
+                              rows={2}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!csatRating) return;
+                                setCsatSubmitted(true);
+                                localStorage.setItem(
+                                  `ticket-csat-${selectedTicketId}`,
+                                  JSON.stringify({ rating: csatRating, comment: csatComment, submittedAt: new Date().toISOString() })
+                                );
+                              }}
+                              className="w-full py-3 rounded-xl bg-white text-[#0A1628] font-black text-xs uppercase tracking-[0.2em] hover:bg-neutral-200 hover:scale-[1.01] active:scale-95 transition-all shadow-xl cursor-pointer"
+                            >
+                              Submit Rating
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* TICKET INSPECTOR SIDEBAR (Linear/Zendesk/Jira Gaps) */}
+              <div className="w-72 border-l border-white/10 hidden xl:flex flex-col p-5 bg-black/15 shrink-0 overflow-y-auto custom-scrollbar gap-6">
+                
+                {/* Assignee details */}
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block px-1">Assignee</span>
+                  {selectedTicket.assigned_to ? (
+                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#00D4FF]/10 border border-[#00D4FF]/25 flex items-center justify-center text-[#00D4FF] text-xs font-black shrink-0">
+                        {(() => {
+                          const assignees = Array.isArray(selectedTicket.assigned_to) ? selectedTicket.assigned_to : [selectedTicket.assigned_to];
+                          const a = assignees[0];
+                          return `${a.first_name?.[0] || 'S'}${a.last_name?.[0] || 'E'}`.toUpperCase();
+                        })()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-white truncate leading-tight">
+                          {(() => {
+                            const assignees = Array.isArray(selectedTicket.assigned_to) ? selectedTicket.assigned_to : [selectedTicket.assigned_to];
+                            const a = assignees[0];
+                            return `${a.first_name || 'Support'} ${a.last_name || 'Engineer'}`;
+                          })()}
+                        </div>
+                        <div className="text-[9px] text-[#00D4FF] font-bold uppercase tracking-wider mt-0.5">L3 Senior DevOps</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white/[0.01] border border-dashed border-white/10 rounded-xl p-3.5 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-neutral-900 border border-white/5 flex items-center justify-center text-neutral-500 shrink-0">
+                        <User size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-neutral-400 leading-tight">Triage Queue</div>
+                        <div className="text-[9px] text-neutral-600 font-bold uppercase tracking-wider mt-0.5">Automated PSA Dispatch</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* SLA Deadline Tracker */}
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block px-1">SLA Deadline</span>
+                  <div className={`p-3 rounded-xl border font-bold text-xs uppercase tracking-wider flex items-center gap-2 ${slaColor}`}>
+                    <Clock size={14} className="shrink-0" />
+                    <span>{slaCountdown}</span>
+                  </div>
+                </div>
+
+                {/* Ticket Priority Selector */}
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block px-1">Priority Level</span>
+                  <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 bg-white/[0.01] ${
+                    selectedTicket.priority === 'critical' ? 'border-rose-500/20 text-rose-450' :
+                    selectedTicket.priority === 'high' ? 'border-amber-500/20 text-amber-300' :
+                    'border-blue-500/20 text-blue-300'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        selectedTicket.priority === 'critical' ? 'bg-rose-500 shadow-[0_0_6px_#f43f5e]' :
+                        selectedTicket.priority === 'high' ? 'bg-amber-400 shadow-[0_0_6px_#fbbf24]' :
+                        'bg-blue-400 shadow-[0_0_6px_#3b82f6]'
+                      }`} />
+                      <span className="text-xs font-bold capitalize">{selectedTicket.priority}</span>
+                    </div>
+                    {selectedTicket.priority !== 'critical' && selectedTicket.status !== 'closed' && selectedTicket.status !== 'resolved' && (
                       <button
                         onClick={async () => {
+                          const nextPriority = selectedTicket.priority === 'normal' ? 'high' : 'critical';
                           const { error } = await supabase
                             .from('tickets')
-                            .update({ status: 'closed', updated_at: new Date().toISOString() })
+                            .update({ priority: nextPriority, updated_at: new Date().toISOString() })
                             .eq('id', selectedTicket.id);
                           if (!error) {
                             setRefreshKey(k => k + 1);
                           }
                         }}
-                        className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white hover:border-transparent transition-all font-black text-[10px] uppercase tracking-wider cursor-pointer shadow-lg shadow-rose-500/5 hover:scale-[1.02]"
+                        className="text-[8px] font-black uppercase text-[#00D4FF] hover:text-white bg-[#00D4FF]/10 px-2 py-0.5 rounded border border-[#00D4FF]/25 hover:bg-[#00D4FF] hover:text-black transition-colors cursor-pointer shrink-0"
+                        title="Escalate ticket urgency level"
                       >
-                        Close Ticket
+                        Escalate
                       </button>
                     )}
                   </div>
                 </div>
-              </div>
-              
-              {/* Chat Feed */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-black/20">
-                {/* Original Description */}
-                <div className="flex gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="w-10 h-10 rounded-2xl bg-neutral-900 border border-white/10 flex items-center justify-center shrink-0 shadow-lg">
-                    <User size={18} className="text-neutral-400" />
-                  </div>
-                  <div className="bg-gradient-to-br from-white/[0.02] to-transparent border border-white/10 rounded-2xl rounded-tl-none p-5 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed shadow-lg flex-1">
-                    <div className="text-[9px] font-black text-[#00D4FF] mb-3 uppercase tracking-widest flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#00D4FF] shadow-[0_0_6px_#00D4FF]" /> Original Request Description
-                    </div>
-                    <div className="text-[13px] text-neutral-300 leading-relaxed font-sans">{selectedTicket.description}</div>
+
+                {/* Related Documents Vault References */}
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block px-1">Suggested Vault References</span>
+                  <div className="space-y-2 bg-white/[0.01] border border-white/5 rounded-xl p-3.5">
+                    {[
+                      { name: "Service Level Agreement (SLA)", id: "sla" },
+                      { name: "Master Service Agreement (MSA)", id: "msa" }
+                    ].map(link => (
+                      <Link 
+                        key={link.id}
+                        href="/portal?view=documents"
+                        className="flex items-center justify-between gap-2 text-[10px] text-neutral-400 hover:text-[#00D4FF] transition-colors group"
+                      >
+                        <span className="truncate pr-1">{link.name}</span>
+                        <ExternalLink size={10} className="shrink-0 text-neutral-600 group-hover:text-[#00D4FF] transition-colors" />
+                      </Link>
+                    ))}
                   </div>
                 </div>
 
-                {/* Messages */}
-                {messages.map((msg, idx) => {
-                  const senderObj = Array.isArray(msg.sender) ? msg.sender[0] : msg.sender;
-                  const isAdmin = senderObj?.role === 'admin' || senderObj?.role === 'agent';
-                  
-                  return (
-                    <div key={idx} className={`flex gap-4 max-w-3xl ${isAdmin ? 'animate-in slide-in-from-left-2' : 'flex-row-reverse self-end ml-auto animate-in slide-in-from-right-2'} duration-300`}>
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg border transition-all ${
-                        isAdmin 
-                          ? 'bg-gradient-to-br from-indigo-500/20 to-purple-600/20 text-[#00D4FF] border-[#00D4FF]/30 shadow-[#00D4FF]/5' 
-                          : 'bg-gradient-to-br from-white/10 to-white/5 text-neutral-300 border-white/10'
-                      }`}>
-                        {isAdmin ? <ShieldCheck size={18} className="animate-pulse" /> : <User size={18} />}
-                      </div>
-                      <div className={`border rounded-2xl p-5 text-sm leading-relaxed shadow-xl max-w-xl transition-all hover:scale-[1.005] duration-200 ${
-                        isAdmin 
-                          ? 'bg-gradient-to-br from-indigo-950/30 to-[#0A1628]/90 border-indigo-500/25 text-neutral-200 rounded-tl-none shadow-indigo-500/5' 
-                          : 'bg-gradient-to-br from-cyan-950/20 to-[#0A1628]/90 border-cyan-500/20 text-neutral-200 rounded-tr-none'
-                      }`}>
-                        <div className="flex items-center gap-2.5 mb-2.5">
-                          <span className={`text-[10px] font-black uppercase tracking-widest ${
-                            isAdmin ? 'text-[#00D4FF]' : 'text-neutral-400'
-                          }`}>
-                            {isAdmin ? `${senderObj?.first_name || 'Support'} (Engineer)` : 'You'}
-                          </span>
-                          <span className="text-[9px] text-neutral-500 font-bold tracking-tight">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <div className="whitespace-pre-wrap text-neutral-300 text-[13px] leading-relaxed">{msg.message}</div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
-              
-              {/* Message Input */}
-              {selectedTicket.status !== 'closed' && (
-                <div className="p-4 border-t border-white/10 bg-black/40 shrink-0">
-                  <form onSubmit={handleSendMessage} className="relative">
-                    <textarea 
-                      value={newMessage}
-                      onChange={e => setNewMessage(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); }}}
-                      placeholder="Type your reply..."
-                      className="w-full bg-black/40 border border-white/10 hover:border-white/20 focus:border-[#00D4FF]/45 rounded-xl py-3.5 pl-4 pr-14 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/10 transition-all resize-none placeholder:text-neutral-600 shadow-inner"
-                      rows={2}
-                    />
-                    <button 
-                      type="submit" 
-                      disabled={sendingMsg || !newMessage.trim()}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-r from-[#00D4FF] to-blue-600 text-black hover:shadow-lg hover:shadow-cyan-500/20 rounded-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:scale-105"
-                    >
-                      {sendingMsg ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} />}
-                    </button>
-                  </form>
-                </div>
-              )}
+
             </div>
           ) : (
             /* DEFAULT: Support Command Center Welcome Panel */
