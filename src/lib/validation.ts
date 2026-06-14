@@ -47,6 +47,17 @@ export const bookingSchema = z.object({
     (t) => ALLOWED_TIMES.includes(t as (typeof ALLOWED_TIMES)[number]),
     "Invalid time slot"
   ),
+  customStack: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        code: z.string(),
+        price: z.string(),
+        priceType: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export type BookingInput = z.infer<typeof bookingSchema>;

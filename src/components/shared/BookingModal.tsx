@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
-import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2, Phone, MessageSquare, Briefcase } from "lucide-react";
+import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2, Phone, MessageSquare, Briefcase, Trash2 } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
+import { Service } from "@/data/services";
 
 export default function BookingModal({ 
   isOpen, 
@@ -9,7 +10,9 @@ export default function BookingModal({
   initialName = "",
   initialEmail = "",
   initialService = "",
-  initialMessage = ""
+  initialMessage = "",
+  customStack = [],
+  onRemoveFromStack
 }: { 
   isOpen: boolean; 
   onClose: () => void;
@@ -17,6 +20,8 @@ export default function BookingModal({
   initialEmail?: string;
   initialService?: string;
   initialMessage?: string;
+  customStack?: Service[];
+  onRemoveFromStack?: (service: Service) => void;
 }) {
   const { t, language } = useLanguage();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -33,8 +38,18 @@ export default function BookingModal({
     message: initialMessage
   });
 
+  const getCustomMessage = (stack: Service[]) => {
+    if (stack.length === 0) return "";
+    const list = stack.map(s => `- ${s.name} (${s.code})`).join("\n");
+    return language === "es"
+      ? `Estoy interesado en un paquete personalizado que incluya los siguientes servicios:\n\n${list}`
+      : `I am interested in a custom package including the following services:\n\n${list}`;
+  };
+
   // Update form if initial values change (e.g. after profile loads or custom package changes) using render-phase synchronization to avoid set-state-in-effect warnings
   const [prevProps, setPrevProps] = useState({ initialName, initialEmail, initialService, initialMessage });
+  const [prevStack, setPrevStack] = useState<Service[]>(customStack);
+
   if (
     initialName !== prevProps.initialName ||
     initialEmail !== prevProps.initialEmail ||
@@ -50,6 +65,20 @@ export default function BookingModal({
       message: initialMessage || prev.message
     }));
   }
+
+  if (customStack !== prevStack) {
+    setPrevStack(customStack);
+    setForm(prev => ({
+      ...prev,
+      message: getCustomMessage(customStack)
+    }));
+  }
+
+  const handleRemoveService = (service: Service) => {
+    if (onRemoveFromStack) {
+      onRemoveFromStack(service);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -69,6 +98,7 @@ export default function BookingModal({
           phone: form.phone,
           service: form.service,
           message: form.message,
+          customStack: customStack,
         }),
       });
 
@@ -307,6 +337,61 @@ export default function BookingModal({
                 </div>
                 <button type="button" onClick={() => setStep(1)} style={{ background: "none", border: "none", color: "var(--color-accent-500)", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600 }}>{t("bookingServices.change")}</button>
               </div>
+
+              {customStack && customStack.length > 0 && (
+                <div style={{
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  borderRadius: "12px",
+                  padding: "1rem",
+                  marginBottom: "1.5rem"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                    <span style={{ color: "white", fontSize: "0.8125rem", fontWeight: 700, fontFamily: "Syne, sans-serif", textTransform: "uppercase" }}>
+                      {language === "es" ? "Su Stack Seleccionado" : "Your Selected Stack"} ({customStack.length})
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "150px", overflowY: "auto", paddingRight: "4px" }}>
+                    {customStack.map(service => (
+                      <div key={service.id} style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        background: "rgba(255,255,255,0.03)",
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(255,255,255,0.05)"
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0, marginRight: "0.5rem" }}>
+                          <div style={{ color: "white", fontSize: "0.75rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {service.name}
+                          </div>
+                          <div style={{ color: "var(--color-neutral-500)", fontSize: "0.625rem", fontFamily: "monospace" }}>
+                            {service.code}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ color: "var(--color-accent-500)", fontSize: "0.75rem", fontWeight: 700 }}>
+                            {service.price}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveService(service)}
+                            style={{
+                              background: "none", border: "none", color: "#EF4444", cursor: "pointer",
+                              display: "flex", alignItems: "center", padding: "4px", borderRadius: "4px",
+                              transition: "background 0.2s"
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"}
+                            onMouseLeave={e => e.currentTarget.style.background = "none"}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 <div>

@@ -13,7 +13,7 @@ import { createCalendarEvent } from "@/lib/calendar/google";
 import { generateIcsInvite } from "@/lib/calendar/ics";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? "danieljwilliams2401@gmail.com";
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? "danieljwilliams@kooltechsolutions.com";
 
 /**
  * Parses free-text date and time strings into a precise UTC Date.
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const parsed = bookingSchema.safeParse(body);
     if (!parsed.success) return validationError(parsed.error);
 
-    const { name, email, date, time, phone, service, message } = parsed.data;
+    const { name, email, date, time, phone, service, message, customStack } = parsed.data;
 
     // ── Sanitize for HTML email embedding ──────────────────────────────────────
     const safeName = sanitizeForEmail(name);
@@ -159,6 +159,34 @@ export async function POST(request: Request) {
           },
         ];
 
+        // Format custom stack HTML if available
+        let customStackHtml = "";
+        if (customStack && customStack.length > 0) {
+          const rows = customStack.map(s => `
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 10px 0; font-weight: bold; color: #333;">${sanitizeForEmail(s.name)}</td>
+              <td style="padding: 10px 0; color: #666; font-family: monospace; font-size: 12px;">${sanitizeForEmail(s.code)}</td>
+              <td style="padding: 10px 0; text-align: right; font-weight: bold; color: #00d4ff;">${sanitizeForEmail(s.price)} (${sanitizeForEmail(s.priceType)})</td>
+            </tr>
+          `).join("");
+
+          customStackHtml = `
+            <h3 style="color: #0A1628; border-bottom: 2px solid #00d4ff; padding-bottom: 8px; margin-top: 25px; font-family: sans-serif;">Requested Custom Stack Services</h3>
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-family: sans-serif; font-size: 14px;">
+              <thead>
+                <tr style="border-bottom: 2px solid #ddd; text-align: left; font-size: 12px; color: #666;">
+                  <th style="padding-bottom: 8px;">Service</th>
+                  <th style="padding-bottom: 8px;">SKU</th>
+                  <th style="padding-bottom: 8px; text-align: right;">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          `;
+        }
+
         // Admin notification
         await resend.emails.send({
           from: "KoolTech Bookings <onboarding@resend.dev>",
@@ -177,6 +205,7 @@ export async function POST(request: Request) {
                 <p><strong>Scheduled Slot:</strong> <span style="background: #e0faff; color: #007791; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${safeDate} at ${safeTime}</span></p>
                 ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}">${meetingLink}</a></p>` : ""}
               </div>
+              ${customStackHtml}
               <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 12px; color: #888;">KoolTech Solutions · Automated Booking Alert</p>
             </div>
@@ -198,6 +227,7 @@ export async function POST(request: Request) {
                 <p style="font-size: 1.25rem; font-weight: bold; color: #0A1628;">${safeDate} at ${safeTime}</p>
                 ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}" style="color: #00d4ff; font-weight: bold;">Join Video Call</a></p>` : ""}
               </div>
+              ${customStackHtml}
               <p>We've attached a calendar invite (.ics) to this email to add it to your calendar.</p>
               ${meetingLink ? "<p>You can use the Google Meet link above to join the call at the scheduled time.</p>" : "<p>We'll send you a meeting link 15 minutes before the session starts.</p>"}
               <p>If you need to reschedule, please reply to this email.</p>

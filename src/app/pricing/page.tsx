@@ -4,7 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PricingSection from "@/components/sections/PricingSection";
 import BookingModal from "@/components/shared/BookingModal";
-import { ArrowRight, HelpCircle, ShoppingCart, Check } from "lucide-react";
+import { ArrowRight, HelpCircle, ShoppingCart, Check, Trash2 } from "lucide-react";
 import { serviceCatalog, Service } from "@/data/services";
 import * as Icons from "lucide-react";
 import { useLanguage } from "@/components/shared/LanguageProvider";
@@ -13,6 +13,7 @@ export default function PricingPage() {
   const { t, language } = useLanguage();
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+  const [showReview, setShowReview] = useState(false);
 
   const faqs = [
     { q: t("pricing.faq1Q"), a: t("pricing.faq1A") },
@@ -286,19 +287,76 @@ export default function PricingPage() {
         <div style={{ 
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
           background: "rgba(10,22,40,0.95)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(0,212,255,0.2)",
-          padding: "1rem", display: "flex", justifyContent: "center",
+          padding: "1rem", display: "flex", flexDirection: "column", alignItems: "center",
           animation: "slideUp 0.3s ease",
           boxShadow: "0 -10px 40px rgba(0,0,0,0.5)"
         }}>
-          <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+          {/* Review Drawer Panel */}
+          {showReview && (
+            <div style={{
+              width: "100%",
+              background: "rgba(10,22,40,0.98)",
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
+              maxHeight: "220px", overflowY: "auto",
+              padding: "0 0 1rem 0",
+              display: "flex", justifyContent: "center",
+              animation: "slideUp 0.2s ease"
+            }}>
+              <div className="container" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.5rem", marginBottom: "0.5rem" }}>
+                  <h4 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", margin: 0, textTransform: "uppercase", fontSize: "0.8125rem" }}>
+                    {language === "es" ? "Revisar su Stack" : "Review Your Custom Stack"}
+                  </h4>
+                  <button 
+                    onClick={() => setShowReview(false)}
+                    style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}
+                  >
+                    {language === "es" ? "Ocultar" : "Hide"}
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.75rem" }}>
+                  {selectedServices.map(s => (
+                    <div key={s.id} style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
+                      padding: "0.5rem 0.75rem", borderRadius: "10px"
+                    }}>
+                      <div style={{ minWidth: 0, flex: 1, marginRight: "0.5rem" }}>
+                        <div style={{ color: "white", fontWeight: 600, fontSize: "0.75rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                        <div style={{ color: "var(--color-neutral-500)", fontSize: "0.625rem", fontFamily: "monospace" }}>{s.code}</div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ color: "var(--color-accent-500)", fontWeight: 700, fontSize: "0.75rem" }}>{s.price}</span>
+                        <button 
+                          type="button"
+                          onClick={() => toggleService(s)}
+                          style={{ background: "none", border: "none", color: "#FF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", borderRadius: "4px" }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", width: "100%" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <div 
+                style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer" }}
+                onClick={() => setShowReview(!showReview)}
+              >
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent-500)", border: "1px solid rgba(0,212,255,0.2)" }}>
                   <ShoppingCart size={20} />
                 </div>
                 <div>
-                  <div style={{ color: "white", fontWeight: 700, fontSize: "1rem" }}>
+                  <div style={{ color: "white", fontWeight: 700, fontSize: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     {t("pricing.servicesSelected").replace("{num}", selectedServices.length.toString())}
+                    <span style={{ fontSize: "0.75rem", color: "var(--color-accent-500)", textDecoration: "underline", fontWeight: 500 }}>
+                      {showReview ? (language === "es" ? "(Ocultar)" : "(Hide)") : (language === "es" ? "(Revisar)" : "(Review)")}
+                    </span>
                   </div>
                   <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>{t("pricing.customBuilder")}</div>
                 </div>
@@ -315,7 +373,10 @@ export default function PricingPage() {
 
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <button 
-                onClick={() => setSelectedServices([])}
+                onClick={() => {
+                  setSelectedServices([]);
+                  setShowReview(false);
+                }}
                 style={{ background: "none", border: "none", color: "var(--color-neutral-400)", fontSize: "0.875rem", cursor: "pointer", fontWeight: 600 }}
               >
                 {t("pricing.clearCart")}
@@ -338,6 +399,8 @@ export default function PricingPage() {
         onClose={() => setBookingOpen(false)} 
         initialService={selectedServices.length > 0 ? "Custom Package" : ""}
         initialMessage={customMessage}
+        customStack={selectedServices}
+        onRemoveFromStack={toggleService}
       />
       <style>{`
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }

@@ -1,11 +1,14 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { 
   Cpu, Clock, AlertTriangle, Plus, Loader2,
   CheckCircle2, ShieldCheck, Activity,
-  Database, BarChart3, Settings, Trash2, X, Shield, Server, Zap
+  Database, BarChart3, Settings, Trash2, X, Shield, Server,
+  ShoppingCart, Check, HelpCircle, Zap
 } from "lucide-react";
+import * as Icons from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { serviceCatalog, Service } from "@/data/services";
 
 interface ClientService {
   id: string;
@@ -17,32 +20,10 @@ interface ClientService {
   next_billing_date: string;
 }
 
-const CATALOG_ITEMS = [
-  {
-    name: "Pro Compute Node",
-    sku: "INF-COMP-PRO",
-    price: 49.00,
-    description: "High performance cloud compute instances to host applications, running API endpoints, or standard web services.",
-    specs: ["4 vCPU", "16GB RAM", "100GB NVMe Disk", "10Gbps Uplink"],
-    icon: <Cpu size={20} />
-  },
-  {
-    name: "Vault Database",
-    sku: "INF-DB-VAULT",
-    price: 99.00,
-    description: "Fully-managed, highly available relational database service with continuous backups and security patching.",
-    specs: ["PostgreSQL 16 Engine", "8GB Dedicated RAM", "200GB Storage", "Daily Snapshots"],
-    icon: <Database size={20} />
-  },
-  {
-    name: "Guard Sentinel",
-    sku: "INF-SEC-GUARD",
-    price: 149.00,
-    description: "Enterprise security perimeter featuring Intrusion Detection/Prevention (IDS/IPS) and managed WAF policies.",
-    specs: ["Real-time Inspection", "DDoS Mitigation", "Custom WAF Rules", "Weekly Threat Audit"],
-    icon: <Shield size={20} />
-  }
-];
+const getCategoryIcon = (iconName: string) => {
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; color?: string }>>)[iconName] || HelpCircle;
+  return <IconComponent size={20} />;
+};
 
 const getMockPerformance = (id: string) => {
   const sum = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -52,11 +33,21 @@ const getMockPerformance = (id: string) => {
   return { cpu, ram, network };
 };
 
+const parsePrice = (priceStr: string) => {
+  if (!priceStr || priceStr.toLowerCase() === "custom") return 0;
+  const num = parseFloat(priceStr.replace(/[^0-9.]/g, ""));
+  return isNaN(num) ? 0 : num;
+};
+
 export default function MyServicesPage() {
   const [services, setServices] = useState<ClientService[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modal & Cart state
   const [showCatalogModal, setShowCatalogModal] = useState(false);
-  const [provisioningItemSku, setProvisioningItemSku] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+  const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
+  const [provisioning, setProvisioning] = useState(false);
   const [cancellingServiceId, setCancellingServiceId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const supabase = createClient();
@@ -94,33 +85,65 @@ export default function MyServicesPage() {
     };
   }, [supabase, fetchServices]);
 
-  // Handle Provisioning
-  const handleProvisionService = async (item: typeof CATALOG_ITEMS[0]) => {
-    setProvisioningItemSku(item.sku);
+  // Handle Cart selection
+  const toggleCartService = (service: Service) => {
+    setSelectedServices(prev => {
+      const exists = prev.some(s => s.id === service.id);
+      if (exists) {
+        return prev.filter(s => s.id !== service.id);
+      }
+      return [...prev, service];
+    });
+  };
+
+  // Cart totals
+  const cartTotals = useMemo(() => {
+    let monthlyTotal = 0;
+    let hasCustom = false;
+    selectedServices.forEach(s => {
+      if (s.price.toLowerCase() === "custom") {
+        hasCustom = true;
+      } else {
+        const val = parsePrice(s.price);
+        if (s.priceType === "Monthly") {
+          monthlyTotal += val;
+        }
+      }
+    });
+    return { monthlyTotal, hasCustom };
+  }, [selectedServices]);
+
+  // Handle Provisioning of Selected Stack
+  const handleProvisionStack = async () => {
+    if (selectedServices.length === 0) return;
+    setProvisioning(true);
     setActionError(null);
+
+    const payload = selectedServices.map(s => ({
+      service_name: s.name,
+      service_sku: s.code,
+      price: parsePrice(s.price)
+    }));
 
     try {
       const res = await fetch("/api/services", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          service_name: item.name,
-          service_sku: item.sku,
-          price: item.price
-        })
+        body: JSON.stringify({ services: payload })
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to provision service");
+        throw new Error(errData.error || "Failed to provision stack");
       }
 
       await fetchServices();
+      setSelectedServices([]);
       setShowCatalogModal(false);
     } catch (err: any) {
       setActionError(err.message || "An unexpected error occurred.");
     } finally {
-      setProvisioningItemSku(null);
+      setProvisioning(false);
     }
   };
 
@@ -231,42 +254,121 @@ export default function MyServicesPage() {
           background: #0A1222;
           border: 1px solid rgba(255, 255, 255, 0.1);
           width: 100%;
-          max-width: 900px;
+          max-width: 1100px;
           border-radius: 24px;
           padding: 2rem;
           position: relative;
           box-shadow: 0 10px 40px rgba(0,0,0,0.6);
           max-height: 90vh;
-          overflow-y: auto;
-        }
-        .catalog-items-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1.5rem;
-          margin-top: 1.5rem;
-        }
-        .catalog-item-card {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 16px;
-          padding: 1.5rem;
           display: flex;
           flex-direction: column;
+        }
+        .catalog-modal-body {
+          display: grid;
+          grid-template-columns: 240px 1fr 280px;
+          gap: 2rem;
+          margin-top: 1.5rem;
+          overflow-y: auto;
+          flex: 1;
+        }
+        .catalog-stack-sidebar {
+          border-left: 1px solid rgba(255, 255, 255, 0.05);
+          padding-left: 1.5rem;
+          display: flex;
+          flex-direction: column;
+        }
+        .catalog-categories-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          border-right: 1px solid rgba(255, 255, 255, 0.05);
+          padding-right: 1.5rem;
+        }
+        .catalog-category-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.75rem 1rem;
+          border-radius: 12px;
+          background: transparent;
+          border: 1px solid transparent;
+          color: var(--color-neutral-400);
+          font-family: inherit;
+          font-weight: 600;
+          font-size: 0.8125rem;
+          text-align: left;
+          cursor: pointer;
           transition: all 0.2s;
         }
-        .catalog-item-card:hover {
-          border-color: rgba(0, 212, 255, 0.3);
+        .catalog-category-btn:hover {
+          background: rgba(255, 255, 255, 0.02);
+          color: white;
+        }
+        .catalog-category-btn.active {
+          background: rgba(0, 212, 255, 0.08);
+          border-color: rgba(0, 212, 255, 0.2);
+          color: #00D4FF;
+        }
+        .catalog-services-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 1.25rem;
+          padding-bottom: 1rem;
+        }
+        .catalog-service-card {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 16px;
+          padding: 1.25rem;
+          display: flex;
+          flex-direction: column;
+          cursor: pointer;
+          transition: all 0.2s;
+          position: relative;
+        }
+        .catalog-service-card:hover {
+          border-color: rgba(0, 212, 255, 0.25);
           background: rgba(255, 255, 255, 0.04);
         }
-        .catalog-item-card button {
-          margin-top: auto;
+        .catalog-service-card.selected {
+          border-color: #00D4FF;
+          background: rgba(0, 212, 255, 0.04);
+        }
+        .catalog-modal-footer {
+          margin-top: 1.5rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1.5rem;
+          flex-wrap: wrap;
         }
         @media (max-width: 900px) {
-          .catalog-items-grid {
+          .catalog-modal-body {
             grid-template-columns: 1fr;
           }
-          .catalog-modal-content {
-            padding: 1.5rem;
+          .catalog-stack-sidebar {
+            border-left: none;
+            padding-left: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 1.5rem;
+            margin-top: 1rem;
+          }
+          .catalog-categories-list {
+            flex-direction: row;
+            border-right: none;
+            padding-right: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 1rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+          }
+          .catalog-categories-list::-webkit-scrollbar {
+            display: none;
+          }
+          .catalog-category-btn {
+            white-space: nowrap;
           }
         }
         @media (max-width: 768px) {
@@ -336,8 +438,20 @@ export default function MyServicesPage() {
         ) : services.map(s => {
           const perf = getMockPerformance(s.id);
           const isCancelling = s.id === cancellingServiceId;
-          const catalogItem = CATALOG_ITEMS.find(item => item.sku === s.service_sku);
-          const icon = catalogItem?.icon || <Cpu size={20} />;
+          
+          // Try to locate category for item styling/icon
+          let matchedService: Service | undefined = undefined;
+          let matchedCategoryIconName = "Cpu";
+          for (const cat of serviceCatalog) {
+            const found = cat.services.find(item => item.code === s.service_sku);
+            if (found) {
+              matchedService = found;
+              matchedCategoryIconName = cat.icon;
+              break;
+            }
+          }
+          
+          const icon = getCategoryIcon(matchedCategoryIconName);
 
           return (
             <div key={s.id} className="glass-card group overflow-hidden border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all flex flex-col" style={{ borderRadius: "20px" }}>
@@ -385,7 +499,9 @@ export default function MyServicesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5">
                     <div className="text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-1">Monthly Cost</div>
-                    <div className="text-white font-bold tracking-tight">${s.price.toLocaleString()}</div>
+                    <div className="text-white font-bold tracking-tight">
+                      {s.price === 0 ? "Custom Quote" : `$${s.price.toLocaleString()}`}
+                    </div>
                   </div>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5">
                     <div className="text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-1">Renewal Date</div>
@@ -460,23 +576,25 @@ export default function MyServicesPage() {
         </div>
       </div>
 
-      {/* Catalog Modal */}
+      {/* Catalog & Custom Stack Builder Modal */}
       {showCatalogModal && (
         <div className="catalog-modal-overlay">
           <div className="catalog-modal-content">
             <button
               onClick={() => setShowCatalogModal(false)}
-              style={{ position: "absolute", right: "1.5rem", top: "1.5rem", background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer" }}
+              style={{ position: "absolute", right: "1.5rem", top: "1.5rem", background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer", zIndex: 10 }}
             >
               <X size={20} />
             </button>
             
-            <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: "1.5rem", fontWeight: 900, color: "white", marginBottom: "0.25rem" }} className="uppercase">
-              Infrastructure Catalog
-            </h2>
-            <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
-              Select a managed subscription item to provision instantly into your infrastructure fleet.
-            </p>
+            <div>
+              <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: "1.5rem", fontWeight: 900, color: "white", marginBottom: "0.25rem" }} className="uppercase">
+                Build Your Custom Stack
+              </h2>
+              <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
+                Browse our comprehensive catalog and check the services you want to provision into your custom stack.
+              </p>
+            </div>
 
             {actionError && (
               <div style={{ margin: "1rem 0 0", padding: "0.75rem", background: "rgba(239, 68, 68, 0.1)", color: "#EF4444", borderRadius: "8px", fontSize: "0.875rem" }}>
@@ -484,48 +602,163 @@ export default function MyServicesPage() {
               </div>
             )}
 
-            <div className="catalog-items-grid">
-              {CATALOG_ITEMS.map((item) => {
-                const isProvisioning = provisioningItemSku === item.sku;
-                return (
-                  <div key={item.sku} className="catalog-item-card">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                      <div style={{ width: "2.5rem", height: "2.5rem", borderRadius: "10px", background: "rgba(0, 212, 255, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00D4FF" }}>
-                        {item.icon}
-                      </div>
-                      <span style={{ fontSize: "1.125rem", fontWeight: 900, color: "white" }}>
-                        ${item.price.toFixed(2)}<span style={{ fontSize: "0.6875rem", color: "var(--color-neutral-500)", fontWeight: 500 }}>/mo</span>
-                      </span>
-                    </div>
-
-                    <h3 style={{ color: "white", fontWeight: "bold", fontSize: "1rem", margin: "0 0 0.5rem", fontFamily: "Syne, sans-serif" }}>
-                      {item.name}
-                    </h3>
-                    <p style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem", lineHeight: 1.6, margin: "0 0 1.25rem", flex: 1 }}>
-                      {item.description}
-                    </p>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", marginBottom: "1.5rem" }}>
-                      {item.specs.map(spec => (
-                        <div key={spec} style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "white", fontSize: "0.6875rem", fontWeight: 600 }}>
-                          <CheckCircle2 size={10} className="text-[#00D4FF]" />
-                          {spec}
-                        </div>
-                      ))}
-                    </div>
-
+            <div className="catalog-modal-body">
+              {/* Category Tab Selector */}
+              <div className="catalog-categories-list">
+                {serviceCatalog.map((cat, index) => {
+                  const isSelected = activeCategoryIndex === index;
+                  return (
                     <button
-                      onClick={() => handleProvisionService(item)}
-                      disabled={provisioningItemSku !== null}
-                      className="btn-primary"
-                      style={{ width: "100%", justifyContent: "center", padding: "0.625rem", fontSize: "0.75rem", borderRadius: "10px" }}
+                      key={cat.name}
+                      onClick={() => setActiveCategoryIndex(index)}
+                      className={`catalog-category-btn ${isSelected ? "active" : ""}`}
                     >
-                      {isProvisioning ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                      {isProvisioning ? "Provisioning..." : "Provision Now"}
+                      {getCategoryIcon(cat.icon)}
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{cat.name}</span>
                     </button>
+                  );
+                })}
+              </div>
+
+              {/* Service Cards under Selected Category */}
+              <div style={{ overflowY: "auto", maxHeight: "50vh" }}>
+                <h3 style={{ color: "white", fontSize: "1.125rem", fontWeight: 700, fontFamily: "Syne, sans-serif", marginBottom: "0.5rem" }}>
+                  {serviceCatalog[activeCategoryIndex].name}
+                </h3>
+                <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginBottom: "1.5rem" }}>
+                  {serviceCatalog[activeCategoryIndex].description}
+                </p>
+
+                <div className="catalog-services-grid">
+                  {serviceCatalog[activeCategoryIndex].services.map((service) => {
+                    const isServiceSelected = selectedServices.some(s => s.id === service.id);
+                    return (
+                      <div
+                        key={service.id}
+                        onClick={() => toggleCartService(service)}
+                        className={`catalog-service-card ${isServiceSelected ? "selected" : ""}`}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                          <div>
+                            <h4 style={{ color: "white", fontSize: "0.875rem", fontWeight: "bold", margin: 0 }}>
+                              {service.name}
+                            </h4>
+                            <span style={{ fontSize: "0.625rem", color: "var(--color-neutral-500)", fontFamily: "monospace", display: "block", marginTop: "2px" }}>
+                              {service.code}
+                            </span>
+                          </div>
+
+                          <div style={{ 
+                            width: 20, height: 20, borderRadius: "6px", 
+                            background: isServiceSelected ? "var(--color-accent-500)" : "rgba(255,255,255,0.06)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            color: isServiceSelected ? "#060B18" : "transparent",
+                            flexShrink: 0,
+                            border: isServiceSelected ? "1px solid var(--color-accent-500)" : "1px solid rgba(255,255,255,0.1)",
+                            transition: "all 0.15s ease"
+                          }}>
+                            <Check size={12} strokeWidth={3} />
+                          </div>
+                        </div>
+
+                        <p style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem", lineHeight: 1.5, margin: "0 0 1.25rem 0", flex: 1 }}>
+                          {service.description}
+                        </p>
+
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                          <span style={{ color: "var(--color-accent-500)", fontSize: "0.9375rem", fontWeight: 700 }}>
+                            {service.price}
+                          </span>
+                          <span style={{ color: "var(--color-neutral-500)", fontSize: "0.6875rem", textTransform: "uppercase", fontWeight: 600 }}>
+                            {service.priceType}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            {/* Selected Stack Sidebar (Desktop) */}
+            <div className="catalog-stack-sidebar">
+                <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700, fontFamily: "Syne, sans-serif", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.5rem", marginBottom: "1rem" }} className="uppercase">
+                  Your Pending Stack ({selectedServices.length})
+                </h3>
+                
+                {selectedServices.length === 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "150px", textAlign: "center", padding: "1rem", color: "var(--color-neutral-500)", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "12px", background: "rgba(255,255,255,0.01)" }}>
+                    <ShoppingCart size={20} style={{ marginBottom: "0.5rem", opacity: 0.3, color: "var(--color-accent-500)" }} />
+                    <p style={{ fontSize: "0.75rem", margin: 0, lineHeight: 1.4 }}>No services selected. Add items from the catalog.</p>
                   </div>
-                );
-              })}
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", overflowY: "auto", maxHeight: "40vh", paddingRight: "4px" }}>
+                    {selectedServices.map(s => (
+                      <div key={s.id} style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
+                        padding: "0.5rem 0.75rem", borderRadius: "10px"
+                      }}>
+                        <div style={{ minWidth: 0, flex: 1, marginRight: "0.5rem" }}>
+                          <div style={{ color: "white", fontWeight: 600, fontSize: "0.75rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                          <div style={{ color: "var(--color-neutral-500)", fontSize: "0.625rem", fontFamily: "monospace" }}>{s.code}</div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ color: "var(--color-accent-500)", fontWeight: 700, fontSize: "0.75rem" }}>{s.price}</span>
+                          <button 
+                            onClick={() => toggleCartService(s)}
+                            style={{ background: "none", border: "none", color: "#FF4444", cursor: "pointer", display: "flex", alignItems: "center", padding: "4px", borderRadius: "4px" }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sticky Stack Builder Summary Footer */}
+            <div className="catalog-modal-footer">
+              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent-500)", border: "1px solid rgba(0,212,255,0.2)" }}>
+                    <ShoppingCart size={18} />
+                  </div>
+                  <div>
+                    <div style={{ color: "white", fontWeight: 700, fontSize: "0.875rem" }}>
+                      {selectedServices.length} Services Selected
+                    </div>
+                    <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>Custom Package Stack</div>
+                  </div>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: "1.5rem" }}>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>Est. Monthly Total</div>
+                  <div style={{ color: "var(--color-accent-500)", fontWeight: 800, fontSize: "1.125rem", display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
+                    ${cartTotals.monthlyTotal.toFixed(2)}
+                    {cartTotals.hasCustom && <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)", fontWeight: 500 }}> + Custom Quote</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                <button 
+                  onClick={() => setSelectedServices([])}
+                  style={{ background: "none", border: "none", color: "var(--color-neutral-500)", fontSize: "0.8125rem", cursor: "pointer", fontWeight: 600 }}
+                >
+                  Clear Selection
+                </button>
+                <button
+                  onClick={handleProvisionStack}
+                  disabled={selectedServices.length === 0 || provisioning}
+                  className="btn-primary"
+                  style={{ padding: "0.625rem 1.5rem", fontSize: "0.8125rem", borderRadius: "12px", border: "none" }}
+                >
+                  {provisioning ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                  Confirm & Provision Stack
+                </button>
+              </div>
             </div>
           </div>
         </div>
