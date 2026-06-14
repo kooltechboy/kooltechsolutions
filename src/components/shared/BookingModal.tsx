@@ -11,7 +11,7 @@ export default function BookingModal({
   initialEmail = "",
   initialService = "",
   initialMessage = "",
-  customStack = [],
+  customStack,
   onRemoveFromStack
 }: { 
   isOpen: boolean; 
@@ -48,7 +48,14 @@ export default function BookingModal({
 
   // Update form if initial values change (e.g. after profile loads or custom package changes) using render-phase synchronization to avoid set-state-in-effect warnings
   const [prevProps, setPrevProps] = useState({ initialName, initialEmail, initialService, initialMessage });
-  const [prevStack, setPrevStack] = useState<Service[]>(customStack);
+  const [prevStack, setPrevStack] = useState<Service[]>(customStack || []);
+
+  const isStackEqual = (a: Service[], b: Service[]) => {
+    const arrA = a || [];
+    const arrB = b || [];
+    if (arrA.length !== arrB.length) return false;
+    return arrA.every((val, index) => val.id === arrB[index]?.id);
+  };
 
   if (
     initialName !== prevProps.initialName ||
@@ -66,7 +73,7 @@ export default function BookingModal({
     }));
   }
 
-  if (customStack !== prevStack) {
+  if (customStack !== undefined && !isStackEqual(customStack, prevStack)) {
     setPrevStack(customStack);
     setForm(prev => ({
       ...prev,
