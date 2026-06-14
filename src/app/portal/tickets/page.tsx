@@ -561,11 +561,11 @@ export default function ClientTicketsPage() {
             </div>
           ) : (
             /* DEFAULT: Support Command Center Welcome Panel */
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-black/10 animate-in fade-in duration-300">
-              <div className="max-w-3xl mx-auto space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-black/10 animate-in fade-in duration-300">
+              <div className="max-w-6xl mx-auto space-y-6 w-full">
                 
                 {/* Header */}
-                <div className="flex items-center gap-4 pb-6 border-b border-white/10">
+                <div className="flex items-center gap-4 pb-5 border-b border-white/10">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00D4FF]/20 to-blue-600/20 flex items-center justify-center text-[#00D4FF] border border-[#00D4FF]/30 shadow-lg shadow-cyan-500/10">
                     <LifeBuoy size={24} className="animate-spin-slow" style={{ animationDuration: '8s' }} />
                   </div>
@@ -575,119 +575,175 @@ export default function ClientTicketsPage() {
                   </div>
                 </div>
 
-                {/* Operations Pulse Bar */}
-                <div className="bg-gradient-to-r from-emerald-500/[0.04] to-emerald-500/[0.01] p-4.5 rounded-2xl border border-emerald-500/25 flex items-center justify-between shadow-lg relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full filter blur-xl opacity-50 group-hover:opacity-80 transition-opacity" />
-                  <div className="flex items-center gap-3">
-                    <span className="relative flex h-3.5 w-3.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-[0_0_8px_#10B981]"></span>
-                    </span>
-                    <div>
-                      <div className="text-xs font-black uppercase tracking-wider text-emerald-400">All Engineers Active</div>
-                      <div className="text-[10px] text-neutral-450 mt-0.5">Average live chat response time is currently 4.8 minutes.</div>
-                    </div>
-                  </div>
-                  <span className="text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 shadow-md">Operational</span>
-                </div>
-
-                {/* Support SLA matrix */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Sev 1 */}
-                  <div className="group relative bg-gradient-to-b from-white/[0.02] to-transparent p-5 rounded-2xl border border-white/10 hover:border-rose-500/40 transition-all duration-300 hover:shadow-xl hover:shadow-rose-500/5 hover:-translate-y-0.5">
-                    <div className="w-9 h-9 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-450 border border-rose-500/25 mb-4 group-hover:bg-rose-500/20 transition-colors">
-                      <ShieldAlert size={18} className="text-rose-400" />
-                    </div>
-                    <h4 className="text-sm font-black uppercase text-white tracking-wider">Sev 1 - Critical</h4>
-                    <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest mt-1">
-                      &lt; 1 Hour Target
-                    </div>
-                    <p className="text-neutral-400 text-xs leading-relaxed mt-2.5">
-                      Production down or security event. 24/7/365 pager response.
-                    </p>
-                  </div>
+                {/* Main Grid: Left side for status & severity, Right side for AI spotlight & contacts */}
+                <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 items-stretch">
                   
-                  {/* Sev 2 */}
-                  <div className="group relative bg-gradient-to-b from-white/[0.02] to-transparent p-5 rounded-2xl border border-white/10 hover:border-amber-400/40 transition-all duration-300 hover:shadow-xl hover:shadow-amber-400/5 hover:-translate-y-0.5">
-                    <div className="w-9 h-9 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 border border-amber-400/25 mb-4 group-hover:bg-amber-400/20 transition-colors">
-                      <AlertCircle size={18} />
+                  {/* Left Column: Operations Status & Severity SLA Matrix */}
+                  <div className="lg:col-span-7 flex flex-col gap-6">
+                    
+                    {/* Operations Pulse Bar */}
+                    <div className="bg-gradient-to-r from-emerald-500/[0.04] to-emerald-500/[0.01] p-4 rounded-2xl border border-emerald-500/25 flex items-center justify-between shadow-lg relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full filter blur-xl opacity-50 group-hover:opacity-80 transition-opacity" />
+                      <div className="flex items-center gap-3">
+                        <span className="relative flex h-3.5 w-3.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-[0_0_8px_#10B981]"></span>
+                        </span>
+                        <div>
+                          <div className="text-xs font-black uppercase tracking-wider text-emerald-400">All Engineers Active</div>
+                          <div className="text-[10px] text-neutral-400 mt-0.5">Average live chat response time is currently 4.8 minutes.</div>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 shadow-md">Operational</span>
                     </div>
-                    <h4 className="text-sm font-black uppercase text-white tracking-wider">Sev 2 - High</h4>
-                    <div className="text-[10px] font-black text-amber-400 uppercase tracking-widest mt-1">
-                      &lt; 4 Hours Target
+
+                    {/* Redesigned Severity cards - Horizontal Stack */}
+                    <div className="space-y-4">
+                      {/* Sev 1 */}
+                      <div className="group relative bg-gradient-to-r from-rose-500/[0.03] to-transparent hover:from-rose-500/[0.06] p-5 rounded-2xl border border-white/10 hover:border-rose-500/40 transition-all duration-300 hover:shadow-xl hover:shadow-rose-500/5 flex items-start gap-4">
+                        <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-rose-500 rounded-l-2xl shadow-[0_0_10px_#f43f5e]" />
+                        <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-450 shrink-0 border border-rose-500/25 group-hover:bg-rose-500/20 transition-colors">
+                          <ShieldAlert size={20} className="text-rose-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-sm font-black uppercase text-white tracking-wider">Sev 1 - Critical Impact</h4>
+                            <span className="text-[8px] font-black bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30 tracking-widest">&lt; 1 HR SLA</span>
+                          </div>
+                          <p className="text-[10px] font-bold mt-1 uppercase tracking-wider text-rose-400">Production Down / Security Incident</p>
+                          <p className="text-neutral-400 text-xs leading-relaxed mt-2.5">
+                            Complete interruption of core business functions. Trigger immediate 24/7 pager escalation to senior engineering.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Sev 2 */}
+                      <div className="group relative bg-gradient-to-r from-amber-500/[0.02] to-transparent hover:from-amber-500/[0.05] p-5 rounded-2xl border border-white/10 hover:border-amber-400/40 transition-all duration-300 hover:shadow-xl hover:shadow-amber-400/5 flex items-start gap-4">
+                        <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-amber-500 rounded-l-2xl shadow-[0_0_10px_#fbbf24]" />
+                        <div className="w-10 h-10 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 shrink-0 border border-amber-400/25 group-hover:bg-amber-400/20 transition-colors">
+                          <AlertCircle size={20} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-sm font-black uppercase text-white tracking-wider">Sev 2 - High Impact</h4>
+                            <span className="text-[8px] font-black bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded border border-amber-400/30 tracking-widest">&lt; 4 HR SLA</span>
+                          </div>
+                          <p className="text-[10px] font-bold mt-1 uppercase tracking-wider text-amber-300">Operational Degradation / Major Bugs</p>
+                          <p className="text-neutral-400 text-xs leading-relaxed mt-2.5">
+                            Impacting operations, major features, or multiple users. High-priority queue scheduling during working hours.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Sev 3 */}
+                      <div className="group relative bg-gradient-to-r from-blue-500/[0.02] to-transparent hover:from-blue-500/[0.05] p-5 rounded-2xl border border-white/10 hover:border-blue-400/40 transition-all duration-300 hover:shadow-xl hover:shadow-blue-400/5 flex items-start gap-4">
+                        <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-blue-500 rounded-l-2xl shadow-[0_0_10px_#3b82f6]" />
+                        <div className="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center text-blue-400 shrink-0 border border-blue-400/25 group-hover:bg-blue-400/20 transition-colors">
+                          <Clock size={20} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-sm font-black uppercase text-white tracking-wider">Sev 3 - Normal Impact</h4>
+                            <span className="text-[8px] font-black bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30 tracking-widest">&lt; 12 HR SLA</span>
+                          </div>
+                          <p className="text-[10px] font-bold mt-1 uppercase tracking-wider text-blue-300">General Requests / Maintenance</p>
+                          <p className="text-neutral-400 text-xs leading-relaxed mt-2.5">
+                            Non-critical requests, configuration changes, billing queries, or system updates. Addressed in standard ticketing order.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-neutral-400 text-xs leading-relaxed mt-2.5">
-                      Operational issues affecting major features or users.
-                    </p>
                   </div>
 
-                  {/* Sev 3 */}
-                  <div className="group relative bg-gradient-to-b from-white/[0.02] to-transparent p-5 rounded-2xl border border-white/10 hover:border-blue-400/40 transition-all duration-300 hover:shadow-xl hover:shadow-blue-400/5 hover:-translate-y-0.5">
-                    <div className="w-9 h-9 rounded-xl bg-blue-400/10 flex items-center justify-center text-blue-450 border border-blue-400/25 mb-4 group-hover:bg-blue-400/20 transition-colors">
-                      <Clock size={18} />
-                    </div>
-                    <h4 className="text-sm font-black uppercase text-white tracking-wider">Sev 3 - Normal</h4>
-                    <div className="text-[10px] font-black text-blue-450 uppercase tracking-widest mt-1">
-                      &lt; 12 Hours Target
-                    </div>
-                    <p className="text-neutral-400 text-xs leading-relaxed mt-2.5">
-                      General inquiries, password resets, or system changes.
-                    </p>
-                  </div>
-                </div>
+                  {/* Right Column: AI Assistant Spotlight & Support Hours/Hotline */}
+                  <div className="lg:col-span-5 flex flex-col justify-between gap-6">
+                    
+                    {/* Kira AI Assistant Spotlight */}
+                    <div className="relative overflow-hidden p-6 rounded-2xl border border-violet-500/20 bg-gradient-to-b from-violet-600/[0.06] to-[#0A1628]/45 hover:border-violet-500/35 transition-all duration-300 shadow-2xl flex flex-col justify-between group h-full">
+                      <div className="absolute -right-12 -top-12 w-48 h-48 bg-violet-600/10 rounded-full filter blur-3xl opacity-50 group-hover:opacity-85 transition-opacity" />
+                      
+                      <div>
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 flex items-center justify-center text-violet-400 border border-violet-500/30 shadow-lg shadow-violet-500/10 shrink-0 group-hover:scale-105 transition-transform duration-300 animate-float">
+                            <Bot size={24} />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-black uppercase text-white tracking-wider flex items-center gap-2">
+                              Kira AI Assistant
+                              <span className="text-[8px] font-black tracking-widest bg-[#00E676]/10 text-[#00E676] px-2 py-0.5 rounded border border-[#00E676]/20 animate-pulse">Online</span>
+                            </h4>
+                            <p className="text-neutral-400 text-[10px] uppercase tracking-wider font-bold">Autonomous L3 Agent</p>
+                          </div>
+                        </div>
+                        
+                        <p className="text-neutral-300 text-xs leading-relaxed mb-5">
+                          Need instant resolution? Kira can run diagnostics, verify system telemetry, check firewall routing, and reset service tunnels in seconds.
+                        </p>
 
-                {/* Kira AI shortcuts */}
-                <div className="relative overflow-hidden p-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-600/[0.06] to-indigo-600/[0.02] hover:border-violet-500/35 transition-all duration-300 shadow-xl flex flex-col sm:flex-row items-center gap-6 group">
-                  {/* Background meshes */}
-                  <div className="absolute -left-12 -top-12 w-36 h-36 bg-violet-600/10 rounded-full filter blur-2xl opacity-50 group-hover:opacity-80 transition-opacity" />
-                  <div className="absolute -right-12 -bottom-12 w-36 h-36 bg-[#00D4FF]/10 rounded-full filter blur-2xl opacity-50 group-hover:opacity-80 transition-opacity" />
-                  
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 flex items-center justify-center text-violet-400 border border-violet-500/30 shadow-lg shadow-violet-500/10 shrink-0 group-hover:scale-105 transition-transform duration-300 animate-float">
-                    <Bot size={28} />
-                  </div>
-                  <div className="flex-1 text-center sm:text-left z-10">
-                    <h4 className="text-sm font-black uppercase text-white tracking-wider flex items-center justify-center sm:justify-start gap-2">
-                      Need Instant Resolution?
-                      <span className="text-[8px] font-black tracking-widest bg-violet-500/15 text-violet-400 px-2 py-0.5 rounded border border-violet-500/20">AI Assistant</span>
-                    </h4>
-                    <p className="text-neutral-400 text-xs leading-relaxed mt-2">
-                      Our autonomous agent Kira can verify cloud servers, sync asset telemetries, and diagnose network routing issues in seconds without waiting for a ticket queue.
-                    </p>
-                    <button 
-                      onClick={() => router.push('/portal/ai-assistant')} 
-                      className="group/btn inline-flex items-center gap-1.5 px-4 py-2 mt-4 rounded-xl bg-violet-500/10 text-violet-300 border border-violet-500/25 hover:bg-violet-500 hover:text-white hover:border-transparent hover:shadow-lg hover:shadow-violet-500/20 transition-all duration-300 text-[10px] font-black uppercase tracking-wider cursor-pointer"
-                    >
-                      Launch Kira Assistant <ChevronRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
-                    </button>
-                  </div>
-                </div>
+                        {/* Visual Mock Chat Preview Box */}
+                        <div className="bg-black/50 border border-white/5 rounded-xl p-4 space-y-3 font-mono text-[10px] leading-relaxed mb-6 select-none shadow-inner">
+                          <div className="flex gap-2">
+                            <span className="text-neutral-500">SYSTEM:</span>
+                            <span className="text-neutral-300">Initializing VPN diagnostic check...</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-[#00D4FF]">KIRA:</span>
+                            <span className="text-emerald-400">✔ Checking node gw-03 response [12ms]</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-[#00D4FF]">KIRA:</span>
+                            <span className="text-neutral-300">Routing is operational. Latency 14ms. All tunnels sync'd.</span>
+                          </div>
+                          <div className="flex gap-2 items-center text-violet-450 animate-pulse">
+                            <span>▋</span>
+                            <span className="text-neutral-500 text-[8px] font-sans italic">Kira is listening...</span>
+                          </div>
+                        </div>
+                      </div>
 
-                {/* Help Contacts & Hours */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-b from-white/[0.01] to-transparent p-5 rounded-2xl border border-white/5 flex gap-4 hover:border-white/10 transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center text-neutral-400 shrink-0 border border-white/10 shadow-md">
-                      <Info size={16} />
+                      <div>
+                        <button 
+                          onClick={() => router.push('/portal/ai-assistant')} 
+                          className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-500/25 transition-all duration-300 text-xs font-black uppercase tracking-wider cursor-pointer hover:scale-[1.01]"
+                        >
+                          Launch Kira Assistant <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <h5 className="text-xs font-black uppercase text-white tracking-wider">Business Support Hours</h5>
-                      <p className="text-neutral-400 text-xs mt-1.5 leading-relaxed">
-                        Mon - Fri: 8:00 AM - 6:00 PM AST
-                        <span className="block mt-1 text-[10px] text-neutral-500">General ticketing response is during business hours.</span>
-                      </p>
+
+                    {/* Support Hours & Hotline stacked below AI card */}
+                    <div className="space-y-4">
+                      {/* Business Hours */}
+                      <div className="bg-gradient-to-br from-white/[0.01] to-transparent p-5 rounded-2xl border border-white/5 flex gap-4 hover:border-white/10 transition-colors shadow-md">
+                        <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center text-neutral-450 shrink-0 border border-white/10 shadow-md">
+                          <Info size={18} className="text-neutral-400" />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-black uppercase text-white tracking-wider">Business Support Hours</h5>
+                          <p className="text-neutral-400 text-xs mt-1.5 leading-relaxed">
+                            Mon - Fri: 8:00 AM - 6:00 PM AST
+                            <span className="block mt-1 text-[10px] text-neutral-500 font-medium">Standard ticketing and non-critical requests are processed during business hours.</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Emergency Hotline */}
+                      <div className="bg-gradient-to-br from-white/[0.01] to-transparent p-5 rounded-2xl border border-white/5 flex gap-4 hover:border-white/10 transition-colors shadow-md">
+                        <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center text-neutral-400 shrink-0 border border-white/10 shadow-md">
+                          <PhoneCall size={18} />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-black uppercase text-white tracking-wider">Emergency Hotline</h5>
+                          <p className="text-neutral-400 text-xs mt-1.5 leading-relaxed">
+                            Caribbean: +1 (868) 555-KOOL
+                            <span className="block mt-1.5 text-[10px] text-rose-450 font-bold bg-rose-500/5 px-2 py-1 rounded border border-rose-500/10">
+                              Pager escalation for Severity 1 production down scenarios.
+                            </span>
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="bg-gradient-to-b from-white/[0.01] to-transparent p-5 rounded-2xl border border-white/5 flex gap-4 hover:border-white/10 transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center text-neutral-400 shrink-0 border border-white/10 shadow-md">
-                      <PhoneCall size={16} />
-                    </div>
-                    <div>
-                      <h5 className="text-xs font-black uppercase text-white tracking-wider">Emergency Hotline</h5>
-                      <p className="text-neutral-400 text-xs mt-1.5 leading-relaxed">
-                        Caribbean: +1 (868) 555-KOOL
-                        <span className="block mt-1 text-[10px] text-rose-400 font-bold">Pager escalation role for Severity 1 production down scenarios.</span>
-                      </p>
-                    </div>
+
                   </div>
                 </div>
 
