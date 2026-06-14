@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Calendar, Clock, User, Mail, CheckCircle, Loader2, Phone, MessageSquare, Briefcase, Trash2 } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { Service } from "@/data/services";
@@ -46,24 +46,8 @@ export default function BookingModal({
       : `I am interested in a custom package including the following services:\n\n${list}`;
   };
 
-  // Update form if initial values change (e.g. after profile loads or custom package changes) using render-phase synchronization to avoid set-state-in-effect warnings
-  const [prevProps, setPrevProps] = useState({ initialName, initialEmail, initialService, initialMessage });
-  const [prevStack, setPrevStack] = useState<Service[]>(customStack || []);
-
-  const isStackEqual = (a: Service[], b: Service[]) => {
-    const arrA = a || [];
-    const arrB = b || [];
-    if (arrA.length !== arrB.length) return false;
-    return arrA.every((val, index) => val.id === arrB[index]?.id);
-  };
-
-  if (
-    initialName !== prevProps.initialName ||
-    initialEmail !== prevProps.initialEmail ||
-    initialService !== prevProps.initialService ||
-    initialMessage !== prevProps.initialMessage
-  ) {
-    setPrevProps({ initialName, initialEmail, initialService, initialMessage });
+  // Sync props using useEffect to prevent render-phase infinite loops
+  useEffect(() => {
     setForm(prev => ({
       ...prev,
       name: prev.name || initialName,
@@ -71,15 +55,16 @@ export default function BookingModal({
       service: initialService || prev.service,
       message: initialMessage || prev.message
     }));
-  }
+  }, [initialName, initialEmail, initialService, initialMessage]);
 
-  if (customStack !== undefined && !isStackEqual(customStack, prevStack)) {
-    setPrevStack(customStack);
-    setForm(prev => ({
-      ...prev,
-      message: getCustomMessage(customStack)
-    }));
-  }
+  useEffect(() => {
+    if (customStack !== undefined) {
+      setForm(prev => ({
+        ...prev,
+        message: getCustomMessage(customStack)
+      }));
+    }
+  }, [customStack, language]);
 
   const handleRemoveService = (service: Service) => {
     if (onRemoveFromStack) {
