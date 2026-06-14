@@ -192,58 +192,330 @@ export default function MyServicesPage() {
           justify-content: space-between;
           align-items: center;
           gap: 1.5rem;
-          margin-bottom: 2rem;
+          margin-bottom: 2.5rem;
         }
         .services-provision-btn {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.875rem 1.75rem;
-          border-radius: 16px;
-          background: white;
-          color: #0A1628;
-          font-family: 'DM Sans', sans-serif;
-          font-weight: 800;
+          padding: 0.75rem 1.5rem;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #00D4FF 0%, #0082b4 100%);
+          color: #060B18;
+          font-family: inherit;
+          font-weight: 700;
           font-size: 0.75rem;
           text-transform: uppercase;
-          letter-spacing: 0.08em;
-          border: none;
+          letter-spacing: 0.05em;
+          border: 1px solid rgba(0, 212, 255, 0.4);
           cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
           white-space: nowrap;
         }
         .services-provision-btn:hover {
-          background: #e2e8f0;
           transform: translateY(-2px);
-          box-shadow: 0 8px 30px rgba(255, 255, 255, 0.15);
+          box-shadow: 0 0 30px rgba(0, 212, 255, 0.35);
+          filter: brightness(1.15);
         }
-        .sla-layout {
+        .services-provision-btn:active {
+          transform: translateY(0);
+        }
+
+        /* Empty State */
+        .empty-state-container {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 3rem;
-          padding: 2.5rem;
-          border-radius: 32px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(10, 22, 40, 0.4) 100%);
-          margin-top: 3rem;
+          justify-content: center;
+          text-align: center;
+          padding: 6rem 2rem;
+          border-radius: 28px;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.015) 0%, rgba(255, 255, 255, 0) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.04);
+          box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.03);
+          position: relative;
+          overflow: hidden;
         }
-        .sla-pulse-circle {
-          width: 4rem;
-          height: 4rem;
-          border-radius: 16px;
-          background: rgba(0, 212, 255, 0.1);
-          border: 1px solid rgba(0, 212, 255, 0.25);
+        .empty-state-icon-box {
+          width: 5.5rem;
+          height: 5.5rem;
+          border-radius: 22px;
+          background: rgba(0, 212, 255, 0.05);
+          border: 1px solid rgba(0, 212, 255, 0.15);
           display: flex;
           align-items: center;
           justify-content: center;
           color: #00D4FF;
+          margin-bottom: 1.5rem;
+          box-shadow: 0 0 40px rgba(0, 212, 255, 0.1);
+          position: relative;
         }
+        .empty-state-title {
+          font-family: 'Syne', sans-serif;
+          font-weight: 800;
+          font-size: 1.5rem;
+          text-transform: uppercase;
+          letter-spacing: -0.01em;
+          color: white;
+          margin-bottom: 0.5rem;
+        }
+        .empty-state-desc {
+          color: var(--color-neutral-400);
+          font-size: 0.8125rem;
+          max-width: 320px;
+          margin-bottom: 2rem;
+          line-height: 1.6;
+        }
+        .empty-state-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 2rem;
+          border-radius: 12px;
+          background: rgba(0, 212, 255, 0.06);
+          color: #00D4FF;
+          border: 1px solid rgba(0, 212, 255, 0.2);
+          font-weight: 700;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .empty-state-btn:hover {
+          background: rgba(0, 212, 255, 0.12);
+          border-color: rgba(0, 212, 255, 0.4);
+          box-shadow: 0 0 25px rgba(0, 212, 255, 0.15);
+          transform: translateY(-1px);
+        }
+
+        /* Active Cards */
+        .active-card-container {
+          background: rgba(10, 22, 40, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 20px;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .active-card-container:hover {
+          border-color: rgba(0, 212, 255, 0.3);
+          box-shadow: 0 10px 30px rgba(0, 212, 255, 0.08);
+          transform: translateY(-2px);
+        }
+        .active-card-icon-box {
+          width: 3rem;
+          height: 3rem;
+          border-radius: 12px;
+          background: rgba(0, 212, 255, 0.06);
+          border: 1px solid rgba(0, 212, 255, 0.15);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #00D4FF;
+          box-shadow: 0 0 15px rgba(0, 212, 255, 0.05);
+        }
+        .active-card-status {
+          font-family: 'DM Sans', sans-serif !important;
+          font-size: 0.625rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          padding: 0.25rem 0.625rem;
+          border-radius: 20px;
+          background: rgba(0, 230, 118, 0.06);
+          border: 1px solid rgba(0, 230, 118, 0.15);
+          color: #00E676;
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+        .pulse-online {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #00E676;
+          box-shadow: 0 0 10px #00E676;
+          animation: pulse 1.8s infinite;
+        }
+        @keyframes pulse {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.5); }
+          70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(0, 230, 118, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+        }
+        .metric-container {
+          background: rgba(0, 0, 0, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.02);
+          padding: 0.875rem;
+          border-radius: 12px;
+        }
+        .metric-bar-track {
+          height: 5px;
+          background: rgba(255, 255, 255, 0.04);
+          border-radius: 3px;
+          overflow: hidden;
+          margin-top: 0.4rem;
+        }
+        .metric-bar-fill {
+          height: 100%;
+          border-radius: 3px;
+          transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .billing-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+        }
+        .billing-pill {
+          background: rgba(255, 255, 255, 0.015);
+          border: 1px solid rgba(255, 255, 255, 0.04);
+          padding: 0.75rem;
+          border-radius: 12px;
+        }
+        .billing-pill-label {
+          font-size: 0.5625rem;
+          font-weight: 800;
+          color: var(--color-neutral-500);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 0.25rem;
+        }
+        .billing-pill-value {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: white;
+        }
+        .active-card-footer {
+          display: flex;
+          gap: 0.75rem;
+          padding: 1rem 1.5rem;
+          background: rgba(255, 255, 255, 0.01);
+          border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .active-card-btn-monitor {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          padding: 0.625rem;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: white;
+          font-size: 0.6875rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .active-card-btn-monitor:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.15);
+        }
+        .active-card-btn-cancel {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          padding: 0.625rem;
+          border-radius: 10px;
+          background: rgba(239, 68, 68, 0.05);
+          border: 1px solid rgba(239, 68, 68, 0.15);
+          color: #ef4444;
+          font-size: 0.6875rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .active-card-btn-cancel:hover {
+          background: rgba(239, 68, 68, 0.12);
+          border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* SLA Console */
+        .sla-card-container {
+          background: linear-gradient(135deg, rgba(0, 212, 255, 0.02) 0%, rgba(10, 22, 40, 0.5) 100%);
+          border: 1px solid rgba(0, 212, 255, 0.08);
+          border-radius: 24px;
+          padding: 2rem;
+          margin-top: 3.5rem;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+          position: relative;
+          overflow: hidden;
+        }
+        .sla-card-header {
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+          margin-bottom: 2rem;
+        }
+        .sla-card-icon-box {
+          width: 3.5rem;
+          height: 3.5rem;
+          border-radius: 16px;
+          background: rgba(0, 212, 255, 0.08);
+          border: 1px solid rgba(0, 212, 255, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #00D4FF;
+          box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+        .sla-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2rem;
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          padding-top: 2rem;
+        }
+        .sla-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .sla-item-label {
+          font-size: 0.625rem;
+          font-weight: 800;
+          color: var(--color-neutral-500);
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .sla-item-value {
+          font-family: 'Syne', sans-serif;
+          font-weight: 800;
+          font-size: 1.75rem;
+          color: white;
+          letter-spacing: -0.01em;
+        }
+        .sla-item-status {
+          font-size: 0.625rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+
+        /* Catalog Modal */
         .catalog-modal-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.85);
-          backdrop-filter: blur(8px);
+          background: rgba(5, 8, 16, 0.85);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -251,14 +523,14 @@ export default function MyServicesPage() {
           padding: 1rem;
         }
         .catalog-modal-content {
-          background: #0A1222;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(10, 18, 34, 0.96);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           width: 100%;
-          max-width: 1100px;
+          max-width: 1150px;
           border-radius: 24px;
-          padding: 2rem;
+          padding: 2.25rem;
           position: relative;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+          box-shadow: 0 20px 50px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.04);
           max-height: 90vh;
           display: flex;
           flex-direction: column;
@@ -267,28 +539,22 @@ export default function MyServicesPage() {
           display: grid;
           grid-template-columns: 240px 1fr 280px;
           gap: 2rem;
-          margin-top: 1.5rem;
+          margin-top: 2rem;
           overflow-y: auto;
           flex: 1;
-        }
-        .catalog-stack-sidebar {
-          border-left: 1px solid rgba(255, 255, 255, 0.05);
-          padding-left: 1.5rem;
-          display: flex;
-          flex-direction: column;
         }
         .catalog-categories-list {
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.35rem;
           border-right: 1px solid rgba(255, 255, 255, 0.05);
-          padding-right: 1.5rem;
+          padding-right: 1.25rem;
         }
         .catalog-category-btn {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          padding: 0.75rem 1rem;
+          padding: 0.6875rem 1rem;
           border-radius: 12px;
           background: transparent;
           border: 1px solid transparent;
@@ -298,41 +564,48 @@ export default function MyServicesPage() {
           font-size: 0.8125rem;
           text-align: left;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .catalog-category-btn:hover {
           background: rgba(255, 255, 255, 0.02);
           color: white;
         }
         .catalog-category-btn.active {
-          background: rgba(0, 212, 255, 0.08);
-          border-color: rgba(0, 212, 255, 0.2);
+          background: rgba(0, 212, 255, 0.06);
+          border-color: rgba(0, 212, 255, 0.15);
           color: #00D4FF;
         }
         .catalog-services-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 1.25rem;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 1rem;
           padding-bottom: 1rem;
         }
         .catalog-service-card {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          background: rgba(255, 255, 255, 0.015);
+          border: 1px solid rgba(255, 255, 255, 0.04);
           border-radius: 16px;
           padding: 1.25rem;
           display: flex;
           flex-direction: column;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           position: relative;
         }
         .catalog-service-card:hover {
           border-color: rgba(0, 212, 255, 0.25);
-          background: rgba(255, 255, 255, 0.04);
+          background: rgba(255, 255, 255, 0.03);
         }
         .catalog-service-card.selected {
           border-color: #00D4FF;
           background: rgba(0, 212, 255, 0.04);
+          box-shadow: 0 0 20px rgba(0, 212, 255, 0.05);
+        }
+        .catalog-stack-sidebar {
+          border-left: 1px solid rgba(255, 255, 255, 0.05);
+          padding-left: 1.5rem;
+          display: flex;
+          flex-direction: column;
         }
         .catalog-modal-footer {
           margin-top: 1.5rem;
@@ -344,6 +617,8 @@ export default function MyServicesPage() {
           gap: 1.5rem;
           flex-wrap: wrap;
         }
+
+        /* Responsive Overrides */
         @media (max-width: 900px) {
           .catalog-modal-body {
             grid-template-columns: 1fr;
@@ -370,6 +645,10 @@ export default function MyServicesPage() {
           .catalog-category-btn {
             white-space: nowrap;
           }
+          .sla-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
         }
         @media (max-width: 768px) {
           .services-header-container {
@@ -380,18 +659,6 @@ export default function MyServicesPage() {
           .services-provision-btn {
             width: 100%;
             justify-content: center;
-          }
-          .sla-layout {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 1.5rem;
-            gap: 1.5rem;
-          }
-          .sla-layout-right {
-            border-top: 1px solid rgba(255,255,255,0.05);
-            border-left: none !important;
-            padding-top: 1.5rem;
-            padding-left: 0 !important;
           }
         }
       `}</style>
@@ -417,20 +684,17 @@ export default function MyServicesPage() {
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {services.length === 0 ? (
-          <div className="glass-card lg:col-span-3 py-24 text-center space-y-6 bg-white/[0.02] border border-white/5" style={{ borderRadius: "24px" }}>
-            <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-neutral-800">
-              <Database size={40} />
+          <div className="empty-state-container lg:col-span-3">
+            <div className="empty-state-icon-box">
+              <Database size={36} />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-white font-syne uppercase tracking-tight">No Active Subscriptions</h2>
-              <p className="text-neutral-500 text-sm mt-2 max-w-xs mx-auto">
-                Discover enterprise-grade managed IT solutions in our global service catalog.
-              </p>
-            </div>
+            <h2 className="empty-state-title">No Active Subscriptions</h2>
+            <p className="empty-state-desc">
+              Discover enterprise-grade managed IT solutions in our global service catalog.
+            </p>
             <button 
               onClick={() => setShowCatalogModal(true)}
-              className="px-8 py-3 rounded-xl bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20 font-bold text-xs uppercase tracking-widest hover:bg-[#00D4FF]/20 transition-all"
-              style={{ cursor: "pointer" }}
+              className="empty-state-btn"
             >
               Browse Catalog
             </button>
@@ -454,73 +718,72 @@ export default function MyServicesPage() {
           const icon = getCategoryIcon(matchedCategoryIconName);
 
           return (
-            <div key={s.id} className="glass-card group overflow-hidden border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all flex flex-col" style={{ borderRadius: "20px" }}>
+            <div key={s.id} className="active-card-container">
               <div className="p-6 space-y-5 flex-1">
                 <div className="flex justify-between items-start">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00D4FF]/10 flex items-center justify-center text-[#00D4FF] border border-[#00D4FF]/20 shadow-lg shadow-[#00D4FF]/5">
+                  <div className="active-card-icon-box">
                     {icon}
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-black text-[#00E676] uppercase tracking-[0.2em] px-2.5 py-1 bg-green-500/10 rounded-full border border-green-500/20 flex items-center gap-1">
-                      <CheckCircle2 size={10} /> {s.status}
+                    <span className="active-card-status">
+                      <span className="pulse-online" /> {s.status}
                     </span>
-                    <span className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mt-2">SKU: {s.service_sku}</span>
+                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mt-2">SKU: {s.service_sku}</span>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-bold text-white font-syne tracking-tight group-hover:text-[#00D4FF] transition-colors">{s.service_name}</h3>
-                  <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mt-1">Enterprise Subscription</p>
+                  <h3 className="text-lg font-bold text-white font-syne tracking-tight group-hover:text-[#00D4FF] transition-colors">{s.service_name}</h3>
+                  <p className="text-neutral-500 text-[9px] font-bold uppercase tracking-widest mt-1">Enterprise Subscription</p>
                 </div>
 
                 {/* Infrastructure Metrics */}
-                <div style={{ background: "rgba(0,0,0,0.15)", padding: "1rem", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.03)" }} className="space-y-3">
+                <div className="metric-container space-y-3">
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.6875rem", marginBottom: "0.25rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.6875rem" }}>
                       <span style={{ color: "var(--color-neutral-500)", fontWeight: 700, textTransform: "uppercase" }}>CPU Core Load</span>
                       <span style={{ color: "white", fontWeight: "bold" }}>{perf.cpu}%</span>
                     </div>
-                    <div style={{ height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${perf.cpu}%`, background: perf.cpu > 80 ? "#FF4444" : perf.cpu > 50 ? "#FFB300" : "#00D4FF", transition: "width 0.5s ease" }} />
+                    <div className="metric-bar-track">
+                      <div className="metric-bar-fill" style={{ width: `${perf.cpu}%`, background: perf.cpu > 80 ? "linear-gradient(90deg, #ef4444, #ff6b6b)" : perf.cpu > 50 ? "linear-gradient(90deg, #f59e0b, #fbbf24)" : "linear-gradient(90deg, #00D4FF, #00A3FF)" }} />
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.6875rem", marginBottom: "0.25rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.6875rem" }}>
                       <span style={{ color: "var(--color-neutral-500)", fontWeight: 700, textTransform: "uppercase" }}>RAM Utilization</span>
                       <span style={{ color: "white", fontWeight: "bold" }}>{perf.ram}%</span>
                     </div>
-                    <div style={{ height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${perf.ram}%`, background: perf.ram > 80 ? "#FF4444" : perf.ram > 50 ? "#FFB300" : "#00E676", transition: "width 0.5s ease" }} />
+                    <div className="metric-bar-track">
+                      <div className="metric-bar-fill" style={{ width: `${perf.ram}%`, background: perf.ram > 80 ? "linear-gradient(90deg, #ef4444, #ff6b6b)" : perf.ram > 50 ? "linear-gradient(90deg, #f59e0b, #fbbf24)" : "linear-gradient(90deg, #00E676, #34d399)" }} />
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                    <div className="text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-1">Monthly Cost</div>
-                    <div className="text-white font-bold tracking-tight">
+                <div className="billing-grid">
+                  <div className="billing-pill">
+                    <div className="billing-pill-label">Monthly Cost</div>
+                    <div className="billing-pill-value">
                       {s.price === 0 ? "Custom Quote" : `$${s.price.toLocaleString()}`}
                     </div>
                   </div>
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                    <div className="text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-1">Renewal Date</div>
-                    <div className="text-white font-bold tracking-tight">{new Date(s.next_billing_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  <div className="billing-pill">
+                    <div className="billing-pill-label">Renewal Date</div>
+                    <div className="billing-pill-value">{new Date(s.next_billing_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-white/[0.02] border-t border-white/5 flex gap-2">
-                <button className="flex-1 py-3 rounded-xl bg-white/5 text-white text-[10px] font-black uppercase tracking-widest border border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-2" style={{ cursor: "pointer" }}>
-                  <BarChart3 size={14} /> Monitor
+              <div className="active-card-footer">
+                <button className="active-card-btn-monitor">
+                  <BarChart3 size={12} /> Monitor
                 </button>
                 <button 
                   onClick={() => handleCancelService(s.id)}
                   disabled={isCancelling}
-                  className="flex-1 py-3 rounded-xl bg-red-500/10 text-red-400 text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
-                  style={{ cursor: "pointer" }}
+                  className="active-card-btn-cancel"
                 >
-                  {isCancelling ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Cancel
+                  {isCancelling ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Cancel
                 </button>
               </div>
             </div>
@@ -529,48 +792,45 @@ export default function MyServicesPage() {
       </div>
 
       {/* SLA Infrastructure Section */}
-      <div className="glass-card rounded-[2.5rem] p-8 lg:p-12 border border-white/5 bg-gradient-to-br from-[#00D4FF]/5 via-transparent to-transparent">
-        <div className="flex flex-col lg:flex-row items-center gap-12">
-          <div className="shrink-0 space-y-4 text-center lg:text-left">
-            <div className="w-16 h-16 rounded-2xl bg-[#00D4FF]/10 flex items-center justify-center text-[#00D4FF] border border-[#00D4FF]/20 mx-auto lg:mx-0 shadow-xl shadow-[#00D4FF]/10">
-              <ShieldCheck size={32} />
+      <div className="sla-card-container">
+        <div className="flex flex-col lg:flex-row items-stretch gap-10">
+          <div className="shrink-0 flex lg:flex-col items-center lg:items-start gap-4">
+            <div className="sla-card-icon-box">
+              <ShieldCheck size={28} />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-white font-syne uppercase tracking-tight">SLA Performance</h2>
-              <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-1">Live Contractual Compliance</p>
+              <h2 className="text-xl font-bold text-white font-syne uppercase tracking-tight">SLA Performance</h2>
+              <p className="text-neutral-500 text-[9px] font-bold uppercase tracking-wider mt-1">Live Contractual Compliance</p>
             </div>
           </div>
 
-          <div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 w-full border-t lg:border-t-0 lg:border-l border-white/5 pt-12 lg:pt-0 lg:pl-12"
-            style={{ borderLeft: "1px solid rgba(255,255,255,0.05)", paddingLeft: "3rem" }}
-          >
-            <div className="space-y-3" style={{ textAlign: "left" }}>
-              <div className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                <Clock size={14} className="text-[#00D4FF]" /> Target Response
+          <div className="sla-grid flex-1 w-full">
+            <div className="sla-item">
+              <div className="sla-item-label">
+                <Clock size={12} style={{ color: "#00D4FF" }} /> Target Response
               </div>
-              <div className="text-3xl font-black text-white font-syne tracking-tighter">&lt; 15 Mins</div>
-              <div className="inline-flex items-center gap-1.5 text-[#00E676] text-[10px] font-black uppercase">
-                <CheckCircle2 size={12} /> Within SLA Target
+              <div className="sla-item-value">&lt; 15 Mins</div>
+              <div className="sla-item-status" style={{ color: "#00E676" }}>
+                <span className="pulse-online" /> Within SLA Target
               </div>
             </div>
 
-            <div className="space-y-3" style={{ textAlign: "left" }}>
-              <div className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                <Activity size={14} className="text-[#A855F7]" /> System Uptime
+            <div className="sla-item">
+              <div className="sla-item-label">
+                <Activity size={12} style={{ color: "#A855F7" }} /> System Uptime
               </div>
-              <div className="text-3xl font-black text-white font-syne tracking-tighter">99.99%</div>
-              <div className="inline-flex items-center gap-1.5 text-[#00E676] text-[10px] font-black uppercase">
-                <CheckCircle2 size={12} /> Exceeding Target
+              <div className="sla-item-value">99.99%</div>
+              <div className="sla-item-status" style={{ color: "#00E676" }}>
+                <span className="pulse-online" /> Exceeding Target
               </div>
             </div>
 
-            <div className="space-y-3" style={{ textAlign: "left" }}>
-              <div className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                <Zap size={14} className="text-[#FFB300]" /> Maintenance
+            <div className="sla-item">
+              <div className="sla-item-label">
+                <Zap size={12} style={{ color: "#FFB300" }} /> Maintenance
               </div>
-              <div className="text-3xl font-black text-white font-syne tracking-tighter">Clear</div>
-              <div className="text-neutral-600 text-[10px] font-black uppercase tracking-widest">Next Window: May 25th</div>
+              <div className="sla-item-value">Clear</div>
+              <div className="text-neutral-500 text-[9px] font-bold uppercase tracking-wider">Next Window: May 25th</div>
             </div>
           </div>
         </div>
@@ -679,8 +939,8 @@ export default function MyServicesPage() {
                 </div>
               </div>
 
-            {/* Selected Stack Sidebar (Desktop) */}
-            <div className="catalog-stack-sidebar">
+              {/* Selected Stack Sidebar (Desktop) */}
+              <div className="catalog-stack-sidebar">
                 <h3 style={{ color: "white", fontSize: "0.875rem", fontWeight: 700, fontFamily: "Syne, sans-serif", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.5rem", marginBottom: "1rem" }} className="uppercase">
                   Your Pending Stack ({selectedServices.length})
                 </h3>
