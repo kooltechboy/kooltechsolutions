@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { 
   User, Building, Mail, Phone, Globe, Save, Loader2, CheckCircle2,
   Shield, Key, Bell, CreditCard, ChevronRight, ArrowUpRight,
@@ -17,6 +18,13 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/portal/profile") {
+      router.replace("/portal?view=profile");
+    }
+  }, [router]);
+
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   BarChart3, TrendingUp, Shield, Clock, Download, ShieldCheck, Activity, 
   Zap, AlertCircle, Loader2, CheckCircle2, ArrowUpRight, ChevronRight,
@@ -7,6 +8,12 @@ import {
 } from "lucide-react";
 
 export default function ReportsPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/portal/reports") {
+      router.replace("/portal?view=reports");
+    }
+  }, [router]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [metrics, setMetrics] = useState<{

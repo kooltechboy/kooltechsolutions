@@ -47,6 +47,13 @@ interface TicketMessage {
 
 export default function ClientTicketsPage() {
   const router = useRouter();
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/portal/tickets") {
+      router.replace("/portal?view=tickets");
+    }
+  }, [router]);
+
   const [tickets, setTickets] = useState<TicketWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

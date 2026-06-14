@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   FileText, Shield, Book, Download, Search, Lock,
   Database, Filter, Plus, X, Loader2
@@ -48,6 +49,13 @@ const defaultCategories = [
 ];
 
 export default function DocumentsPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/portal/documents") {
+      router.replace("/portal?view=documents");
+    }
+  }, [router]);
+
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

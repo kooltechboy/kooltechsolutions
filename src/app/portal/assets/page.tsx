@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   HardDrive, Monitor, Laptop, Server, Printer, Network, Search, 
   CheckCircle2, Clock, Cpu, Activity, 
@@ -68,6 +69,13 @@ const timeAgo = (d: string | null | undefined): string => {
 };
 
 export default function AssetsPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/portal/assets") {
+      router.replace("/portal?view=assets");
+    }
+  }, [router]);
+
   const [search, setSearch] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);

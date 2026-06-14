@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Cpu, Clock, AlertTriangle, Plus, Loader2,
   CheckCircle2, ShieldCheck, Activity,
@@ -40,6 +41,13 @@ const parsePrice = (priceStr: string) => {
 };
 
 export default function MyServicesPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/portal/services") {
+      router.replace("/portal?view=services");
+    }
+  }, [router]);
+
   const [services, setServices] = useState<ClientService[]>([]);
   const [loading, setLoading] = useState(true);
   

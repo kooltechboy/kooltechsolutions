@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import {
   LayoutDashboard, Ticket, FileText, Server, BarChart3,
@@ -24,6 +24,39 @@ const navItems = [
   { icon: Bot, label: "AI Assistant", href: "/portal/ai-assistant" },
   { icon: User, label: "My Profile", href: "/portal/profile" },
 ];
+
+function PortalNav({ setSidebarOpen }: { setSidebarOpen: (o: boolean) => void }) {
+  const searchParams = useSearchParams();
+  const currentView = searchParams.get("view") || "dashboard";
+
+  const getViewKey = (href: string) => {
+    if (href === "/portal") return "dashboard";
+    return href.replace("/portal/", "");
+  };
+
+  return (
+    <>
+      {navItems.map(item => {
+        const itemKey = getViewKey(item.href);
+        const isActive = currentView === itemKey;
+        const targetHref = item.href === "/portal" ? "/portal" : `/portal?view=${itemKey}`;
+        
+        return (
+          <Link
+            key={item.href}
+            href={targetHref}
+            onClick={() => setSidebarOpen(false)}
+            className={`nav-item ${isActive ? "active" : ""}`}
+            style={{ marginBottom: "0.125rem" }}
+          >
+            <item.icon size={17} />
+            {item.label}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
 
 interface PortalProfile {
   first_name?: string;
@@ -93,21 +126,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: "1rem 0.75rem", overflowY: "auto" }}>
-          {navItems.map(item => {
-            const isActive = pathname === item.href || (item.href !== "/portal" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`nav-item ${isActive ? "active" : ""}`}
-                style={{ marginBottom: "0.125rem" }}
-              >
-                <item.icon size={17} />
-                {item.label}
-              </Link>
-            );
-          })}
+          <Suspense fallback={<div style={{ padding: "1rem", color: "var(--color-neutral-500)", fontSize: "0.8125rem" }}>Loading menu...</div>}>
+            <PortalNav setSidebarOpen={setSidebarOpen} />
+          </Suspense>
         </nav>
 
         {/* User */}
@@ -155,7 +176,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </button>
           <div style={{ flex: 1 }} />
           <NotificationHub />
-                <Link href="/portal/profile" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", textDecoration: "none" }}>
+                <Link href="/portal?view=profile" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", textDecoration: "none" }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ color: "var(--color-accent-500)", fontSize: "0.7rem", fontWeight: 700 }}>{initials}</span>
                   </div>

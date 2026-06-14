@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Send, Bot, User, ArrowLeft, Loader2, Sparkles, AlertCircle, Ticket, HardDrive } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
@@ -16,6 +17,13 @@ interface TicketData {
 }
 
 export default function AIAssistantPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/portal/ai-assistant") {
+      router.replace("/portal?view=ai-assistant");
+    }
+  }, [router]);
+
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Hello! I'm Kira, your virtual IT engineer. How can I help you with your services, tickets, or network settings today?" }
   ]);

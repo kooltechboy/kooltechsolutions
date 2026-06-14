@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   Download, 
@@ -60,6 +61,13 @@ const getStatusBadgeStyle = (status: string) => {
 };
 
 export default function InvoicesPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/portal/invoices") {
+      router.replace("/portal?view=invoices");
+    }
+  }, [router]);
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
