@@ -11,8 +11,8 @@ module.exports = {
       // Restart: npx pm2 restart kooltech-voice-agent
       // Stop:    npx pm2 stop kooltech-voice-agent
       name: "kooltech-voice-agent",
-      script: "npx",
-      args: "tsx src/agent/agent.ts dev",
+      script: "node",
+      args: "dist/agent/agent/agent.js dev",
       cwd: process.cwd(),
       interpreter: "none",
 
