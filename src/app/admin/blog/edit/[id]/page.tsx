@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from "md-editor-rt";
 import "md-editor-rt/lib/style.css";
+import { getFallbackImage } from "@/components/blog/BlogListClient";
 
 export default function EditBlogPostPage() {
   const router = useRouter();
@@ -102,9 +103,16 @@ export default function EditBlogPostPage() {
     setSaving(true);
     setError(null);
 
+    // If image_url is empty, set a fallback image URL
+    const finalData = {
+      ...formData,
+      read_time: dynamicReadTime,
+      image_url: formData.image_url || getFallbackImage(formData.category)
+    };
+
     const { error: updateError } = await supabase
       .from("posts")
-      .update({ ...formData, read_time: dynamicReadTime })
+      .update(finalData)
       .eq("id", id);
 
     if (updateError) {
@@ -190,9 +198,14 @@ export default function EditBlogPostPage() {
               onChange={(e) => setFormData((prev) => ({ ...prev, image_url: e.target.value }))}
               placeholder="https://images.unsplash.com/..."
             />
-            {formData.image_url && (
+            {(formData.image_url || formData.category) && (
               <div style={{ width: "50px", height: "45px", borderRadius: "8px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
-                <img src={formData.image_url} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img 
+                  src={formData.image_url || getFallbackImage(formData.category)} 
+                  alt="Preview" 
+                  onError={(e) => { e.currentTarget.src = getFallbackImage(formData.category); }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                />
               </div>
             )}
           </div>

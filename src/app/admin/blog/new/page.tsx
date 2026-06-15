@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Sparkles, Upload, Clock } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
 import 'md-editor-rt/lib/style.css';
+import { getFallbackImage } from "@/components/blog/BlogListClient";
 
 export default function NewBlogPostPage() {
   const router = useRouter();
@@ -27,7 +28,17 @@ export default function NewBlogPostPage() {
     image_url: "",
   });
 
-
+  // Dynamically set logged-in user as author name
+  useEffect(() => {
+    async function getAuthor() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const name = user.user_metadata?.full_name || user.email || "Daniel Joseph Williams";
+        setFormData(prev => ({ ...prev, author_name: name }));
+      }
+    }
+    getAuthor();
+  }, [supabase]);
 
   const handleAIRefine = async () => {
     if (!formData.content) return;
@@ -174,18 +185,17 @@ export default function NewBlogPostPage() {
             category: (formData.category === "Cybersecurity" || !formData.category) ? data.metadata.category : formData.category,
             read_time: (formData.read_time === "5 min" || !formData.read_time) ? data.metadata.read_time : formData.read_time,
             // Intelligent Cover Image Suggestion if missing
-            image_url: formData.image_url || `https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200&h=630&q=80` 
+            image_url: formData.image_url || getFallbackImage((formData.category === "Cybersecurity" || !formData.category) ? data.metadata.category : formData.category)
           };
-          
-          // If we have a more specific category/title, let's try to get a better image
-          if (!formData.image_url && data.metadata.category) {
-            const searchTerms = encodeURIComponent(formData.title + " " + data.metadata.category);
-            finalData.image_url = `https://source.unsplash.com/featured/1200x630?${searchTerms}`;
-          }
         }
       } catch {
         console.warn("AI metadata completion failed.");
       }
+    }
+
+    // Set fallback image if it is still empty
+    if (!finalData.image_url) {
+      finalData.image_url = getFallbackImage(finalData.category);
     }
 
     // Final Slug Sanity Check
@@ -286,9 +296,14 @@ export default function NewBlogPostPage() {
               onChange={e => setFormData({ ...formData, image_url: e.target.value })} 
               placeholder="https://images.unsplash.com/..."
             />
-            {formData.image_url && (
-              <div style={{ width: "50px", height: "45px", borderRadius: "8px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <img src={formData.image_url} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            {(formData.image_url || formData.category) && (
+              <div style={{ width: "50px", height: "45px", borderRadius: "8px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
+                <img 
+                  src={formData.image_url || getFallbackImage(formData.category)} 
+                  alt="Preview" 
+                  onError={(e) => { e.currentTarget.src = getFallbackImage(formData.category); }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                />
               </div>
             )}
           </div>
@@ -325,8 +340,6 @@ export default function NewBlogPostPage() {
             </select>
           </div>
         </div>
-
-
 
         <div style={{ background: "rgba(168,85,247,0.05)", padding: "2rem", borderRadius: "16px", border: "1px solid rgba(168,85,247,0.2)", marginBottom: "1.5rem", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
@@ -369,7 +382,6 @@ export default function NewBlogPostPage() {
             )}
           </div>
         </div>
-
 
         <div>
           <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.8rem" }}>Blog Content (Rich Text / Markdown)</label>

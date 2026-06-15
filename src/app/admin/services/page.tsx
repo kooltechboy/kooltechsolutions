@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import * as Icons from "lucide-react";
-import { Search, ChevronRight, Plus, Loader2 } from "lucide-react";
+import { Search, ChevronRight, Plus, Loader2, RefreshCw } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 interface ServiceItem {
@@ -25,21 +25,23 @@ export default function ServicesPage() {
   const [search, setSearch] = useState("");
   const [catalog, setCatalog] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const supabase = createClient();
 
   const fetchCatalog = useCallback(async () => {
     const { data } = await supabase.from("service_catalog").select("*").order("category");
     if (data) {
       const grouped = data.reduce((acc: Record<string, ServiceCategory>, item) => {
-        if (!acc[item.category]) {
-          acc[item.category] = {
-            name: item.category,
+        const catName = item.category || "Other Services";
+        if (!acc[catName]) {
+          acc[catName] = {
+            name: catName,
             description: item.category_description || "",
             icon: item.category_icon || "HelpCircle",
             services: []
           };
         }
-        acc[item.category].services.push({
+        acc[catName].services.push({
           id: item.id,
           name: item.name,
           code: item.code || "",
@@ -59,11 +61,32 @@ export default function ServicesPage() {
     fetchCatalog();
   }, [fetchCatalog]);
 
+  const handleITFlowSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/itflow/sync", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`ITFlow Sync Completed!\nSynced ${data.details?.syncedProducts || 0} products/services.`);
+        await fetchCatalog();
+      } else {
+        alert("Sync error: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Network error running sync: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const filteredCatalog = catalog.map(cat => ({
     ...cat,
     services: cat.services.filter(s => 
       s.name.toLowerCase().includes(search.toLowerCase()) || 
-      cat.name.toLowerCase().includes(search.toLowerCase())
+      cat.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.code.toLowerCase().includes(search.toLowerCase())
     )
   })).filter(cat => cat.services.length > 0);
 
@@ -83,26 +106,37 @@ export default function ServicesPage() {
           Service & Solutions <span className="gradient-text">Catalog</span>
         </h1>
         <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-          Browse, manage and deploy enterprise-grade IT solutions from our unified portfolio.
+          Browse, manage and deploy enterprise-grade IT solutions from our unified portfolio, synced directly with ITFlow.
         </p>
       </div>
 
       {/* Controls */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
-        <div style={{ position: "relative", flex: 1, maxWidth: "500px" }}>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: "280px", maxWidth: "500px" }}>
           <Search size={18} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-neutral-500)" }} />
           <input 
             type="text" 
-            placeholder="Search for services, categories, or keywords..."
+            placeholder="Search by name, category, or code..."
             className="input-field"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ paddingLeft: "3rem", borderRadius: "12px", width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", color: "white", outline: "none", padding: "0.75rem 1rem 0.75rem 3rem" }}
           />
         </div>
-        <button className="btn-primary" style={{ padding: "0 1.5rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700 }}>
-          <Plus size={18} /> New Service
-        </button>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <button 
+            onClick={handleITFlowSync}
+            disabled={syncing}
+            className="btn-ghost" 
+            style={{ padding: "0 1.25rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 600, border: "1px solid rgba(0,212,255,0.2)", cursor: "pointer" }}
+          >
+            {syncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            {syncing ? "Syncing ITFlow..." : "Sync ITFlow Products"}
+          </button>
+          <button className="btn-primary" style={{ padding: "0 1.5rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700 }}>
+            <Plus size={18} /> New Service
+          </button>
+        </div>
       </div>
 
       {/* Categories Grid */}
@@ -140,7 +174,7 @@ export default function ServicesPage() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {category.services.slice(0, 6).map((service) => (
+                {category.services.map((service) => (
                   <div key={service.id} style={{ 
                     padding: "0.875rem", 
                     borderRadius: "12px", 
@@ -170,23 +204,13 @@ export default function ServicesPage() {
                     </p>
                   </div>
                 ))}
-                {category.services.length > 4 && (
-                  <button style={{ 
-                    background: "none", border: "none", color: "var(--color-accent-600)", 
-                    fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", 
-                    display: "flex", alignItems: "center", gap: "0.25rem",
-                    padding: "0.5rem 0"
-                  }}>
-                    View all {category.services.length} services <ChevronRight size={14} />
-                  </button>
-                )}
               </div>
 
               <div style={{ marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1rem", display: "flex", gap: "0.75rem" }}>
-                <button className="btn-secondary" style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", fontSize: "0.75rem", background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <button className="btn-secondary" style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", fontSize: "0.75rem", background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }}>
                   Manage Category
                 </button>
-                <button className="btn-primary" style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", fontSize: "0.75rem", border: "none", color: "white" }}>
+                <button className="btn-primary" style={{ flex: 1, padding: "0.5rem", borderRadius: "8px", fontSize: "0.75rem", border: "none", color: "white", cursor: "pointer" }}>
                   Add Service
                 </button>
               </div>

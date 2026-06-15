@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { PenSquare, Edit, Trash2, Eye } from "lucide-react";
+import { PenSquare, Edit, Trash2, Eye, ToggleLeft, ToggleRight, FileText, CheckCircle, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { getFallbackImage, getCategoryColor } from "@/components/blog/BlogListClient";
 
 interface Post {
   id: string;
@@ -14,6 +15,7 @@ interface Post {
   status: string;
   author_name: string;
   created_at: string;
+  image_url?: string;
 }
 
 export default function BlogCMSPage() {
@@ -64,9 +66,27 @@ export default function BlogCMSPage() {
     }
   };
 
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === "Published" ? "Draft" : "Published";
+    const { error } = await supabase
+      .from("posts")
+      .update({ status: newStatus })
+      .eq("id", id);
+    if (error) {
+      alert("Error updating status: " + error.message);
+    } else {
+      setRefreshKey(prev => prev + 1);
+    }
+  };
+
+  const totalPosts = posts.length;
+  const publishedPosts = posts.filter(p => p.status === "Published").length;
+  const draftPosts = posts.filter(p => p.status !== "Published").length;
+
   return (
     <div style={{ padding: "2rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem" }}>
+      {/* Header Row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0.8rem", background: "rgba(0,212,255,0.1)", borderRadius: "6px", marginBottom: "1rem" }}>
             <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: loading ? "#FFB300" : "#00E676" }} />
@@ -80,45 +100,77 @@ export default function BlogCMSPage() {
           <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
             Publish and manage blog posts, technical articles, and insights.
           </p>
-          
-          <div style={{ display: "flex", gap: "1rem", marginTop: "2rem", flexWrap: "wrap" }}>
-            <div style={{ position: "relative", flex: "1 1 300px" }}>
-              <input 
-                placeholder="Search by title or author..." 
-                className="input-field" 
-                style={{ paddingLeft: "1rem", borderRadius: "8px", fontSize: "0.875rem" }} 
-                onChange={(e) => {
-                  const term = e.target.value.toLowerCase();
-                  const filtered = posts.filter(p => 
-                    p.title.toLowerCase().includes(term) || 
-                    p.author_name.toLowerCase().includes(term)
-                  );
-                  setFilteredPosts(filtered);
-                }}
-              />
-            </div>
-            <select 
-              className="input-field" 
-              style={{ width: "200px", borderRadius: "8px", fontSize: "0.875rem" }}
-              onChange={(e) => {
-                const cat = e.target.value;
-                if (cat === "All") {
-                  setFilteredPosts(posts);
-                } else {
-                  setFilteredPosts(posts.filter(p => p.category === cat));
-                }
-              }}
-            >
-              <option value="All">All Categories</option>
-              {["Cybersecurity", "Cloud", "AI & Automation", "Network", "Compliance", "News"].map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
         </div>
         <Link href="/admin/blog/new" className="btn-primary" style={{ padding: "0.75rem 1.25rem", borderRadius: "8px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
           <PenSquare size={18} /> New Article
         </Link>
+      </div>
+
+      {/* KPI Stats Bar */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+        <div className="glass-card" style={{ padding: "1.25rem 1.5rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ padding: "0.75rem", borderRadius: "10px", background: "rgba(0, 212, 255, 0.1)", color: "var(--color-accent-500)" }}>
+            <FileText size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)", fontWeight: 600, textTransform: "uppercase" }}>Total Articles</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "white" }}>{totalPosts}</div>
+          </div>
+        </div>
+        <div className="glass-card" style={{ padding: "1.25rem 1.5rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ padding: "0.75rem", borderRadius: "10px", background: "rgba(0, 230, 118, 0.1)", color: "var(--color-success)" }}>
+            <CheckCircle size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)", fontWeight: 600, textTransform: "uppercase" }}>Published</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "white" }}>{publishedPosts}</div>
+          </div>
+        </div>
+        <div className="glass-card" style={{ padding: "1.25rem 1.5rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ padding: "0.75rem", borderRadius: "10px", background: "rgba(255, 179, 0, 0.1)", color: "var(--color-warning)" }}>
+            <HelpCircle size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)", fontWeight: 600, textTransform: "uppercase" }}>Drafts</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "white" }}>{draftPosts}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: "1 1 300px" }}>
+          <input 
+            placeholder="Search by title or author..." 
+            className="input-field" 
+            style={{ paddingLeft: "1rem", borderRadius: "8px", fontSize: "0.875rem" }} 
+            onChange={(e) => {
+              const term = e.target.value.toLowerCase();
+              const filtered = posts.filter(p => 
+                p.title.toLowerCase().includes(term) || 
+                p.author_name.toLowerCase().includes(term)
+              );
+              setFilteredPosts(filtered);
+            }}
+          />
+        </div>
+        <select 
+          className="input-field" 
+          style={{ width: "200px", borderRadius: "8px", fontSize: "0.875rem" }}
+          onChange={(e) => {
+            const cat = e.target.value;
+            if (cat === "All") {
+              setFilteredPosts(posts);
+            } else {
+              setFilteredPosts(posts.filter(p => p.category === cat));
+            }
+          }}
+        >
+          <option value="All">All Categories</option>
+          {["Cybersecurity", "Cloud", "AI & Automation", "Network", "Compliance", "News"].map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
       </div>
 
       {error && (
@@ -127,12 +179,13 @@ export default function BlogCMSPage() {
         </div>
       )}
 
+      {/* CMS Table */}
       <div className="glass-card" style={{ borderRadius: "12px", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "rgba(0,212,255,0.05)", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
-                {["Article Title", "Author", "Status", "Date", "Actions"].map(h => (
+                {["Article", "Category", "Author", "Status", "Date", "Actions"].map(h => (
                   <th key={h} style={{ padding: "0.875rem 1.5rem", color: "var(--color-neutral-500)", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                 ))}
               </tr>
@@ -140,88 +193,135 @@ export default function BlogCMSPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
+                  <td colSpan={6} style={{ padding: "3rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
                     Loading articles...
                   </td>
                 </tr>
               ) : filteredPosts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
+                  <td colSpan={6} style={{ padding: "3rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
                     No articles match your search.
                   </td>
                 </tr>
               ) : (
-                filteredPosts.map((post) => (
-                  <tr key={post.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.05)" }}>
-                    <td style={{ padding: "1.25rem 1.5rem", color: "white", fontWeight: 700, fontSize: "0.875rem" }}>
-                      {post.title}
-                    </td>
-                    <td style={{ padding: "1.25rem 1.5rem", color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>{post.author_name}</td>
-                    <td style={{ padding: "1.25rem 1.5rem" }}>
-                      <span style={{
-                        padding: "0.25rem 0.625rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600,
-                        background: post.status === "Published" ? "rgba(0,230,118,0.1)" : "rgba(255,179,0,0.1)",
-                        color: post.status === "Published" ? "var(--color-success)" : "var(--color-warning)"
-                      }}>
-                        {post.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "1.25rem 1.5rem", color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
-                      {new Date(post.created_at).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </td>
-                    <td style={{ padding: "1.25rem 1.5rem" }}>
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <Link 
-                          href={`/blog/${post.slug}`} 
-                          target="_blank" 
-                          style={{ 
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            width: "32px", height: "32px", borderRadius: "6px",
-                            background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-                            cursor: "pointer", color: "var(--color-neutral-400)", transition: "all 0.2s" 
-                          }}
-                          className="action-btn"
-                          title="View Live"
-                        >
-                          <Eye size={16} />
-                        </Link>
-                        
-                        <Link 
-                          href={`/admin/blog/edit/${post.id}`} 
-                          style={{ 
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            width: "32px", height: "32px", borderRadius: "6px",
-                            background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)",
-                            cursor: "pointer", color: "var(--color-accent-400)", transition: "all 0.2s" 
-                          }}
-                          className="action-btn"
-                          title="Edit Article"
-                        >
-                          <Edit size={16} />
-                        </Link>
+                filteredPosts.map((post) => {
+                  const catColor = getCategoryColor(post.category);
+                  return (
+                    <tr key={post.id} style={{ borderBottom: "1px solid rgba(0,212,255,0.05)" }} className="cms-table-row">
+                      {/* Image + Title */}
+                      <td style={{ padding: "1rem 1.5rem", color: "white", fontWeight: 700, fontSize: "0.875rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                          <div style={{ width: "50px", height: "38px", borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+                            <img 
+                              src={post.image_url || getFallbackImage(post.category)} 
+                              alt="Thumbnail" 
+                              onError={(e) => { e.currentTarget.src = getFallbackImage(post.category); }}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ fontWeight: 700 }}>{post.title}</span>
+                            <span style={{ fontSize: "0.72rem", color: "var(--color-neutral-500)", fontWeight: 400, marginTop: "0.15rem" }} title={post.excerpt}>
+                              {post.excerpt.length > 60 ? post.excerpt.substring(0, 60) + "..." : post.excerpt}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      {/* Category */}
+                      <td style={{ padding: "1rem 1.5rem" }}>
+                        <span className="badge" style={{ background: `${catColor}15`, color: catColor, border: `1px solid ${catColor}30`, fontSize: "0.68rem" }}>
+                          {post.category}
+                        </span>
+                      </td>
+                      {/* Author */}
+                      <td style={{ padding: "1rem 1.5rem", color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>{post.author_name}</td>
+                      {/* Status + Quick Toggle */}
+                      <td style={{ padding: "1rem 1.5rem" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{
+                            padding: "0.25rem 0.625rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600,
+                            background: post.status === "Published" ? "rgba(0,230,118,0.1)" : "rgba(255,179,0,0.1)",
+                            color: post.status === "Published" ? "var(--color-success)" : "var(--color-warning)"
+                          }}>
+                            {post.status}
+                          </span>
+                          <button
+                            onClick={() => toggleStatus(post.id, post.status)}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: post.status === "Published" ? "var(--color-success)" : "var(--color-neutral-500)", display: "flex", alignItems: "center" }}
+                            title={post.status === "Published" ? "Switch to Draft" : "Publish Article"}
+                          >
+                            {post.status === "Published" ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                          </button>
+                        </div>
+                      </td>
+                      {/* Date */}
+                      <td style={{ padding: "1rem 1.5rem", color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
+                        {new Date(post.created_at).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
+                      {/* Actions */}
+                      <td style={{ padding: "1rem 1.5rem" }}>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <Link 
+                            href={`/blog/${post.slug}`} 
+                            target="_blank" 
+                            style={{ 
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              width: "32px", height: "32px", borderRadius: "6px",
+                              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                              cursor: "pointer", color: "var(--color-neutral-400)", transition: "all 0.2s" 
+                            }}
+                            className="action-btn"
+                            title="View Live"
+                          >
+                            <Eye size={16} />
+                          </Link>
+                          
+                          <Link 
+                            href={`/admin/blog/edit/${post.id}`} 
+                            style={{ 
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              width: "32px", height: "32px", borderRadius: "6px",
+                              background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)",
+                              cursor: "pointer", color: "var(--color-accent-400)", transition: "all 0.2s" 
+                            }}
+                            className="action-btn"
+                            title="Edit Article"
+                          >
+                            <Edit size={16} />
+                          </Link>
 
-                        <button 
-                          onClick={() => handleDelete(post.id)} 
-                          style={{ 
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            width: "32px", height: "32px", borderRadius: "6px",
-                            background: "rgba(255,68,68,0.1)", border: "1px solid rgba(255,68,68,0.2)",
-                            cursor: "pointer", color: "#FF4444", transition: "all 0.2s" 
-                          }}
-                          className="action-btn"
-                          title="Delete Article"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          <button 
+                            onClick={() => handleDelete(post.id)} 
+                            style={{ 
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              width: "32px", height: "32px", borderRadius: "6px",
+                              background: "rgba(255,68,68,0.1)", border: "1px solid rgba(255,68,68,0.2)",
+                              cursor: "pointer", color: "#FF4444", transition: "all 0.2s" 
+                            }}
+                            className="action-btn"
+                            title="Delete Article"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
+      <style>{`
+        .cms-table-row:hover {
+          background: rgba(0, 212, 255, 0.02);
+        }
+        .action-btn:hover {
+          filter: brightness(1.2);
+          transform: translateY(-1px);
+        }
+      `}</style>
     </div>
   );
 }

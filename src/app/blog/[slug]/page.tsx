@@ -7,13 +7,15 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import ReadingProgress from "@/components/blog/ReadingProgress";
 import remarkGfm from "remark-gfm";
+import GoogleAdSlot from "@/components/blog/GoogleAdSlot";
+import { getFallbackImage, getCategoryColor } from "@/components/blog/BlogListClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
   const { data: post } = await supabase.from("posts").select("*").eq("slug", slug).single();
   
-  if (!post) {
+  if (!post || post.status !== "Published") {
     return { title: "Post Not Found" };
   }
 
@@ -30,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       siteName: 'Kool Tech Solutions',
       images: [
         {
-          url: post.image_url || 'https://kooltechsolutions.com/og-image.jpg',
+          url: post.image_url || getFallbackImage(post.category),
           width: 1200,
           height: 630,
         },
@@ -44,7 +46,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       card: 'summary_large_image',
       title: post.title,
       description: post.excerpt,
-      images: [post.image_url || 'https://kooltechsolutions.com/og-image.jpg'],
+      images: [post.image_url || getFallbackImage(post.category)],
       creator: '@kooltechsolutions',
     },
   };
@@ -60,22 +62,36 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     .eq("slug", slug)
     .single();
 
-  if (error || !post) {
+  if (error || !post || post.status !== "Published") {
     notFound();
   }
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "Cybersecurity": return "#FF4444";
-      case "Cloud": return "#00D4FF";
-      case "AI & Automation": return "#A855F7";
-      case "Network": return "#4B84C8";
-      case "Compliance": return "#FFB300";
-      default: return "#00D4FF";
-    }
-  };
-
   const color = getCategoryColor(post.category);
+
+  // Fetch Related Posts
+  let { data: relatedPosts } = await supabase
+    .from("posts")
+    .select("id, title, slug, category, read_time, image_url, created_at")
+    .eq("status", "Published")
+    .eq("category", post.category)
+    .neq("id", post.id)
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  let finalRelated = relatedPosts || [];
+  if (finalRelated.length < 3) {
+    const { data: fallbackRelated } = await supabase
+      .from("posts")
+      .select("id, title, slug, category, read_time, image_url, created_at")
+      .eq("status", "Published")
+      .neq("id", post.id)
+      .neq("category", post.category)
+      .order("created_at", { ascending: false })
+      .limit(3 - finalRelated.length);
+    if (fallbackRelated) {
+      finalRelated = [...finalRelated, ...fallbackRelated];
+    }
+  }
 
   // Extract headers for Table of Contents
   const headers = post.content
@@ -89,7 +105,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     "@type": "TechArticle",
     "headline": post.title,
     "description": post.excerpt,
-    "image": post.image_url,
+    "image": post.image_url || getFallbackImage(post.category),
     "datePublished": post.created_at,
     "dateModified": post.updated_at,
     "author": {
@@ -106,6 +122,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       }
     }
   };
+
+  const shareUrl = encodeURIComponent(`https://kooltechsolutions.com/blog/${post.slug}`);
+  const shareText = encodeURIComponent(post.title);
 
   return (
     <>
@@ -151,9 +170,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 </div>
               </div>
 
-              {post.image_url && (
-                <img src={post.image_url} alt={post.title} style={{ width: "100%", borderRadius: "24px", marginBottom: "4rem", border: "1px solid rgba(255,255,255,0.1)" }} />
-              )}
+              <img 
+                src={post.image_url || getFallbackImage(post.category)} 
+                alt={post.title} 
+                onError={(e) => { e.currentTarget.src = getFallbackImage(post.category); }}
+                style={{ width: "100%", borderRadius: "24px", marginBottom: "4rem", border: "1px solid rgba(255,255,255,0.1)" }} 
+              />
 
               <div className="prose prose-invert modern-blog-content" style={{ 
                 maxWidth: "100%", 
@@ -176,11 +198,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   .modern-blog-content td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--color-neutral-400); }
                   .modern-blog-content tr:last-child td { border-bottom: none; }
                   .modern-blog-content tr:hover td { background: rgba(255,255,255,0.02); color: white; }
-                  .ad-slot { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justifyContent: center; color: var(--color-neutral-600); font-size: 0.75rem; margin: 3rem 0; min-height: 250px; }
+                  .modern-blog-content pre { background: rgba(0, 0, 0, 0.4); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); overflow-x: auto; margin: 2rem 0; }
+                  .modern-blog-content code { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--color-accent-400); background: rgba(0, 212, 255, 0.05); padding: 0.2rem 0.4rem; border-radius: 4px; }
+                  .modern-blog-content pre code { color: var(--color-neutral-200); background: transparent; padding: 0; }
                   @media (max-width: 992px) { .blog-layout-grid { grid-template-columns: 1fr !important; } .blog-sidebar { display: none; } }
                 `}} />
                 
-                <div className="ad-slot" id="blog-top-ad">Google AdSense Slot</div>
+                {/* Auto ad unit container above the article */}
+                <GoogleAdSlot />
 
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -198,7 +223,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   {post.content}
                 </ReactMarkdown>
 
-                <div className="ad-slot" id="blog-bottom-ad">Google AdSense Slot</div>
+                {/* Auto ad unit container below the article */}
+                <GoogleAdSlot />
 
                 {/* Social Sharing & Author Footer */}
                 <div style={{ marginTop: "5rem", padding: "3rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
@@ -211,12 +237,31 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                       <p style={{ color: "var(--color-neutral-400)", fontSize: "1rem", lineHeight: 1.6, margin: "0.75rem 0 1.5rem" }}>
                         Expert in Caribbean technology strategy and enterprise security. Leading digital transformation at Kool Tech Solutions.
                       </p>
-                      <div style={{ display: "flex", gap: "0.75rem" }}>
-                        {['Twitter', 'LinkedIn', 'Facebook'].map(s => (
-                          <button key={s} style={{ padding: "0.5rem 1rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "white", fontSize: "0.8125rem", cursor: "pointer" }}>
-                            <Share2 size={14} style={{ marginRight: "0.5rem", verticalAlign: "middle" }} /> {s}
-                          </button>
-                        ))}
+                      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                        <a 
+                          href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ textDecoration: "none", padding: "0.5rem 1rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "white", fontSize: "0.8125rem", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                        >
+                          <Share2 size={14} style={{ marginRight: "0.5rem" }} /> X (Twitter)
+                        </a>
+                        <a 
+                          href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ textDecoration: "none", padding: "0.5rem 1rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "white", fontSize: "0.8125rem", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                        >
+                          <Share2 size={14} style={{ marginRight: "0.5rem" }} /> LinkedIn
+                        </a>
+                        <a 
+                          href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ textDecoration: "none", padding: "0.5rem 1rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "white", fontSize: "0.8125rem", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                        >
+                          <Share2 size={14} style={{ marginRight: "0.5rem" }} /> Facebook
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -233,7 +278,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     <h4 style={{ color: "white", fontSize: "0.75rem", fontWeight: 700, marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Table of Contents</h4>
                     <nav style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
                       {headers.map((h: string, i: number) => (
-                        <a key={i} href={`#${h.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", textDecoration: "none", transition: "0.2s", lineHeight: 1.4 }}>
+                        <a key={i} href={`#${h.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", textDecoration: "none", transition: "0.2s", lineHeight: 1.4 }} onMouseEnter={e => e.currentTarget.style.color = "var(--color-accent-400)"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-500)"}>
                           {h}
                         </a>
                       ))}
@@ -241,13 +286,51 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   </div>
                 )}
 
-                <div style={{ minHeight: "500px", background: "rgba(255,255,255,0.01)", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-neutral-700)", fontSize: "0.75rem", textAlign: "center", padding: "2rem" }}>
-                  Google AdSense Vertical Slot
-                </div>
+                {/* Auto ads container in the sidebar */}
+                <GoogleAdSlot />
 
               </div>
             </aside>
           </div>
+
+          {/* Related Posts Section */}
+          {finalRelated.length > 0 && (
+            <div style={{ marginTop: "6rem", borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "4rem" }}>
+              <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "2.5rem" }}>
+                Related <span className="gradient-text">Articles</span>
+              </h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem" }}>
+                {finalRelated.map((p) => {
+                  const pColor = getCategoryColor(p.category);
+                  return (
+                    <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
+                      <div className="glass-card" style={{ borderRadius: "16px", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column", border: "1px solid rgba(0, 212, 255, 0.05)" }}>
+                        <div style={{ height: "160px", width: "100%", position: "relative", overflow: "hidden" }}>
+                          <img 
+                            src={p.image_url || getFallbackImage(p.category)} 
+                            alt={p.title}
+                            onError={(e) => { e.currentTarget.src = getFallbackImage(p.category); }}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, var(--color-primary-950), transparent)" }} />
+                        </div>
+                        <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                            <span className="badge" style={{ background: `${pColor}15`, color: pColor, border: `1px solid ${pColor}30`, fontSize: "0.65rem" }}>{p.category}</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--color-neutral-500)", fontSize: "0.72rem" }}>
+                              <Clock size={11} /> {p.read_time}
+                            </span>
+                          </div>
+                          <h4 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1rem", color: "white", lineHeight: 1.4, marginBottom: "0.5rem" }}>{p.title}</h4>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
         </section>
       </main>
 

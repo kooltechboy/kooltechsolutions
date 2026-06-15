@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Calendar, Clock } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { getFallbackImage, getCategoryColor } from "@/components/blog/BlogListClient";
 
 interface Post {
   id: string;
@@ -34,17 +35,6 @@ export default function BlogSection() {
     fetchLatestPosts();
   }, [supabase]);
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "Cybersecurity": return "#FF4444";
-      case "Cloud": return "#00D4FF";
-      case "AI & Automation": return "#A855F7";
-      case "Network": return "#4B84C8";
-      case "Compliance": return "#FFB300";
-      default: return "#00D4FF";
-    }
-  };
-
   if (posts.length === 0) return null;
 
   return (
@@ -70,8 +60,9 @@ export default function BlogSection() {
                 <div className="glass-card" style={{ borderRadius: "16px", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
                   <div style={{ height: "160px", width: "100%", position: "relative", overflow: "hidden" }}>
                     <img 
-                      src={post.image_url || `https://source.unsplash.com/featured/800x600?technology,${post.category}`} 
+                      src={post.image_url || getFallbackImage(post.category)} 
                       alt={post.title}
+                      onError={(e) => { e.currentTarget.src = getFallbackImage(post.category); }}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                     <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, var(--color-primary-950), transparent)" }} />

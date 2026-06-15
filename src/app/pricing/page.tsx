@@ -1,19 +1,93 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PricingSection from "@/components/sections/PricingSection";
 import BookingModal from "@/components/shared/BookingModal";
-import { ArrowRight, HelpCircle, ShoppingCart, Check, Trash2 } from "lucide-react";
-import { serviceCatalog, Service } from "@/data/services";
+import { ArrowRight, HelpCircle, ShoppingCart, Check, Trash2, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
 import { useLanguage } from "@/components/shared/LanguageProvider";
+import { createClient } from "@/utils/supabase/client";
+
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  priceType: "Monthly" | "One-time" | "Ad Hoc" | "Annual";
+  code: string;
+  priority?: "High" | "Medium" | "Low";
+}
+
+interface ServiceCategory {
+  name: string;
+  icon: string;
+  description: string;
+  services: Service[];
+}
 
 export default function PricingPage() {
   const { t, language } = useLanguage();
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
   const [showReview, setShowReview] = useState(false);
+
+  const [serviceCatalog, setServiceCatalog] = useState<ServiceCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  const fetchCatalog = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("service_catalog")
+        .select("*")
+        .eq("active", true)
+        .order("category");
+
+      if (error) throw error;
+
+      if (data) {
+        const grouped = data.reduce((acc: Record<string, ServiceCategory>, item) => {
+          const catName = item.category || "Other Services";
+          if (!acc[catName]) {
+            acc[catName] = {
+              name: catName,
+              description: item.category_description || "",
+              icon: item.category_icon || "HelpCircle",
+              services: []
+            };
+          }
+
+          // Force price_type to match the expected client types
+          let mappedPriceType: "Monthly" | "One-time" | "Ad Hoc" | "Annual" = "Monthly";
+          if (item.price_type === "One-time" || item.price_type === "Annual" || item.price_type === "Ad Hoc") {
+            mappedPriceType = item.price_type;
+          }
+
+          acc[catName].services.push({
+            id: item.id,
+            name: item.name,
+            code: item.code || "",
+            price: item.price || "Custom",
+            priceType: mappedPriceType,
+            priority: item.priority || "Normal",
+            description: item.description || ""
+          });
+          return acc;
+        }, {});
+
+        setServiceCatalog(Object.values(grouped));
+      }
+    } catch (err) {
+      console.error("Error fetching service catalog:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchCatalog();
+  }, [fetchCatalog]);
 
   const faqs = [
     { q: t("pricing.faq1Q"), a: t("pricing.faq1A") },
@@ -35,35 +109,40 @@ export default function PricingPage() {
             name: "Servicios Gestionados Adicionales",
             desc: "Complementos especializados de seguridad y gestión para proteger su infraestructura."
           };
-        case "NOC as a Service":
+        case "SOC & Compliance Consulting":
           return {
-            name: "NOC como Servicio",
-            desc: "Centro de Operaciones de Red 24/7 que ofrece garantías de tiempo de inactividad de infraestructura."
-          };
-        case "SOC as a Service":
-          return {
-            name: "SOC como Servicio",
-            desc: "Centro de Operaciones de Seguridad con despliegue de SIEM y cobertura de analistas humanos."
-          };
-        case "Compliance as a Service":
-          return {
-            name: "Cumplimiento como Servicio",
-            desc: "Gestión de cumplimiento continuo para HIPAA, PCI-DSS, SOC2 y más."
+            name: "Consultoría de SOC y Cumplimiento",
+            desc: "vCISO, pruebas de penetración, auditorías de cumplimiento y contención avanzada de amenazas."
           };
         case "AI as a Service (AIaaS) & Digital Web":
           return {
             name: "IA como Servicio (AIaaS) y Web Digital",
             desc: "Empleados de IA personalizados, agentes autónomos y plataformas web de alto rendimiento."
           };
+        case "Secure Cloud Communications":
+          return {
+            name: "Comunicaciones Seguras en la Nube",
+            desc: "Soluciones VoIP empresariales y plataformas de comunicaciones unificadas."
+          };
+        case "Professional IT Services":
+          return {
+            name: "Servicios de TI Profesionales",
+            desc: "Despacho en sitio, incorporación, respuesta a emergencias y soporte de ingeniería por hora."
+          };
         case "Cloud Licensing & SaaS":
           return {
             name: "Licencias de Nube y SaaS",
             desc: "Licenciamiento oficial y administración profesional para M365 y Google Workspace."
           };
-        case "Secure Cloud Communications":
+        case "Hardware Procurement":
           return {
-            name: "Comunicaciones Seguras en la Nube",
-            desc: "Soluciones VoIP empresariales y plataformas de comunicaciones unificadas."
+            name: "Adquisición de Hardware",
+            desc: "Estaciones de trabajo preconfiguradas, firewalls y equipos de red."
+          };
+        case "Web Infrastructure & Domain Administration":
+          return {
+            name: "Infraestructura Web y Administración de Dominios",
+            desc: "Adquisición de SSL, renovación de dominios y gestión de seguridad DNS."
           };
         default:
           return { name, desc: defaultDesc };
@@ -127,7 +206,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Combo Packages (Reused Section) */}
+        {/* Combo Packages */}
         <PricingSection />
 
         {/* Comprehensive Catalog & Custom Builder */}
@@ -142,94 +221,101 @@ export default function PricingPage() {
               </p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>
-              {serviceCatalog.map((category) => {
-                const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; color?: string }>>)[category.icon] || Icons.HelpCircle;
-                const translated = getCategoryTranslation(category.name, category.description);
-                
-                return (
-                  <div key={category.name}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "1rem" }}>
-                      <div style={{ width: 48, height: 48, borderRadius: "12px", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent-500)", flexShrink: 0 }}>
-                        <IconComponent size={24} />
+            {loading ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", gap: "1rem", flexDirection: "column" }}>
+                <Loader2 size={36} className="animate-spin" color="var(--color-accent-500)" />
+                <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Loading live ITFlow catalog...</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>
+                {serviceCatalog.map((category) => {
+                  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; color?: string }>>)[category.icon] || Icons.HelpCircle;
+                  const translated = getCategoryTranslation(category.name, category.description);
+                  
+                  return (
+                    <div key={category.name}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "1rem" }}>
+                        <div style={{ width: 48, height: 48, borderRadius: "12px", background: "rgba(0,212,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent-500)", flexShrink: 0 }}>
+                          <IconComponent size={24} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.5rem", margin: 0 }}>
+                            {translated.name}
+                          </h3>
+                          <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", margin: "0.25rem 0 0 0" }}>
+                            {translated.desc}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "1.5rem", margin: 0 }}>
-                          {translated.name}
-                        </h3>
-                        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", margin: "0.25rem 0 0 0" }}>
-                          {translated.desc}
-                        </p>
-                      </div>
-                    </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))", gap: "1.5rem" }}>
-                      {category.services.map((service) => {
-                        const isSelected = selectedServices.some(s => s.id === service.id);
-                        
-                        return (
-                          <div 
-                            key={service.id} 
-                            onClick={() => toggleService(service)}
-                            className="glass-card" 
-                            style={{ 
-                              padding: "1.5rem", 
-                              borderRadius: "16px", 
-                              display: "flex", 
-                              flexDirection: "column",
-                              border: isSelected ? "1px solid var(--color-accent-500)" : "1px solid rgba(255,255,255,0.05)",
-                              background: isSelected ? "rgba(0,212,255,0.05)" : "rgba(10,22,40,0.6)",
-                              cursor: "pointer",
-                              transition: "all 0.2s ease"
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                              <div style={{ flex: 1, paddingRight: "1rem" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                  <h4 style={{ color: "white", fontSize: "1rem", fontWeight: 600, margin: 0 }}>{service.name}</h4>
-                                  {service.priority === "High" && (
-                                    <span style={{ fontSize: "0.6rem", background: "rgba(255,68,68,0.1)", color: "#ff4444", padding: "0.15rem 0.4rem", borderRadius: "4px", fontWeight: 700, textTransform: "uppercase" }}>
-                                      {language === "es" ? "Crítico" : "Critical"}
-                                    </span>
-                                  )}
-                                </div>
-                                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginTop: "0.25rem" }}>{service.code}</div>
-                              </div>
-                              <div style={{ 
-                                width: 24, height: 24, borderRadius: "6px", 
-                                background: isSelected ? "var(--color-accent-500)" : "rgba(255,255,255,0.1)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: isSelected ? "#060B18" : "transparent",
-                                flexShrink: 0,
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))", gap: "1.5rem" }}>
+                        {category.services.map((service) => {
+                          const isSelected = selectedServices.some(s => s.id === service.id);
+                          
+                          return (
+                            <div 
+                              key={service.id} 
+                              onClick={() => toggleService(service)}
+                              className="glass-card" 
+                              style={{ 
+                                padding: "1.5rem", 
+                                borderRadius: "16px", 
+                                display: "flex", 
+                                flexDirection: "column",
+                                border: isSelected ? "1px solid var(--color-accent-500)" : "1px solid rgba(255,255,255,0.05)",
+                                background: isSelected ? "rgba(0,212,255,0.05)" : "rgba(10,22,40,0.6)",
+                                cursor: "pointer",
                                 transition: "all 0.2s ease"
-                              }}>
-                                <Check size={14} strokeWidth={3} />
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                                <div style={{ flex: 1, paddingRight: "1rem" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                    <h4 style={{ color: "white", fontSize: "1rem", fontWeight: 600, margin: 0 }}>{service.name}</h4>
+                                    {service.priority === "High" && (
+                                      <span style={{ fontSize: "0.6rem", background: "rgba(255,68,68,0.1)", color: "#ff4444", padding: "0.15rem 0.4rem", borderRadius: "4px", fontWeight: 700, textTransform: "uppercase" }}>
+                                        {language === "es" ? "Crítico" : "Critical"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", marginTop: "0.25rem" }}>{service.code}</div>
+                                </div>
+                                <div style={{ 
+                                  width: 24, height: 24, borderRadius: "6px", 
+                                  background: isSelected ? "var(--color-accent-500)" : "rgba(255,255,255,0.1)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: isSelected ? "#060B18" : "transparent",
+                                  flexShrink: 0,
+                                  transition: "all 0.2s ease"
+                                }}>
+                                  <Check size={14} strokeWidth={3} />
+                                </div>
                               </div>
-                            </div>
-                            
-                            <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", lineHeight: 1.5, marginBottom: "1.5rem", flexGrow: 1 }}>
-                              {service.description}
-                            </p>
+                              
+                              <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", lineHeight: 1.5, marginBottom: "1.5rem", flexGrow: 1 }}>
+                                {service.description}
+                              </p>
 
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                              <div style={{ color: "var(--color-accent-500)", fontSize: "1.125rem", fontWeight: 700 }}>
-                                {service.price === "Custom" && language === "es" ? "A medida" : service.price}
-                              </div>
-                              <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 600 }}>
-                                {language === "es" 
-                                  ? (service.priceType === "Monthly" ? "Mensual" : service.priceType === "One-time" ? "Única vez" : "Ad Hoc")
-                                  : service.priceType
-                                }
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                                <div style={{ color: "var(--color-accent-500)", fontSize: "1.125rem", fontWeight: 700 }}>
+                                  {service.price === "Custom" && language === "es" ? "A medida" : service.price}
+                                </div>
+                                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 600 }}>
+                                  {language === "es" 
+                                    ? (service.priceType === "Monthly" ? "Mensual" : service.priceType === "One-time" ? "Única vez" : service.priceType === "Annual" ? "Anual" : "Ad Hoc")
+                                    : service.priceType
+                                  }
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
 

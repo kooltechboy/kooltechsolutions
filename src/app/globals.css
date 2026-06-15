@@ -675,3 +675,11 @@ body {
   }
 }
 
+/* Custom Blog Card Hover Animation */
+.card-image-hover {
+  transition: transform 0.5s ease;
+}
+.glass-card:hover .card-image-hover {
+  transform: scale(1.05);
+}
+

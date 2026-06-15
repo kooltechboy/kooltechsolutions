@@ -3,7 +3,7 @@ export interface Service {
   name: string;
   description: string;
   price: string;
-  priceType: "Monthly" | "One-time" | "Ad Hoc";
+  priceType: "Monthly" | "One-time" | "Ad Hoc" | "Annual";
   code: string;
   priority?: "High" | "Medium" | "Low";
 }
