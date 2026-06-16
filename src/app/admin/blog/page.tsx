@@ -29,53 +29,60 @@ export default function BlogCMSPage() {
 
   useEffect(() => {
     async function fetchPosts() {
-      console.log("CMS: Fetching posts from Supabase...");
+      console.log("CMS: Fetching posts from secure admin API...");
       setLoading(true);
       setError(null);
       try {
-        const { data, error } = await supabase
-          .from("posts")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          console.error("CMS: Supabase Error:", error);
-          setError(`DATABASE CONNECTION FAILED: ${error.message} (Code: ${error.code})`);
-        } else {
-          console.log("CMS: Successfully fetched", data?.length || 0, "posts");
-          setPosts(data || []);
-          setFilteredPosts(data || []);
+        const res = await fetch("/api/admin/blog");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Failed with status ${res.status}`);
         }
+        const data = await res.json();
+        console.log("CMS: Successfully fetched", data?.length || 0, "posts");
+        setPosts(data || []);
+        setFilteredPosts(data || []);
       } catch (err) {
-        console.error("CMS: Unexpected error:", err);
-        setError(`CRITICAL SYSTEM ERROR: ${err instanceof Error ? err.message : String(err)}`);
+        console.error("CMS: Fetch error:", err);
+        setError(`DATABASE CONNECTION FAILED: ${err instanceof Error ? err.message : String(err)}`);
       }
       setLoading(false);
     }
     fetchPosts();
-  }, [supabase, refreshKey]);
+  }, [refreshKey]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this article?")) return;
     
-    const { error } = await supabase.from("posts").delete().eq("id", id);
-    if (error) {
-      alert("Error deleting: " + error.message);
-    } else {
+    try {
+      const res = await fetch(`/api/admin/blog?id=${id}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed with status ${res.status}`);
+      }
       setRefreshKey(prev => prev + 1);
+    } catch (err) {
+      alert("Error deleting: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const toggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "Published" ? "Draft" : "Published";
-    const { error } = await supabase
-      .from("posts")
-      .update({ status: newStatus })
-      .eq("id", id);
-    if (error) {
-      alert("Error updating status: " + error.message);
-    } else {
+    try {
+      const res = await fetch("/api/admin/blog", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: newStatus })
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed with status ${res.status}`);
+      }
       setRefreshKey(prev => prev + 1);
+    } catch (err) {
+      alert("Error updating status: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

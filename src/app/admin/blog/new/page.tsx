@@ -201,15 +201,24 @@ export default function NewBlogPostPage() {
     // Final Slug Sanity Check
     if (!finalData.slug) finalData.slug = generateSlug(currentTitle);
 
-    const { error: insertError } = await supabase.from("posts").insert([finalData]);
+    try {
+      const res = await fetch("/api/admin/blog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalData)
+      });
 
-    if (insertError) {
-      console.error(insertError);
-      setError(insertError.message);
-      setSaving(false);
-    } else {
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed with status ${res.status}`);
+      }
+
       router.push("/admin/blog");
       router.refresh();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
+      setSaving(false);
     }
   };
 

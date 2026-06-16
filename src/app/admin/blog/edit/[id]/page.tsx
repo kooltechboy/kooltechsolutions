@@ -34,15 +34,13 @@ export default function EditBlogPostPage() {
 
   useEffect(() => {
     async function fetchPost() {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error || !data) {
-        setError("Could not load article: " + (error?.message ?? "Not found"));
-      } else {
+      try {
+        const res = await fetch(`/api/admin/blog?id=${id}`);
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Failed with status ${res.status}`);
+        }
+        const data = await res.json();
         setFormData({
           title: data.title ?? "",
           slug: data.slug ?? "",
@@ -54,6 +52,8 @@ export default function EditBlogPostPage() {
           content: data.content ?? "",
           image_url: data.image_url ?? "",
         });
+      } catch (err) {
+        setError("Could not load article: " + (err instanceof Error ? err.message : String(err)));
       }
       setLoading(false);
     }
@@ -110,17 +110,23 @@ export default function EditBlogPostPage() {
       image_url: formData.image_url || getFallbackImage(formData.category)
     };
 
-    const { error: updateError } = await supabase
-      .from("posts")
-      .update(finalData)
-      .eq("id", id);
+    try {
+      const res = await fetch("/api/admin/blog", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...finalData })
+      });
 
-    if (updateError) {
-      setError(updateError.message);
-      setSaving(false);
-    } else {
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed with status ${res.status}`);
+      }
+
       router.push("/admin/blog");
       router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setSaving(false);
     }
   };
 
