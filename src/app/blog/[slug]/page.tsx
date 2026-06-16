@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown";
 import ReadingProgress from "@/components/blog/ReadingProgress";
 import remarkGfm from "remark-gfm";
 import GoogleAdSlot from "@/components/blog/GoogleAdSlot";
-import { getFallbackImage, getCategoryColor } from "@/components/blog/BlogListClient";
+import { getFallbackImage, getCategoryColor } from "@/utils/blog";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

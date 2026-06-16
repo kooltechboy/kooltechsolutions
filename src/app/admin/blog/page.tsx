@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { PenSquare, Edit, Trash2, Eye, ToggleLeft, ToggleRight, FileText, CheckCircle, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
-import { getFallbackImage, getCategoryColor } from "@/components/blog/BlogListClient";
+import { getFallbackImage, getCategoryColor } from "@/utils/blog";
 
 interface Post {
   id: string;

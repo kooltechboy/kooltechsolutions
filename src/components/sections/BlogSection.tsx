@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Calendar, Clock } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import { getFallbackImage, getCategoryColor } from "@/components/blog/BlogListClient";
+import { getFallbackImage, getCategoryColor } from "@/utils/blog";
 
 interface Post {
   id: string;

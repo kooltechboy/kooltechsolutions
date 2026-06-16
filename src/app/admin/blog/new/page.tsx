@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
 import 'md-editor-rt/lib/style.css';
-import { getFallbackImage } from "@/components/blog/BlogListClient";
+import { getFallbackImage } from "@/utils/blog";
 
 export default function NewBlogPostPage() {
   const router = useRouter();
