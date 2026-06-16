@@ -173,7 +173,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               <img 
                 src={post.image_url || getFallbackImage(post.category)} 
                 alt={post.title} 
-                onError={(e) => { e.currentTarget.src = getFallbackImage(post.category); }}
                 style={{ width: "100%", borderRadius: "24px", marginBottom: "4rem", border: "1px solid rgba(255,255,255,0.1)" }} 
               />
 
@@ -202,6 +201,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   .modern-blog-content code { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--color-accent-400); background: rgba(0, 212, 255, 0.05); padding: 0.2rem 0.4rem; border-radius: 4px; }
                   .modern-blog-content pre code { color: var(--color-neutral-200); background: transparent; padding: 0; }
                   @media (max-width: 992px) { .blog-layout-grid { grid-template-columns: 1fr !important; } .blog-sidebar { display: none; } }
+                  .toc-link { color: var(--color-neutral-500); font-size: 0.875rem; text-decoration: none; transition: all 0.2s; line-height: 1.4; display: block; }
+                  .toc-link:hover { color: var(--color-accent-400); padding-left: 2px; }
                 `}} />
                 
                 {/* Auto ad unit container above the article */}
@@ -278,7 +279,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     <h4 style={{ color: "white", fontSize: "0.75rem", fontWeight: 700, marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Table of Contents</h4>
                     <nav style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
                       {headers.map((h: string, i: number) => (
-                        <a key={i} href={`#${h.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", textDecoration: "none", transition: "0.2s", lineHeight: 1.4 }} onMouseEnter={e => e.currentTarget.style.color = "var(--color-accent-400)"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-500)"}>
+                        <a key={i} href={`#${h.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="toc-link">
                           {h}
                         </a>
                       ))}
@@ -309,7 +310,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                           <img 
                             src={p.image_url || getFallbackImage(p.category)} 
                             alt={p.title}
-                            onError={(e) => { e.currentTarget.src = getFallbackImage(p.category); }}
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
                           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, var(--color-primary-950), transparent)" }} />
