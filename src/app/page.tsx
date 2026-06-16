@@ -21,6 +21,7 @@ export default function HomePage() {
         <TrustBar />
         <ServicesSection />
         <WhyUsSection />
+        <AIWorkforceSection />
         <ROICalculator />
         <PricingSection />
         <Testimonials />

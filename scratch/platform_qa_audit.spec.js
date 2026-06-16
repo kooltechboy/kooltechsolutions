@@ -56,7 +56,7 @@ test('Platform E2E QA Audit Campaign', async ({ page }) => {
     let loadError = null;
 
     try {
-      response = await page.goto(targetUrl, { waitUntil: 'networkidle', timeout: 10000 });
+      response = await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
     } catch (err) {
       loadError = err.message;
     }

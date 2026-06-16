@@ -8,7 +8,7 @@ interface ServiceOption {
   id: string;
   nameKey: string;
   pricePerUser: number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ size?: number; color?: string; className?: string }>;
 }
 
 const serviceOptions: ServiceOption[] = [
@@ -23,11 +23,6 @@ export default function ROICalculator() {
   const [users, setUsers] = useState<number>(25);
   const [region, setRegion] = useState<"NA" | "Carib">("Carib");
   const [selectedServices, setSelectedServices] = useState<string[]>(["cybersecurity", "helpdesk"]);
-  const [calculatedCosts, setCalculatedCosts] = useState({
-    ktsCost: 0,
-    inHouseCost: 0,
-    savings: 0,
-  });
 
   const toggleService = (id: string) => {
     setSelectedServices((prev) =>
@@ -35,34 +30,26 @@ export default function ROICalculator() {
     );
   };
 
-  useEffect(() => {
-    const baseRate = selectedServices.reduce((acc, serviceId) => {
-      const option = serviceOptions.find((o) => o.id === serviceId);
-      return acc + (option ? option.pricePerUser : 0);
-    }, 0);
+  const baseRate = selectedServices.reduce((acc, serviceId) => {
+    const option = serviceOptions.find((o) => o.id === serviceId);
+    return acc + (option ? option.pricePerUser : 0);
+  }, 0);
 
-    let discount = 1.0;
-    if (users > 100) discount = 0.80;
-    else if (users > 50) discount = 0.85;
-    else if (users > 20) discount = 0.90;
+  let discount = 1.0;
+  if (users > 100) discount = 0.80;
+  else if (users > 50) discount = 0.85;
+  else if (users > 20) discount = 0.90;
 
-    const ktsCost = Math.round(users * baseRate * discount);
-    
-    let inHouseCost = 0;
-    if (region === "NA") {
-      inHouseCost = Math.max(6500, users * 140);
-    } else {
-      inHouseCost = Math.max(1500, users * 35);
-    }
-    
-    const savings = Math.max(0, inHouseCost - ktsCost);
-
-    setCalculatedCosts({
-      ktsCost,
-      inHouseCost,
-      savings,
-    });
-  }, [users, selectedServices, region]);
+  const ktsCost = Math.round(users * baseRate * discount);
+  
+  let inHouseCost = 0;
+  if (region === "NA") {
+    inHouseCost = Math.max(6500, users * 140);
+  } else {
+    inHouseCost = Math.max(1500, users * 35);
+  }
+  
+  const savings = Math.max(0, inHouseCost - ktsCost);
 
   const getContactUrl = () => {
     const servicesParam = selectedServices
@@ -416,7 +403,7 @@ export default function ROICalculator() {
                       textShadow: "0 0 15px rgba(0, 230, 118, 0.2)",
                     }}
                   >
-                    ${calculatedCosts.savings.toLocaleString()}/mo
+                    ${savings.toLocaleString()}/mo
                   </div>
                 </div>
               </div>
@@ -431,7 +418,7 @@ export default function ROICalculator() {
                     className="font-mono"
                     style={{ color: "var(--color-danger)", fontWeight: 700, fontSize: "1.125rem" }}
                   >
-                    ${calculatedCosts.inHouseCost.toLocaleString()}/mo
+                    ${inHouseCost.toLocaleString()}/mo
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -442,7 +429,7 @@ export default function ROICalculator() {
                     className="font-mono"
                     style={{ color: "white", fontWeight: 700, fontSize: "1.125rem" }}
                   >
-                    ${calculatedCosts.ktsCost.toLocaleString()}/mo
+                    ${ktsCost.toLocaleString()}/mo
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -453,7 +440,7 @@ export default function ROICalculator() {
                     className="font-mono"
                     style={{ color: "var(--color-success)", fontWeight: 800, fontSize: "1.125rem" }}
                   >
-                    ${(calculatedCosts.savings * 12).toLocaleString()}/yr
+                    ${(savings * 12).toLocaleString()}/yr
                   </span>
                 </div>
               </div>

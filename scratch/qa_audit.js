@@ -34,7 +34,7 @@ async function runAudit() {
   // Navigate to Homepage
   const url = 'http://localhost:3000';
   console.log(`Navigating to ${url}...`);
-  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
 
   const interactions = [];
 
@@ -201,14 +201,6 @@ async function runAudit() {
       severity: 'Major',
       message: aiWorkforceErrors.join('\n'),
       reproduce: '1. Load the homepage.\n2. Look at the console logs or click/open the AI Chat Assistant/Voice Widget.\n3. Observe network failures or unhandled rejections on LiveKit/AI-Workforce endpoints.'
-    });
-  } else {
-    bugs.push({
-      id: 'AG-QA-001',
-      element: 'AI Workforce Section / LiveKit Voice Connection',
-      severity: 'Major',
-      message: 'Failed to establish LiveKit audio connection / API route for AI-Workforce returns error or is non-functional.',
-      reproduce: '1. Open the Homepage.\n2. Attempt to start voice mode or type messages to the chatbot.\n3. The chatbot/LiveKit system does not respond due to missing/broken voice pipeline integration.'
     });
   }
 

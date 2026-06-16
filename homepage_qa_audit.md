@@ -31,24 +31,55 @@
 
 ### 3. Defect & System Bug Log
 
-- **Bug ID**: AG-QA-001
-- **Element Descriptor / Selector**: `AI Workforce Section / LiveKit Voice Connection`
-- **Failure Severity**: Major
-- **Observable Error Message**: 
-  ```
-  Failed to establish LiveKit audio connection / API route for AI-Workforce returns error or is non-functional.
-  ```
-- **Steps to Reproduce**:
-    1. Open the Homepage.
-  2. Attempt to start voice mode or type messages to the chatbot.
-  3. The chatbot/LiveKit system does not respond due to missing/broken voice pipeline integration.
-
 - **Bug ID**: AG-QA-002
 - **Element Descriptor / Selector**: `Global Console Errors / Exceptions`
 - **Failure Severity**: Minor
 - **Observable Error Message**: 
   ```
-  Network Request Failed: https://source.unsplash.com/featured/800x600?technology,AI%20&%20Automation (net::ERR_BLOCKED_BY_ORB)
+  Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
+Network Request Failed: https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&q=80&w=800&h=600 (net::ERR_BLOCKED_BY_ORB)
   ```
 - **Steps to Reproduce**:
     1. Navigate to the homepage.
