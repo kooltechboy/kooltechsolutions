@@ -1,5 +1,5 @@
 /**
- * POST /api/ai-workforce/compress
+ * POST /api/ai-agents/compress
  *
  * Called by the client-side chat widget when the message list exceeds the
  * MAX_MESSAGES_BEFORE_COMPRESS threshold (15 user+assistant turns).

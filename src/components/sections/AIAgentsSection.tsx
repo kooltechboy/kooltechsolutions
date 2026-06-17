@@ -72,7 +72,7 @@ const agents = [
   }
 ];
 
-export default function AIWorkforceSection() {
+export default function AIAgentsSection() {
   return (
     <section className="py-24 bg-slate-950 relative overflow-hidden">
       {/* Background Radial Glows */}

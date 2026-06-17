@@ -23,6 +23,15 @@ const AGENT_MAP: Record<string, { name: string; label: string }> = {
   default: { name: "Kira", label: "Kira AI" },
 };
 
+const isAllowedPath = (pathname: string) => {
+  if (pathname === "/" || pathname === "") return true;
+  if (pathname.startsWith("/about")) return true;
+  if (pathname.startsWith("/services")) return true;
+  if (pathname.startsWith("/pricing")) return true;
+  if (pathname.startsWith("/contact")) return true;
+  return false;
+};
+
 export default function VoiceAssistant() {
   const pathname = usePathname() || "/";
   const [isOpen, setIsOpen] = useState(false);
@@ -76,7 +85,7 @@ export default function VoiceAssistant() {
     setIsOpen(false);
   };
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/portal")) {
+  if (!isAllowedPath(pathname)) {
     return null;
   }
 

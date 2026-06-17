@@ -237,9 +237,21 @@ export async function POST(req: Request) {
       }
 
       case "createTicket": {
-        const client_id = userContext?.id;
+        let client_id = userContext?.id;
+
+        if (!client_id && args.email) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("email", args.email)
+            .single();
+          if (profile) {
+            client_id = profile.id;
+          }
+        }
+
         if (!client_id) {
-          return NextResponse.json({ success: false, error: "User not authenticated. Cannot create ticket." }, { status: 401 });
+          return NextResponse.json({ success: false, error: "Client account not found. Please provide the email associated with your client account to file a support ticket, or request a call back if you don't have an account." }, { status: 401 });
         }
 
         const { data, error } = await supabase
@@ -259,6 +271,59 @@ export async function POST(req: Request) {
           success: true,
           ticketId: data.id,
           message: `Ticket created (ID: ${data.id}). Priority: ${args.priority}.`,
+        });
+      }
+
+      case "scheduleCallback": {
+        const first_name = args.name.split(" ")[0] || "Unknown";
+        const last_name = args.name.split(" ").slice(1).join(" ") || "-";
+
+        const callbackNote = `CALLBACK REQUESTED: ${args.date || "ASAP"} at ${args.time || "anytime"}`;
+        const reasonNote = args.reason ? `\nTopic: ${args.reason}` : "";
+
+        // Insert CRM lead record
+        const { data: lead, error: leadError } = await supabase
+          .from("leads")
+          .insert({
+            first_name,
+            last_name,
+            email: args.email || null,
+            phone: args.phone,
+            service_interest: "Callback",
+            notes: `${callbackNote}${reasonNote}`,
+            status: "new",
+          })
+          .select("id")
+          .single();
+
+        if (leadError) return NextResponse.json({ success: false, error: leadError.message });
+
+        // Email notifications using Resend
+        if (process.env.RESEND_API_KEY) {
+          try {
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL ?? "sales@kooltechsolutions.com";
+
+            await resend.emails.send({
+              from: "KoolTech AI <onboarding@resend.dev>",
+              to: [adminEmail],
+              subject: `📞 New Callback Request: ${args.name}`,
+              html: `<h2>New Callback Request — Booked by ${resolvedAgentName}</h2>
+                <p><strong>Name:</strong> ${args.name}</p>
+                <p><strong>Phone:</strong> ${args.phone}</p>
+                <p><strong>Email:</strong> ${args.email || "N/A"}</p>
+                <p><strong>Preferred Time:</strong> ${args.date || "ASAP"} at ${args.time || "anytime"}</p>
+                <p><strong>Topic / Reason:</strong> ${args.reason || "General inquiry"}</p>`,
+            });
+          } catch (e) {
+            console.error("[Tool Gateway] scheduleCallback Email error:", e);
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          leadId: lead.id,
+          message: "Callback requested successfully. Our team will contact you shortly.",
         });
       }
 
@@ -346,7 +411,7 @@ export async function POST(req: Request) {
 
       case "escalateToHuman": {
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-        const res = await fetch(`${baseUrl}/api/ai-workforce/escalate`, {
+        const res = await fetch(`${baseUrl}/api/ai-agents/escalate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

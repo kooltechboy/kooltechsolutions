@@ -3,6 +3,14 @@ import { createClient } from "@/utils/supabase/server";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { rateLimitError, serverError, unauthorizedError } from "@/lib/errors";
 import { z } from "zod";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+function getServiceRoleSupabase() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 const escalationSchema = z.object({
   sessionId: z.string().max(200),
@@ -47,7 +55,7 @@ export async function POST(req: Request) {
       userContact,
     } = parsed.data;
 
-    const supabase = await createClient();
+    const supabase = getServiceRoleSupabase();
 
     // ── Create escalation record ──────────────────────────────────────────────
     const { data: escalation, error: escError } = await supabase
@@ -171,7 +179,7 @@ export async function POST(req: Request) {
 
       resend.emails
         .send({
-          from: "KoolTech AI Workforce <onboarding@resend.dev>",
+          from: "KoolTech AI Assistants <onboarding@resend.dev>",
           to: [adminEmail],
           subject: `🔔 [${priority.toUpperCase()}] AI Escalation: ${agentName} → Human Agent`,
           html: `

@@ -23,7 +23,7 @@ class KoolTechToolContext:
         self.agent_name = agent_name
         self.user_context = user_context
         site_url = os.getenv("NEXT_PUBLIC_SITE_URL") or "http://localhost:3000"
-        self.gateway_url = f"{site_url}/api/ai-workforce/tools"
+        self.gateway_url = f"{site_url}/api/ai-agents/tools"
         logger.info(f"[Tools] Initialized for session {session_id}, agent {agent_name}, user {user_context}")
 
     async def _call_gateway(self, tool_name: str, args: dict) -> dict:
@@ -129,18 +129,20 @@ class KoolTechToolContext:
         return f"Ticket '{res.get('subject')}' — Status: {res.get('status').upper()}, Priority: {res.get('priority')}."
 
     @llm.function_tool
-    async def createTicket(self, subject: str, description: str, priority: str = "normal") -> str:
+    async def createTicket(self, subject: str, description: str, priority: str = "normal", email: str = None) -> str:
         """Create a support ticket for an issue.
 
         Args:
             subject: Brief summary of the issue
             description: Detailed description of the problem
             priority: Priority: low, normal, high, or critical
+            email: Client's email address (required if not logged in)
         """
         res = await self._call_gateway("createTicket", {
             "subject": subject,
             "description": description,
-            "priority": priority
+            "priority": priority,
+            "email": email
         })
         if "error" in res or not res.get("success"):
             return f"Error creating ticket: {res.get('error', 'Unauthorized')}"
@@ -159,6 +161,38 @@ class KoolTechToolContext:
         results = res.get("results", [])
         context = "\n\n".join([f"[Verified Info - {c['title']}]: {c['content']}" for c in results])
         return context
+
+    @llm.function_tool
+    async def scheduleCallback(
+        self,
+        name: str,
+        phone: str,
+        email: str = None,
+        date: str = None,
+        time: str = None,
+        reason: str = None
+    ) -> str:
+        """Schedule a phone call back from a human representative. Use when the user requests a callback or wants us to call them.
+
+        Args:
+            name: Client's full name
+            phone: Client's phone/WhatsApp number
+            email: Client's email address (optional)
+            date: Preferred date for callback (optional, e.g. June 16)
+            time: Preferred time for callback (optional, e.g. 2:00 PM)
+            reason: Reason or topic of the call (e.g. custom pricing, support follow-up)
+        """
+        res = await self._call_gateway("scheduleCallback", {
+            "name": name,
+            "phone": phone,
+            "email": email,
+            "date": date,
+            "time": time,
+            "reason": reason
+        })
+        if "error" in res or not res.get("success"):
+            return f"Error scheduling callback: {res.get('error', 'Operation failed')}"
+        return res.get("message", "Callback scheduled successfully.")
 
     @llm.function_tool
     async def escalateToHuman(
@@ -258,7 +292,8 @@ CORE BEHAVIORS:
 3. Voice format: You are speaking aloud. No markdown, no bullet points, no numbered lists. Keep sentences short and natural. Pause between thoughts.
 4. Zero Hallucination: Use getKnowledge before answering pricing, feature, or SLA questions. If no data found, use your fallback response to connect them with a specialist.
 5. Tool Confirmation: Before calling bookDemo, verbally confirm all details (name, email, service, date, time) and wait for the user to say "yes" or "confirm".
-6. Escalation: If the user asks for a human or expresses frustration, call escalateToHuman immediately.
+6. Callbacks: If the user requests a callback or wants us to call them back, gather their name, phone number, and callback reason, then call scheduleCallback.
+7. Escalation: If the user asks for a human or expresses frustration, call escalateToHuman immediately.
 
 SERVICES OVERVIEW (for quick reference — always use getKnowledge for specific details):
 {catalog_summary}
@@ -292,4 +327,4 @@ ROLE-SPECIFIC INSTRUCTIONS:
     logger.info("Agent started successfully")
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, agent_name="kooltech-workforce"))
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, agent_name="kooltech-voice-agent"))

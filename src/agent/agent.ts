@@ -359,7 +359,7 @@ const tools = {
     execute: async ({ reason, priority, summary, clientName, clientEmail }) => {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-        await fetch(`${baseUrl}/api/ai-workforce/escalate`, {
+        await fetch(`${baseUrl}/api/ai-agents/escalate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -497,5 +497,5 @@ ${persona.instructions}`;
 });
 
 // ── Register worker with a stable agent name for dispatch ─────────────────────
-// The name 'kooltech-workforce' matches what token/route.ts dispatches to.
-cli.runApp(new WorkerOptions({ agent: __filename, agentName: 'kooltech-workforce' }));
+// The name 'kooltech-voice-agent' matches what token/route.ts dispatches to.
+cli.runApp(new WorkerOptions({ agent: __filename, agentName: 'kooltech-voice-agent' }));

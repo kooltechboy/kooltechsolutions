@@ -14,8 +14,16 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { createCalendarEvent } from "@/lib/calendar/google";
 import { generateIcsInvite } from "@/lib/calendar/ics";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
+
+function getServiceRoleSupabase() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // ── Telemetry ─────────────────────────────────────────────────────────────────
 async function logConversation(
@@ -214,7 +222,7 @@ CORE MISSION:
             message: z.string().optional().describe("Additional notes from the client"),
           }),
           execute: async (params: any) => {
-            const supabase = await createClient();
+            const supabase = getServiceRoleSupabase();
             const first_name = params.name.split(" ")[0] || "Unknown";
             const last_name = params.name.split(" ").slice(1).join(" ") || "-";
 
@@ -405,7 +413,7 @@ CORE MISSION:
             date: z.string().describe("The date to check (e.g. 'June 15')"),
           }),
           execute: async ({ date }: { date: string }) => {
-            const supabase = await createClient();
+            const supabase = getServiceRoleSupabase();
             const { data, error } = await supabase
               .from("leads")
               .select("notes")
@@ -424,28 +432,48 @@ CORE MISSION:
         // ── Tickets & Support ───────────────────────────────────────────────
         createTicket: tool({
           description:
-            "Create a support ticket for an authenticated user's issue.",
+            "Create a support ticket for a client's issue. If not logged in, client email must be provided to find their account.",
           parameters: z.object({
             subject: z.string().describe("Brief summary of the issue"),
             description: z.string().describe("Detailed problem description"),
             priority: z
               .enum(["low", "normal", "high", "critical"])
               .describe("Priority level"),
+            email: z
+              .string()
+              .email()
+              .optional()
+              .describe("Client's email address (required if not logged in)"),
           }),
           execute: async (params: any) => {
-            if (!userContext)
+            const supabase = getServiceRoleSupabase();
+            let client_id = userContext?.id;
+
+            if (!client_id && params.email) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("id")
+                .eq("email", params.email)
+                .single();
+              if (profile) {
+                client_id = profile.id;
+              }
+            }
+
+            if (!client_id) {
               return {
                 success: false,
-                error: "User not authenticated. Cannot create ticket.",
+                error: "Client account not found. Please provide the email associated with your client account to file a support ticket, or schedule a callback if you don't have an account.",
               };
-            const supabase = await createClient();
+            }
+
             const { data, error } = await supabase
               .from("tickets")
               .insert({
                 subject: params.subject,
                 description: params.description,
                 priority: params.priority,
-                client_id: userContext.id,
+                client_id,
                 status: "open",
               })
               .select("id")
@@ -465,7 +493,7 @@ CORE MISSION:
             ticketId: z.string().describe("The ticket ID to look up"),
           }),
           execute: async ({ ticketId }: { ticketId: string }) => {
-            const supabase = await createClient();
+            const supabase = getServiceRoleSupabase();
             const { data, error } = await supabase
               .from("tickets")
               .select("status, subject, priority, created_at")
@@ -582,6 +610,71 @@ CORE MISSION:
           },
         } as any),
 
+        scheduleCallback: tool({
+          description:
+            "Schedule a phone call back from a human representative. Use when user requests a callback or wants us to call them.",
+          parameters: z.object({
+            name: z.string().describe("Client's full name"),
+            phone: z.string().describe("Client's phone/WhatsApp number"),
+            email: z.string().email().optional().describe("Client's email address (optional)"),
+            date: z.string().optional().describe("Preferred date for the callback (optional, e.g. 'June 16')"),
+            time: z.string().optional().describe("Preferred time for the callback (optional, e.g. '2:00 PM')"),
+            reason: z.string().optional().describe("Topic or reason of the callback (optional)"),
+          }),
+          execute: async (params: any) => {
+            const supabase = getServiceRoleSupabase();
+            const first_name = params.name.split(" ")[0] || "Unknown";
+            const last_name = params.name.split(" ").slice(1).join(" ") || "-";
+
+            const callbackNote = `CALLBACK REQUESTED: ${params.date || "ASAP"} at ${params.time || "anytime"}`;
+            const reasonNote = params.reason ? `\nTopic: ${params.reason}` : "";
+
+            const { data: lead, error: leadError } = await supabase
+              .from("leads")
+              .insert({
+                first_name,
+                last_name,
+                email: params.email || null,
+                phone: params.phone,
+                service_interest: "Callback",
+                notes: `${callbackNote}${reasonNote}`,
+                status: "new",
+              })
+              .select("id")
+              .single();
+
+            if (leadError) return { success: false, error: leadError.message };
+
+            // Email notifications using Resend
+            if (process.env.RESEND_API_KEY) {
+              try {
+                const resend = new Resend(process.env.RESEND_API_KEY);
+                const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL ?? "sales@kooltechsolutions.com";
+
+                await resend.emails.send({
+                  from: "KoolTech AI <onboarding@resend.dev>",
+                  to: [adminEmail],
+                  subject: `📞 New Callback Request: ${params.name}`,
+                  html: `<h2>New Callback Request — Booked by ${resolvedAgentName}</h2>
+                    <p><strong>Name:</strong> ${params.name}</p>
+                    <p><strong>Phone:</strong> ${params.phone}</p>
+                    <p><strong>Email:</strong> ${params.email || "N/A"}</p>
+                    <p><strong>Preferred Time:</strong> ${params.date || "ASAP"} at ${params.time || "anytime"}</p>
+                    <p><strong>Topic / Reason:</strong> ${params.reason || "General inquiry"}</p>`,
+                });
+              } catch (e) {
+                console.error("[Tool Gateway] scheduleCallback Email error:", e);
+              }
+            }
+
+            return {
+              success: true,
+              leadId: lead.id,
+              message: "Callback requested successfully. Our team will contact you shortly.",
+            };
+          },
+        } as any),
+
         // ── Human Escalation ────────────────────────────────────────────────
         escalateToHuman: tool({
           description:
@@ -613,7 +706,7 @@ CORE MISSION:
             try {
               const baseUrl =
                 process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-              const res = await fetch(`${baseUrl}/api/ai-workforce/escalate`, {
+              const res = await fetch(`${baseUrl}/api/ai-agents/escalate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

@@ -92,7 +92,7 @@ export async function POST(req: Request) {
     // After generating the visitor token, dispatch the agent worker to the room.
     try {
       const dispatchClient = new AgentDispatchClient(livekitUrl, apiKey, apiSecret);
-      await dispatchClient.createDispatch(roomName, "kooltech-workforce", {
+      await dispatchClient.createDispatch(roomName, "kooltech-voice-agent", {
         metadata: JSON.stringify({ agentName, userContext }),
       });
     } catch (dispatchErr) {

@@ -104,7 +104,7 @@ function buildFAQChunks(): RawChunk[] {
       category: "General",
       title: "What is KoolTech Solutions?",
       content:
-        "KoolTech Solutions is a premium Managed Service Provider (MSP) specializing in enterprise-grade IT services for businesses in the Dominican Republic, USA, Canada, and the Caribbean. We provide Managed IT, Cybersecurity, Cloud Services, Network Design, VoIP, and AI-powered workforce automation.",
+        "KoolTech Solutions is a premium Managed Service Provider (MSP) specializing in enterprise-grade IT services for businesses in the Dominican Republic, USA, Canada, and the Caribbean. We provide Managed IT, Cybersecurity, Cloud Services, Network Design, VoIP, and AI-powered automation and agents.",
       metadata: {},
     },
     {
@@ -128,7 +128,7 @@ function buildFAQChunks(): RawChunk[] {
       category: "Support",
       title: "What are KoolTech's support hours?",
       content:
-        "KoolTech provides 24/7 automated monitoring and AI-first support via our chat and voice workforce. Human engineers are available Monday–Friday 9 AM–6 PM Atlantic Standard Time (UTC-4). Critical incidents trigger 24/7 human on-call escalation regardless of business hours.",
+        "KoolTech provides 24/7 automated monitoring and AI-first support via our chat and voice assistants. Human engineers are available Monday–Friday 9 AM–6 PM Atlantic Standard Time (UTC-4). Critical incidents trigger 24/7 human on-call escalation regardless of business hours.",
       metadata: {},
     },
     {
@@ -157,10 +157,10 @@ function buildFAQChunks(): RawChunk[] {
     },
     {
       source: "faq",
-      category: "AI Workforce",
-      title: "What are KoolTech's AI Workforce agents?",
+      category: "AI Assistants",
+      title: "What are KoolTech's AI Assistants?",
       content:
-        "KoolTech offers custom AI employees for business automation: Kira (AI Receptionist, $129/mo) handles inbound calls and lead qualification; Max (AI Support Pro, $149/mo) manages ticket resolution and knowledge base search; Nova (AI Sales Development, $189/mo) handles outbound lead generation and follow-ups. Custom AI agents are also available starting at $149/mo for hosting.",
+        "KoolTech offers custom AI assistants for business automation: Kira (AI Receptionist, $129/mo) handles inbound calls, lead qualification, and callbacks; Max (AI Support Pro, $149/mo) manages ticket resolution and knowledge base search; Nova (AI Sales Development, $189/mo) handles outbound lead generation and follow-ups. Custom AI assistants are also available starting at $149/mo for hosting.",
       metadata: {},
     },
   ];

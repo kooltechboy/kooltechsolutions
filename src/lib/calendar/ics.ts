@@ -50,7 +50,7 @@ export function generateIcsInvite(params: {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//KoolTech Solutions//AI Workforce//EN",
+    "PRODID:-//KoolTech Solutions//AI Assistants//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:REQUEST",
     "BEGIN:VEVENT",

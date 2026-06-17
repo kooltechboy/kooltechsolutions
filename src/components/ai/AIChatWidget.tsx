@@ -133,6 +133,15 @@ function VoiceAssistantUI({ agentColor }: { agentColor: string }) {
   );
 }
 
+const isAllowedPath = (pathname: string) => {
+  if (pathname === "/" || pathname === "") return true;
+  if (pathname.startsWith("/about")) return true;
+  if (pathname.startsWith("/services")) return true;
+  if (pathname.startsWith("/pricing")) return true;
+  if (pathname.startsWith("/contact")) return true;
+  return false;
+};
+
 export default function AIChatWidget() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -179,7 +188,7 @@ export default function AIChatWidget() {
   const [input, setInput] = useState("");
 
   const { messages, setMessages, append, isLoading, error, reload } = useChat({
-    api: '/api/ai-workforce/v1',
+    api: '/api/ai-agents/v1',
     id: sessionId,
     initialMessages: [{ id: 'initial', role: 'assistant', content: agent.greeting }],
     body: {
@@ -262,7 +271,7 @@ export default function AIChatWidget() {
     const compressMessages = async () => {
       setIsCompressing(true);
       try {
-        const res = await fetch('/api/ai-workforce/compress', {
+        const res = await fetch('/api/ai-agents/compress', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -328,7 +337,7 @@ export default function AIChatWidget() {
     }
   };
 
-  if (pathname.startsWith('/admin') || pathname.startsWith('/portal')) {
+  if (!isAllowedPath(pathname)) {
     return null;
   }
 
