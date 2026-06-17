@@ -46,6 +46,47 @@ export default function BlogListClient({ initialPosts }: BlogListClientProps) {
 
   return (
     <>
+      {/* Inline CSS — reliable regardless of build/purge */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .kts-featured-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          border-radius: 24px;
+          overflow: hidden;
+          border: 1px solid rgba(0, 212, 255, 0.2);
+          transition: transform 0.3s ease, border-color 0.3s ease;
+          background: rgba(10, 22, 40, 0.7);
+          backdrop-filter: blur(16px);
+        }
+        @media (min-width: 769px) {
+          .kts-featured-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .kts-featured-image {
+          height: 340px;
+          position: relative;
+          overflow: hidden;
+        }
+        @media (min-width: 769px) {
+          .kts-featured-image { height: 100%; min-height: 340px; }
+        }
+        .kts-card-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2.5rem;
+        }
+        @media (min-width: 640px) {
+          .kts-card-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1024px) {
+          .kts-card-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .kts-featured-grid:hover {
+          border-color: rgba(0, 212, 255, 0.4);
+          box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
+          transform: translateY(-4px);
+        }
+      `}} />
+
       {/* Search Input Section */}
       <section style={{ padding: "0 0 3rem" }}>
         <div className="container" style={{ textAlign: "center" }}>
@@ -105,10 +146,10 @@ export default function BlogListClient({ initialPosts }: BlogListClientProps) {
         <div className="container" style={{ marginBottom: "4rem" }}>
           <Link href={`/blog/${featuredPost.slug}`} style={{ textDecoration: "none" }}>
             <div
-              className="glass-card blog-featured-grid"
+              className="kts-featured-grid"
             >
               {/* Cover Image */}
-              <div className="blog-featured-image">
+              <div className="kts-featured-image">
                 <img
                   src={featuredPost.image_url || getFallbackImage(featuredPost.category)}
                   alt={featuredPost.title}
@@ -213,7 +254,7 @@ export default function BlogListClient({ initialPosts }: BlogListClientProps) {
             </p>
           </div>
         ) : (
-          <div className="blog-card-grid">
+          <div className="kts-card-grid">
             {gridPosts.map((post) => {
               const color = getCategoryColor(post.category);
               return (

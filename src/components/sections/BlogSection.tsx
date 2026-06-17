@@ -52,7 +52,7 @@ export default function BlogSection() {
           </Link>
         </div>
 
-        <div className="blog-card-grid" style={{ gap: "1.5rem" }}>
+        <div className="blog-card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
           {posts.map(post => {
             const color = getCategoryColor(post.category);
             return (
