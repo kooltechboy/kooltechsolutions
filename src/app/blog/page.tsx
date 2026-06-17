@@ -62,8 +62,6 @@ export default async function BlogPage() {
   }
 
   const allPosts: Post[] = posts || [];
-  const featuredPost = allPosts[0] ?? null;
-  const gridPosts = allPosts.slice(1);
 
   return (
     <>
@@ -75,7 +73,7 @@ export default async function BlogPage() {
           <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem", textAlign: "center" }}>
             <div
               style={{
-                display: "inline-flex", alignItems: "center", gap: "0.35rem",
+                display: "inline-flex", alignItems: "center",
                 padding: "0.25rem 0.75rem", borderRadius: "100px", fontSize: "0.75rem",
                 fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase",
                 background: "rgba(0,212,255,0.12)", color: "#00D4FF",
@@ -87,7 +85,8 @@ export default async function BlogPage() {
             <h1
               style={{
                 fontFamily: "Syne, sans-serif", fontWeight: 800,
-                fontSize: "clamp(2rem, 5vw, 3rem)", color: "white", marginBottom: "1rem", lineHeight: 1.15,
+                fontSize: "clamp(2rem, 5vw, 3rem)", color: "white",
+                marginBottom: "1rem", lineHeight: 1.15,
               }}
             >
               IT Insights &amp;{" "}
@@ -107,7 +106,7 @@ export default async function BlogPage() {
           </div>
         </section>
 
-        {/* ── No Posts Fallback ── */}
+        {/* ── No Posts ── */}
         {allPosts.length === 0 && (
           <section style={{ padding: "4rem 0" }}>
             <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem", textAlign: "center" }}>
@@ -116,143 +115,119 @@ export default async function BlogPage() {
           </section>
         )}
 
-        {/* ── Featured Post ── */}
-        {featuredPost && (
-          <section style={{ padding: "2rem 0" }}>
+        {/* ── All Posts as Cards ── */}
+        {allPosts.length > 0 && (
+          <section style={{ padding: "1rem 0 5rem" }}>
             <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem" }}>
-              <Link href={`/blog/${featuredPost.slug}`} style={{ textDecoration: "none", display: "block" }}>
-                {/*
-                  The grid is defined entirely inline.
-                  On screens >= 769px → 2 equal columns.
-                  On screens < 769px  → single column (handled by the <style> tag below).
-                */}
-                <style>{`
-                  .blog-featured-card {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    background: rgba(10,22,40,0.7);
-                    border: 1px solid rgba(0,212,255,0.2);
-                    border-radius: 24px;
-                    overflow: hidden;
-                    transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-                  }
-                  .blog-featured-card:hover {
-                    border-color: rgba(0,212,255,0.5);
-                    box-shadow: 0 0 40px rgba(0,212,255,0.18);
-                    transform: translateY(-4px);
-                  }
-                  @media (min-width: 769px) {
-                    .blog-featured-card { grid-template-columns: 1fr 1fr; }
-                  }
-                  .blog-featured-img-wrap {
-                    height: 320px;
-                    position: relative;
-                    overflow: hidden;
-                  }
-                  @media (min-width: 769px) {
-                    .blog-featured-img-wrap { height: 100%; min-height: 360px; }
-                  }
-                  .blog-grid {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    gap: 2rem;
-                    margin-top: 3rem;
-                  }
-                  @media (min-width: 640px) {
-                    .blog-grid { grid-template-columns: repeat(2, 1fr); }
-                  }
-                  @media (min-width: 1024px) {
-                    .blog-grid { grid-template-columns: repeat(3, 1fr); }
-                  }
-                `}</style>
-
-                <div className="blog-featured-card">
-                  {/* Image side */}
-                  <div className="blog-featured-img-wrap">
-                    <img
-                      src={featuredPost.image_url || getFallbackImage(featuredPost.category)}
-                      alt={featuredPost.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                    />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(6,11,24,0.7) 0%, transparent 60%)" }} />
-                    <span
-                      style={{
-                        position: "absolute", top: "1.25rem", left: "1.25rem",
-                        background: `${getCategoryColor(featuredPost.category)}25`,
-                        color: getCategoryColor(featuredPost.category),
-                        border: `1px solid ${getCategoryColor(featuredPost.category)}40`,
-                        padding: "0.3rem 0.9rem", borderRadius: "100px",
-                        fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
-                      }}
-                    >
-                      Featured · {featuredPost.category}
-                    </span>
-                  </div>
-
-                  {/* Content side */}
-                  <div style={{ padding: "2.5rem 2rem", display: "flex", flexDirection: "column", justifyContent: "center", gap: "1rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", color: "#94A3B8", fontSize: "0.875rem", flexWrap: "wrap" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                        <Calendar size={14} />
-                        {new Date(featuredPost.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </span>
-                      <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                        <Clock size={14} /> {featuredPost.read_time} read
-                      </span>
-                    </div>
-                    <h2
-                      style={{
-                        fontFamily: "Syne, sans-serif", fontWeight: 800,
-                        fontSize: "clamp(1.5rem, 3vw, 2.25rem)", color: "white", lineHeight: 1.2, margin: 0,
-                      }}
-                    >
-                      {featuredPost.title}
-                    </h2>
-                    <p style={{ color: "#94A3B8", fontSize: "1rem", lineHeight: 1.7, margin: 0 }}>
-                      {featuredPost.excerpt}
-                    </p>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "#00D4FF", fontWeight: 600, fontSize: "0.9375rem" }}>
-                      Read Article <ArrowRight size={16} />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </section>
-        )}
-
-        {/* ── Post Grid ── */}
-        {gridPosts.length > 0 && (
-          <section style={{ padding: "2rem 0 5rem" }}>
-            <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem" }}>
-              <div className="blog-grid">
-                {gridPosts.map((post) => {
+              <div style={{ display: "flex", flexDirection: "column", gap: "3rem" }}>
+                {allPosts.map((post, index) => {
                   const color = getCategoryColor(post.category);
+                  const isFeatured = index === 0;
+                  const imageUrl = post.image_url || getFallbackImage(post.category);
+
+                  if (isFeatured) {
+                    // Featured hero card — wide landscape layout
+                    return (
+                      <Link
+                        key={post.id}
+                        href={`/blog/${post.slug}`}
+                        style={{ textDecoration: "none", display: "block" }}
+                      >
+                        <div
+                          style={{
+                            background: "rgba(10,22,40,0.8)",
+                            border: "1px solid rgba(0,212,255,0.25)",
+                            borderRadius: "20px",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {/* Full-width image */}
+                          <div style={{ position: "relative", height: "320px", overflow: "hidden" }}>
+                            <img
+                              src={imageUrl}
+                              alt={post.title}
+                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                            />
+                            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(6,11,24,0.95) 0%, rgba(6,11,24,0.3) 60%, transparent 100%)" }} />
+                            <span
+                              style={{
+                                position: "absolute", top: "1.25rem", left: "1.25rem",
+                                background: `${color}25`, color,
+                                border: `1px solid ${color}40`,
+                                padding: "0.3rem 0.9rem", borderRadius: "100px",
+                                fontSize: "0.72rem", fontWeight: 700,
+                                letterSpacing: "0.06em", textTransform: "uppercase",
+                              }}
+                            >
+                              Featured · {post.category}
+                            </span>
+                          </div>
+
+                          {/* Content below image */}
+                          <div style={{ padding: "2rem 2.5rem 2.5rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", color: "#94A3B8", fontSize: "0.875rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+                              <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                                <Calendar size={14} />
+                                {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              </span>
+                              <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                                <Clock size={14} /> {post.read_time} read
+                              </span>
+                            </div>
+                            <h2
+                              style={{
+                                fontFamily: "Syne, sans-serif", fontWeight: 800,
+                                fontSize: "clamp(1.5rem, 3vw, 2.25rem)",
+                                color: "white", lineHeight: 1.2, marginBottom: "1rem",
+                              }}
+                            >
+                              {post.title}
+                            </h2>
+                            <p style={{ color: "#94A3B8", fontSize: "1.05rem", lineHeight: 1.7, marginBottom: "1.5rem", maxWidth: "700px" }}>
+                              {post.excerpt}
+                            </p>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "#00D4FF", fontWeight: 600, fontSize: "0.9375rem" }}>
+                              Read Article <ArrowRight size={16} />
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  }
+
+                  // Regular card
                   return (
-                    <Link key={post.id} href={`/blog/${post.slug}`} style={{ textDecoration: "none", display: "flex" }}>
+                    <Link
+                      key={post.id}
+                      href={`/blog/${post.slug}`}
+                      style={{ textDecoration: "none", display: "block" }}
+                    >
                       <div
                         style={{
-                          background: "rgba(10,22,40,0.7)", border: "1px solid rgba(0,212,255,0.1)",
-                          borderRadius: "16px", overflow: "hidden", display: "flex", flexDirection: "column",
-                          width: "100%", transition: "border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease",
+                          background: "rgba(10,22,40,0.7)",
+                          border: "1px solid rgba(0,212,255,0.1)",
+                          borderRadius: "16px",
+                          overflow: "hidden",
                         }}
                       >
-                        <div style={{ height: "200px", position: "relative", overflow: "hidden", flexShrink: 0 }}>
+                        <div style={{ height: "220px", position: "relative", overflow: "hidden" }}>
                           <img
-                            src={post.image_url || getFallbackImage(post.category)}
+                            src={imageUrl}
                             alt={post.title}
                             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                           />
-                          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(6,11,24,0.8) 0%, transparent 55%)" }} />
+                          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(6,11,24,0.9) 0%, transparent 60%)" }} />
                         </div>
 
-                        <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem", flex: 1 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                        <div style={{ padding: "1.75rem" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.875rem", flexWrap: "wrap" }}>
                             <span
                               style={{
-                                background: `${color}15`, color, border: `1px solid ${color}30`,
-                                padding: "0.2rem 0.65rem", borderRadius: "100px", fontSize: "0.68rem",
-                                fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase",
+                                background: `${color}15`, color,
+                                border: `1px solid ${color}30`,
+                                padding: "0.2rem 0.65rem", borderRadius: "100px",
+                                fontSize: "0.68rem", fontWeight: 700,
+                                letterSpacing: "0.05em", textTransform: "uppercase",
                               }}
                             >
                               {post.category}
@@ -265,22 +240,18 @@ export default async function BlogPage() {
                           <h3
                             style={{
                               fontFamily: "Syne, sans-serif", fontWeight: 700,
-                              fontSize: "1.1rem", color: "white", lineHeight: 1.35, margin: 0,
+                              fontSize: "1.2rem", color: "white",
+                              lineHeight: 1.35, marginBottom: "0.75rem",
                             }}
                           >
                             {post.title}
                           </h3>
 
-                          <p style={{ color: "#94A3B8", fontSize: "0.875rem", lineHeight: 1.6, margin: 0, flex: 1 }}>
+                          <p style={{ color: "#94A3B8", fontSize: "0.9rem", lineHeight: 1.65, marginBottom: "1.25rem" }}>
                             {post.excerpt}
                           </p>
 
-                          <div
-                            style={{
-                              display: "flex", alignItems: "center", justifyContent: "space-between",
-                              paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)", marginTop: "auto",
-                            }}
-                          >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                             <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#64748B", fontSize: "0.75rem" }}>
                               <Calendar size={12} />
                               {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
