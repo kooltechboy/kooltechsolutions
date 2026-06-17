@@ -105,18 +105,10 @@ export default function BlogListClient({ initialPosts }: BlogListClientProps) {
         <div className="container" style={{ marginBottom: "4rem" }}>
           <Link href={`/blog/${featuredPost.slug}`} style={{ textDecoration: "none" }}>
             <div
-              className="glass-card"
-              style={{
-                borderRadius: "24px",
-                overflow: "hidden",
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-                border: "1px solid rgba(0, 212, 255, 0.2)",
-                transition: "transform 0.3s ease, border-color 0.3s ease",
-              }}
+              className="glass-card blog-featured-grid"
             >
               {/* Cover Image */}
-              <div style={{ height: "380px", position: "relative", overflow: "hidden" }}>
+              <div className="blog-featured-image">
                 <img
                   src={featuredPost.image_url || getFallbackImage(featuredPost.category)}
                   alt={featuredPost.title}
@@ -221,13 +213,7 @@ export default function BlogListClient({ initialPosts }: BlogListClientProps) {
             </p>
           </div>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "2.5rem",
-            }}
-          >
+          <div className="blog-card-grid">
             {gridPosts.map((post) => {
               const color = getCategoryColor(post.category);
               return (
