@@ -98,7 +98,7 @@ export default function AIWorkforceSection() {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight leading-tight"
           >
-            Meet Your Proactive <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400">AI Workforce</span>
+            Meet Your Proactive <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400">AI Assistants</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 15 }}

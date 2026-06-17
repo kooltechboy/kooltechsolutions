@@ -67,10 +67,10 @@ const AGENTS = {
   },
   default: { 
     name: "Kira", 
-    role: "AI Workforce", 
+    role: "AI Assistant", 
     color: "#00D4FF", 
     icon: Zap,
-    greeting: "Hello! How can the KoolTech AI workforce assist you today?" 
+    greeting: "Hello! How can the KoolTech AI assistant help you today?" 
   },
 };
 
@@ -502,7 +502,7 @@ export default function AIChatWidget() {
                     <input
                       value={input}
                       onChange={handleInputChange}
-                      placeholder="Message our workforce..."
+                      placeholder="Message our AI assistant..."
                       className="w-full bg-slate-900/80 border border-white/10 rounded-2xl py-3.5 pl-5 pr-12 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all placeholder:text-slate-500 shadow-inner"
                     />
                     <button

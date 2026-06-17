@@ -24,18 +24,7 @@ async function logConversation(
   content: string,
   agentName: string
 ) {
-  if (!content?.trim()) return;
-  try {
-    const supabase = await createClient();
-    await supabase.from("agent_logs").insert({
-      session_id: sessionId,
-      role,
-      content: content.trim(),
-      agent_name: agentName,
-    });
-  } catch (err) {
-    console.error("[AI Route] Telemetry log failed:", err);
-  }
+  return; // Disabled AI Workforce telemetry database writes
 }
 
 // ── Session tracking ──────────────────────────────────────────────────────────
@@ -45,22 +34,7 @@ async function upsertSession(
   channel: string,
   pathname: string | undefined
 ) {
-  try {
-    const supabase = await createClient();
-    await supabase.from("agent_sessions").upsert(
-      {
-        session_id: sessionId,
-        agent_name: agentName,
-        channel,
-        page_context: pathname ?? "/",
-        last_active_at: new Date().toISOString(),
-        status: "active",
-      },
-      { onConflict: "session_id", ignoreDuplicates: false }
-    );
-  } catch {
-    // Non-critical — don't block the stream
-  }
+  return; // Disabled AI Workforce session tracking database writes
 }
 
 /**
@@ -148,7 +122,7 @@ export async function POST(req: Request) {
     const catalogContext = buildCatalogContext(resolvedAgentName);
 
     // ── Build system instruction ──────────────────────────────────────────────
-    let systemInstruction = `You are ${resolvedAgentName}, the ${agentRole ?? "AI Workforce"} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
+    let systemInstruction = `You are ${resolvedAgentName}, the ${agentRole ?? "AI Assistant"} for KoolTech Solutions — a premium MSP serving the Dominican Republic, USA, Canada and the Caribbean.
 Current page context: ${JSON.stringify(context ?? {})}
 
 CORE BEHAVIORS:

@@ -34,8 +34,6 @@ const navGroups = [
     items: [
       { icon: Server, label: "ITFlow Sync", href: "/admin/itflow" },
       { icon: PenSquare, label: "Blog CMS", href: "/admin/blog" },
-      { icon: Bot, label: "AI Workers", href: "/admin/ai-workforce" },
-      { icon: Database, label: "AI Logs", href: "/admin/ai-logs" },
       { icon: Zap, label: "Services", href: "/admin/services" },
       { icon: Plug, label: "Integrations", href: "/admin/integrations" },
       { icon: Settings, label: "Automation", href: "/admin/automation" },
