@@ -58,6 +58,13 @@ const AGENTS = {
     icon: TrendingUp,
     greeting: "Nexus online. I'm analyzing your current sales velocity and lead quality. We have several high-intent leads waiting for qualification. How can I help you scale today?"
   },
+  nova: {
+    name: "Nova",
+    role: "AI Sales Development",
+    color: "#F43F5E",
+    icon: TrendingUp,
+    greeting: "Hi! I'm Nova. I specialize in outbound growth, lead qualification, and nurturing sales pipelines. Ready to scale your outreach?"
+  },
   default: { 
     name: "Kira", 
     role: "AI Workforce", 
@@ -159,7 +166,8 @@ export default function AIChatWidget() {
   const getAgent = () => {
     if (pathname.includes('/admin')) return AGENTS.admin;
     if (pathname.includes('/portal')) return AGENTS.portal;
-    if (pathname === '/') return AGENTS.home;
+    if (pathname.includes('nova') || pathname.includes('/pricing')) return AGENTS.nova;
+    if (pathname === '/' || pathname.includes('/about')) return AGENTS.home;
     if (pathname.includes('/services')) return AGENTS.services;
     if (pathname.includes('/blog')) return AGENTS.blog;
     if (pathname.includes('/contact')) return AGENTS.contact;
@@ -319,6 +327,10 @@ export default function AIChatWidget() {
       }
     }
   };
+
+  if (pathname.startsWith('/admin') || pathname.startsWith('/portal')) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end pointer-events-none">

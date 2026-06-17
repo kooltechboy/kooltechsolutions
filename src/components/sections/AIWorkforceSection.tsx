@@ -12,7 +12,8 @@ import {
   UserCheck, 
   Database, 
   Activity, 
-  CalendarRange 
+  CalendarRange,
+  TrendingUp
 } from "lucide-react";
 import Link from "next/link";
 
@@ -54,6 +55,19 @@ const agents = [
     stats: [
       { label: "Sync Latency", value: "Realtime", icon: Activity },
       { label: "Booking Rate", value: "94.2%", icon: CalendarRange }
+    ]
+  },
+  {
+    name: "Nova",
+    role: "AI Sales Development",
+    desc: "Outbound lead generation outreach, email nurturing, and sales growth pipeline optimization.",
+    icon: TrendingUp,
+    color: "#F43F5E",
+    specialty: "Outbound Growth",
+    emoji: "🚀",
+    stats: [
+      { label: "Outreach Speed", value: "Continuous", icon: Clock },
+      { label: "Pipeline Yield", value: "Automated", icon: BarChart3 }
     ]
   }
 ];
@@ -98,7 +112,7 @@ export default function AIWorkforceSection() {
         </div>
 
         {/* Tiles Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {agents.map((agent, index) => {
             const AgentIcon = agent.icon;
             return (
@@ -208,6 +222,7 @@ export default function AIWorkforceSection() {
               <div className="w-12 h-12 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-lg shadow-md">👋</div>
               <div className="w-12 h-12 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-lg shadow-md">🛡️</div>
               <div className="w-12 h-12 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-lg shadow-md">📅</div>
+              <div className="w-12 h-12 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-lg shadow-md">🚀</div>
             </div>
             <div>
               <h4 className="text-white font-bold text-lg tracking-tight mb-1">Integrated with your CRM & Portal</h4>

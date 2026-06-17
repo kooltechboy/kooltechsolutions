@@ -237,7 +237,7 @@ export default function CallNowButton({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-28 right-6 z-[99998] w-[300px] rounded-3xl border border-white/10 p-6 shadow-2xl overflow-hidden"
+            className="fixed bottom-28 right-28 z-[99998] w-[300px] rounded-3xl border border-white/10 p-6 shadow-2xl overflow-hidden"
             style={{
               background: "rgba(10,22,45,0.97)",
               backdropFilter: "blur(24px)",

@@ -46,4 +46,16 @@ next-env.d.ts
 /dist/
 /test-results/
 
+# python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# scratch
+scratch/
+
 

@@ -72,6 +72,15 @@ const AGENTS = [
     desc: "Analyzes lead pipelines, sales velocity, and growth opportunities.",
     channel: "Text + Voice",
   },
+  {
+    id: "nova",
+    name: "Nova",
+    role: "AI Sales Development",
+    icon: TrendingUp,
+    color: "#F43F5E",
+    desc: "Autonomous outbound lead generation, outreach campaigns, and sales nurturing.",
+    channel: "Text + Voice",
+  },
 ];
 
 const AGENT_MAP = Object.fromEntries(AGENTS.map((a) => [a.name.toLowerCase(), a]));

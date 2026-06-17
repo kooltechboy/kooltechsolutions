@@ -66,12 +66,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // ── Check authentication for metadata injection ──────────────────────────
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userContext = user ? { id: user.id, email: user.email } : null;
+
     // ── Generate JWT token for the visitor participant ─────────────────────────
     const at = new AccessToken(apiKey, apiSecret, {
       identity: `${participantName}-${Date.now()}`,
       name: participantName,
-      // Pass agentName as participant metadata so the agent worker knows which persona to use
-      metadata: JSON.stringify({ agentName }),
+      // Pass agentName and userContext as participant metadata
+      metadata: JSON.stringify({ agentName, userContext }),
     });
 
     at.addGrant({
@@ -85,15 +90,12 @@ export async function POST(req: Request) {
 
     // ── Agent auto-dispatch (GAP-02 fix) ──────────────────────────────────────
     // After generating the visitor token, dispatch the agent worker to the room.
-    // This is fire-and-forget — we do not fail the token request if dispatch fails.
-    // The LiveKit worker must be running (npm run agent / PM2) for this to work.
     try {
       const dispatchClient = new AgentDispatchClient(livekitUrl, apiKey, apiSecret);
       await dispatchClient.createDispatch(roomName, "kooltech-workforce", {
-        metadata: JSON.stringify({ agentName }),
+        metadata: JSON.stringify({ agentName, userContext }),
       });
     } catch (dispatchErr) {
-      // Log but do not fail — visitor can still join, agent may already be in the room
       console.warn(
         `[LiveKit Dispatch] Failed to dispatch agent to room ${roomName}:`,
         dispatchErr instanceof Error ? dispatchErr.message : dispatchErr

@@ -31,11 +31,11 @@ export default function FloatingCTA() {
       style={{
         position: "fixed",
         bottom: "2rem",
-        right: "2rem",
+        left: "2rem",
         zIndex: 999,
         display: "flex",
         flexDirection: "column",
-        alignItems: "flex-end",
+        alignItems: "flex-start",
         fontFamily: "'DM Sans', sans-serif",
       }}
     >

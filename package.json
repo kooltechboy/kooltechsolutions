@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "agent": "npx tsc -p src/agent/tsconfig.json && node dist/agent/agent/agent.js dev",
+    "agent": "src/agent-python/venv/Scripts/python.exe src/agent-python/agent.py dev",
     "agent:prod": "npx pm2 start ecosystem.config.js --env production",
     "agent:stop": "npx pm2 stop kooltech-voice-agent",
     "agent:logs": "npx pm2 logs kooltech-voice-agent",

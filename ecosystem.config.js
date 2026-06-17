@@ -11,10 +11,10 @@ module.exports = {
       // Restart: npx pm2 restart kooltech-voice-agent
       // Stop:    npx pm2 stop kooltech-voice-agent
       name: "kooltech-voice-agent",
-      script: "node",
-      args: "dist/agent/agent/agent.js dev",
+      script: "src/agent-python/agent.py",
+      args: "dev",
       cwd: process.cwd(),
-      interpreter: "none",
+      interpreter: "src/agent-python/venv/Scripts/python.exe",
 
       // Process management
       instances: 1,           // One worker is enough; LiveKit handles concurrency
@@ -50,11 +50,11 @@ module.exports = {
       // ── KoolTech Next.js App ─────────────────────────────────────────────────
       // Production Next.js server. Run `npm run build` first.
       name: "kooltech-web",
-      script: "node",
-      args: "node_modules/.bin/next start",
+      script: "./node_modules/next/dist/bin/next",
+      args: "start",
       cwd: process.cwd(),
-      instances: "max",       // Cluster mode — use all CPU cores
-      exec_mode: "cluster",
+      instances: 1,
+      exec_mode: "fork",
       autorestart: true,
       watch: false,
       max_memory_restart: "1G",
