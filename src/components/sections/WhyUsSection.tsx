@@ -3,7 +3,7 @@ import { Zap, Lock, HeadphonesIcon, BarChart3, Globe, Cpu } from "lucide-react";
 import { useLanguage } from "@/components/shared/LanguageProvider";
 
 const reasonsList = [
-  { icon: Zap, titleKey: "whyus.aiOps", color: "#00D4FF", descKey: "whyus.aiOpsDesc" },
+  { icon: Zap, titleKey: "whyus.aiOpt", color: "#00D4FF", descKey: "whyus.aiOptDesc" },
   { icon: Lock, titleKey: "whyus.zeroTrust", color: "#FF4444", descKey: "whyus.zeroTrustDesc" },
   { icon: HeadphonesIcon, titleKey: "whyus.humans", color: "#00E676", descKey: "whyus.humansDesc" },
   { icon: BarChart3, titleKey: "whyus.transparency", color: "#FFB300", descKey: "whyus.transparencyDesc" },
