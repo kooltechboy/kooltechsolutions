@@ -200,7 +200,7 @@ CORE MISSION:
 
     // ── Stream response with tools ────────────────────────────────────────────
     const result = streamText({
-      model: google("gemini-2.0-flash") as any,
+      model: google("gemini-2.5-flash") as any,
       system: systemInstruction,
       messages,
       tools: {
@@ -752,11 +752,44 @@ CORE MISSION:
       },
     });
 
-    return (
-      (result as any).toDataStreamResponse
-        ? (result as any).toDataStreamResponse()
-        : (result as any).toTextStreamResponse()
+    // Convert to Vercel AI SDK Data Stream protocol format manually
+    const textEncoder = new TextEncoder();
+    const customStream = result.fullStream.pipeThrough(
+      new TransformStream({
+        transform(chunk, controller) {
+          try {
+            const c = chunk as any;
+            if (c.type === 'text-delta' && c.text) {
+              controller.enqueue(textEncoder.encode(`0:${JSON.stringify(c.text)}\n`));
+            } else if (c.type === 'tool-call') {
+              controller.enqueue(textEncoder.encode(`9:${JSON.stringify({
+                toolCallId: c.toolCallId,
+                toolName: c.toolName,
+                args: c.args ?? c.input
+              })}\n`));
+            } else if (c.type === 'tool-result') {
+              controller.enqueue(textEncoder.encode(`a:${JSON.stringify({
+                toolCallId: c.toolCallId,
+                toolName: c.toolName,
+                args: c.args ?? c.input,
+                result: c.result
+              })}\n`));
+            }
+          } catch (e) {
+            console.error('[Stream Transformer Error]', e);
+          }
+        }
+      })
     );
+
+    return new Response(customStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'x-vercel-ai-data-stream': 'v1',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (err) {
     return serverError(err, "ai-chat");
   }

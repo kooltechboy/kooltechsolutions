@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       .join("\n");
 
     const { text: summary } = await generateText({
-      model: google("gemini-2.0-flash") as any,
+      model: google("gemini-2.5-flash") as any,
       system: `You are a concise note-taker. Summarize the following conversation segment between a user and ${agentName} (a KoolTech Solutions AI agent) into 3-5 bullet points. Preserve: key facts (name, email, service interest, any booking details), unresolved questions, and the user's sentiment. Use plain text only. Start each bullet with "• ".`,
       prompt: transcript,
     });
