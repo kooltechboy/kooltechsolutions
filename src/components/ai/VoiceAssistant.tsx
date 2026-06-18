@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Loader2, X, Volume2, Phone } from "lucide-react";
+import React, { useState } from "react";
+import { Mic, Loader2, X, Volume2, Phone } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   LiveKitRoom,
@@ -8,7 +8,6 @@ import {
   BarVisualizer,
   RoomAudioRenderer,
   VoiceAssistantControlBar,
-  AgentState,
   DisconnectButton,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
@@ -36,8 +35,8 @@ export default function VoiceAssistant() {
   const pathname = usePathname() || "/";
   const [isOpen, setIsOpen] = useState(false);
   const [token, setToken] = useState<string>("");
-  const [roomName, setRoomName] = useState<string>("");
   const [connecting, setConnecting] = useState(false);
+  const [hasConnected, setHasConnected] = useState(false);
 
   const getAgent = () => {
     if (pathname.includes("/admin")) return AGENT_MAP.admin;
@@ -54,9 +53,9 @@ export default function VoiceAssistant() {
   const connectToVoice = async () => {
     setConnecting(true);
     setIsOpen(true);
+    setHasConnected(false);
     try {
       const room = `float-call-${currentAgent.name.toLowerCase()}-${crypto.randomUUID().slice(0, 8)}`;
-      setRoomName(room);
       const res = await fetch("/api/livekit/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,15 +73,23 @@ export default function VoiceAssistant() {
       }
     } catch (e) {
       console.error("[VoiceAssistant] Connection failed:", e);
-      setIsOpen(false);
+      setToken("");
     }
     setConnecting(false);
   };
 
   const handleDisconnect = () => {
     setToken("");
-    setRoomName("");
     setIsOpen(false);
+    setHasConnected(false);
+  };
+
+  const handleRoomDisconnected = () => {
+    setToken("");
+    if (hasConnected) {
+      setIsOpen(false);
+      setHasConnected(false);
+    }
   };
 
   if (!isAllowedPath(pathname)) {
@@ -139,7 +146,8 @@ export default function VoiceAssistant() {
                 connect={true}
                 audio={true}
                 video={false}
-                onDisconnected={handleDisconnect}
+                onConnected={() => setHasConnected(true)}
+                onDisconnected={handleRoomDisconnected}
                 className="w-full h-full flex flex-col items-center"
               >
                 <ActiveSessionUI />
