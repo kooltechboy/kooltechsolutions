@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Bot, User, ArrowLeft, Loader2, Sparkles, AlertCircle, Ticket, HardDrive } from "lucide-react";
+import { Send, Bot, User, ArrowLeft, Loader2, Sparkles, Ticket, HardDrive } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 
@@ -24,9 +24,8 @@ export default function AIAssistantPage() {
     }
   }, [router]);
 
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hello! I'm Kira, your virtual IT engineer. How can I help you with your services, tickets, or network settings today?" }
-  ]);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [tickets, setTickets] = useState<TicketData[]>([]);
@@ -34,19 +33,79 @@ export default function AIAssistantPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    async function loadQuickContext() {
+    async function loadChatAndMessages() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
+      // Load tickets for support context sidebar
+      const { data: ticketData } = await supabase
         .from("tickets")
         .select("id, subject, status")
         .eq("client_id", user.id)
         .limit(3);
+      if (ticketData) setTickets(ticketData);
 
-      if (data) setTickets(data);
+      // Check if there is an existing 'general' AI chat for this user
+      const { data: existingChats } = await supabase
+        .from("ai_chats")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("context_type", "general")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      let activeChatId = null;
+
+      if (existingChats && existingChats.length > 0) {
+        activeChatId = existingChats[0].id;
+        setChatId(activeChatId);
+
+        // Fetch messages for this chat session
+        const { data: dbMessages } = await supabase
+          .from("ai_messages")
+          .select("role, content")
+          .eq("chat_id", activeChatId)
+          .order("created_at", { ascending: true });
+
+        if (dbMessages && dbMessages.length > 0) {
+          setMessages(dbMessages as Message[]);
+        } else {
+          // Fallback if session exists but messages are empty
+          const welcomeMessage = "Hello! I'm Kira, your virtual IT engineer. How can I help you with your services, tickets, or network settings today?";
+          setMessages([{ role: "assistant", content: welcomeMessage }]);
+        }
+      } else {
+        // Create a new general chat session
+        const { data: newChat } = await supabase
+          .from("ai_chats")
+          .insert({
+            user_id: user.id,
+            title: "General IT Support Chat",
+            context_type: "general",
+          })
+          .select("id")
+          .single();
+
+        if (newChat) {
+          activeChatId = newChat.id;
+          setChatId(activeChatId);
+
+          const welcomeMessage = "Hello! I'm Kira, your virtual IT engineer. How can I help you with your services, tickets, or network settings today?";
+          
+          // Insert welcome message to db
+          await supabase
+            .from("ai_messages")
+            .insert({
+              chat_id: activeChatId,
+              role: "assistant",
+              content: welcomeMessage,
+            });
+
+          setMessages([{ role: "assistant", content: welcomeMessage }]);
+        }
+      }
     }
-    loadQuickContext();
+    loadChatAndMessages();
   }, [supabase]);
 
   useEffect(() => {
@@ -57,14 +116,26 @@ export default function AIAssistantPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || sending) return;
+    if (!input.trim() || sending || !chatId) return;
 
     const userMessage = input.trim();
     setInput("");
+    
+    // Append to UI immediately
     setMessages(prev => [...prev, { role: "user", content: userMessage }]);
     setSending(true);
 
     try {
+      // 1. Insert user message in Database
+      await supabase
+        .from("ai_messages")
+        .insert({
+          chat_id: chatId,
+          role: "user",
+          content: userMessage
+        });
+
+      // 2. Fetch AI reply from Next.js route
       const chatHistory = [...messages, { role: "user", content: userMessage }];
       const res = await fetch("/api/portal/ai-assistant", {
         method: "POST",
@@ -74,12 +145,23 @@ export default function AIAssistantPage() {
 
       const data = await res.json();
       if (res.ok && data.text) {
+        // 3. Insert assistant reply in Database
+        await supabase
+          .from("ai_messages")
+          .insert({
+            chat_id: chatId,
+            role: "assistant",
+            content: data.text
+          });
+
         setMessages(prev => [...prev, { role: "assistant", content: data.text }]);
       } else {
-        setMessages(prev => [...prev, { role: "assistant", content: "I'm sorry, I encountered a connection error. Please try again." }]);
+        const errMsg = "I'm sorry, I encountered a connection error. Please try again.";
+        setMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
       }
-    } catch (err) {
-      setMessages(prev => [...prev, { role: "assistant", content: "Failed to communicate with AI server." }]);
+    } catch {
+      const errMsg = "Failed to communicate with AI server.";
+      setMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
     } finally {
       setSending(false);
     }
