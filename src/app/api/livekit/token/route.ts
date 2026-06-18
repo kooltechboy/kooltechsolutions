@@ -45,11 +45,19 @@ export async function POST(req: Request) {
 
     // ── Auth-gated agents: Cortex and Nexus require a valid session ──────────
     if (isAuthRequiredAgent(agentName)) {
-      const supabase = await createClient();
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
+      try {
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          return NextResponse.json(
+            { error: "Authentication required for this agent" },
+            { status: 401 }
+          );
+        }
+      } catch (authErr) {
+        console.error("[LiveKit Token] Auth verification failed for auth-gated agent:", authErr);
         return NextResponse.json(
-          { error: "Authentication required for this agent" },
+          { error: "Authentication verification failed" },
           { status: 401 }
         );
       }
@@ -67,9 +75,16 @@ export async function POST(req: Request) {
     }
 
     // ── Check authentication for metadata injection ──────────────────────────
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const userContext = user ? { id: user.id, email: user.email } : null;
+    let userContext = null;
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userContext = { id: user.id, email: user.email };
+      }
+    } catch (authError) {
+      console.warn("[LiveKit Token] Optional auth check failed or no session:", authError);
+    }
 
     // ── Generate JWT token for the visitor participant ─────────────────────────
     const at = new AccessToken(apiKey, apiSecret, {
