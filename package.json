@@ -4,22 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npx tsc src/agent/agent.ts --outDir dist --module commonjs --target es2022 --moduleResolution node --skipLibCheck --esModuleInterop",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:kb": "npx tsx src/lib/knowledge/embed.ts",
-    "agent": "node dist/agent/agent.js dev"
+    "seed:kb": "npx tsx src/lib/knowledge/embed.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.74",
     "@ai-sdk/react": "0.0.70",
     "@google/genai": "^2.8.0",
     "@google/generative-ai": "^0.24.1",
-    "@livekit/agents": "^1.4.3",
-    "@livekit/agents-plugin-google": "^1.4.3",
-    "@livekit/components-react": "^2.9.21",
-    "@livekit/components-styles": "^1.2.0",
-    "@livekit/rtc-node": "^0.13.29",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
@@ -39,8 +33,6 @@
     "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
-    "livekit-client": "^2.19.0",
-    "livekit-server-sdk": "^2.15.3",
     "lucide-react": "^1.14.0",
     "md-editor-rt": "^6.5.0",
     "next": "^16.2.6",

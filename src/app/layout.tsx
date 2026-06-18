@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script";
 import { LanguageProvider } from "@/components/shared/LanguageProvider";
-import AIChatWidget from "@/components/ai/AIChatWidget";
 
 export const metadata: Metadata = {
   title: {
@@ -67,7 +66,6 @@ export default function RootLayout({
         />
         <LanguageProvider>
           {children}
-          <AIChatWidget />
         </LanguageProvider>
       </body>
     </html>

@@ -75,30 +75,7 @@ export const ticketSchema = z.object({
 
 export type TicketInput = z.infer<typeof ticketSchema>;
 
-// ─── AI Chat ──────────────────────────────────────────────────────────────────
 
-export const aiChatSchema = z.object({
-  messages: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant", "system"]),
-        content: z.string().max(8000),
-        id: z.string().optional(),
-      })
-    )
-    .min(1)
-    .max(50),
-  agentName: safeString(50).optional(),
-  agentRole: safeString(100).optional(),
-  context: z
-    .object({
-      pathname: z.string().max(200).optional(),
-    })
-    .optional(),
-  sessionId: z.string().max(200).optional(),
-});
-
-export type AIChatInput = z.infer<typeof aiChatSchema>;
 
 // ─── Blog refine ──────────────────────────────────────────────────────────────
 
