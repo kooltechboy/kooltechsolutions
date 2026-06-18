@@ -11,10 +11,9 @@ module.exports = {
       // Restart: npx pm2 restart kooltech-voice-agent
       // Stop:    npx pm2 stop kooltech-voice-agent
       name: "kooltech-voice-agent",
-      script: "src/agent-python/agent.py",
-      args: "dev",
+      script: "npm",
+      args: "run agent",
       cwd: process.cwd(),
-      interpreter: "src/agent-python/venv/Scripts/python.exe",
 
       // Process management
       instances: 1,           // One worker is enough; LiveKit handles concurrency

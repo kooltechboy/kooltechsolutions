@@ -1,0 +1,125 @@
+import { AccessToken, AgentDispatchClient } from "livekit-server-sdk";
+import { NextResponse } from "next/server";
+import { rateLimitAsync, getClientIp } from "@/lib/rateLimit";
+import { rateLimitError } from "@/lib/errors";
+import { createClient } from "@/utils/supabase/server";
+
+// ── Allowed agent names (security allowlist) ──────────────────────────────────
+// Prevents clients from injecting arbitrary agentName values.
+// Cortex and Nexus additionally require an authenticated session.
+const PUBLIC_AGENTS = ["Kira", "Aria", "Max"] as const;
+const AUTH_REQUIRED_AGENTS = ["Cortex", "Nexus"] as const;
+const ALL_ALLOWED_AGENTS = [...PUBLIC_AGENTS, ...AUTH_REQUIRED_AGENTS] as const;
+type AllowedAgent = (typeof ALL_ALLOWED_AGENTS)[number];
+
+function isAllowedAgent(name: unknown): name is AllowedAgent {
+  return typeof name === "string" && (ALL_ALLOWED_AGENTS as readonly string[]).includes(name);
+}
+
+function isAuthRequiredAgent(name: string): boolean {
+  return (AUTH_REQUIRED_AGENTS as readonly string[]).includes(name);
+}
+
+export async function POST(req: Request) {
+  // ── Rate limiting: 20 token requests per IP per minute ────────────────────
+  const ip = getClientIp(req);
+  const rl = await rateLimitAsync(`livekit-token:${ip}`, { limit: 20, windowSecs: 60 });
+  if (!rl.success) return rateLimitError(rl.resetAt);
+
+  try {
+    const body = await req.json();
+    const { roomName, participantName, agentName: rawAgentName } = body;
+
+    // ── Input validation ──────────────────────────────────────────────────────
+    if (!roomName || typeof roomName !== "string" || roomName.length > 200) {
+      return NextResponse.json({ error: "Invalid roomName" }, { status: 400 });
+    }
+    if (!participantName || typeof participantName !== "string") {
+      return NextResponse.json({ error: "Missing participantName" }, { status: 400 });
+    }
+
+    // ── Agent name allowlist check (Security: GAP-10 fix) ────────────────────
+    const agentName: AllowedAgent = isAllowedAgent(rawAgentName)
+      ? rawAgentName
+      : "Kira"; // Default to Kira if invalid/missing
+
+    // ── Auth-gated agents: Cortex and Nexus require a valid session ──────────
+    if (isAuthRequiredAgent(agentName)) {
+      try {
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          return NextResponse.json(
+            { error: "Authentication required for this agent" },
+            { status: 401 }
+          );
+        }
+      } catch (authErr) {
+        console.error("[LiveKit Token] Auth verification failed for auth-gated agent:", authErr);
+        return NextResponse.json(
+          { error: "Authentication verification failed" },
+          { status: 401 }
+        );
+      }
+    }
+
+    const apiKey = process.env.LIVEKIT_API_KEY;
+    const apiSecret = process.env.LIVEKIT_API_SECRET;
+    const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+
+    if (!apiKey || !apiSecret || !livekitUrl) {
+      return NextResponse.json(
+        { error: "LiveKit credentials are not configured" },
+        { status: 500 }
+      );
+    }
+
+    // ── Check authentication for metadata injection ──────────────────────────
+    let userContext = null;
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userContext = { id: user.id, email: user.email };
+      }
+    } catch (authError) {
+      console.warn("[LiveKit Token] Optional auth check failed or no session:", authError);
+    }
+
+    // ── Generate JWT token for the visitor participant ─────────────────────────
+    const at = new AccessToken(apiKey, apiSecret, {
+      identity: `${participantName}-${Date.now()}`,
+      name: participantName,
+      // Pass agentName and userContext as participant metadata
+      metadata: JSON.stringify({ agentName, userContext }),
+    });
+
+    at.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: true,
+      canSubscribe: true,
+    });
+
+    const token = await at.toJwt();
+
+    // ── Agent auto-dispatch (GAP-02 fix) ──────────────────────────────────────
+    // After generating the visitor token, dispatch the agent worker to the room.
+    try {
+      const dispatchClient = new AgentDispatchClient(livekitUrl, apiKey, apiSecret);
+      await dispatchClient.createDispatch(roomName, "kooltech-voice-agent", {
+        metadata: JSON.stringify({ agentName, userContext }),
+      });
+    } catch (dispatchErr) {
+      console.warn(
+        `[LiveKit Dispatch] Failed to dispatch agent to room ${roomName}:`,
+        dispatchErr instanceof Error ? dispatchErr.message : dispatchErr
+      );
+    }
+
+    return NextResponse.json({ token, agentName });
+  } catch (err) {
+    console.error("[LiveKit Token] Error:", err);
+    return NextResponse.json({ error: "Failed to generate token" }, { status: 500 });
+  }
+}
