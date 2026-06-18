@@ -49,6 +49,8 @@ export default function TicketDetailPage() {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [loadingSummary, setLoadingSummary] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -74,6 +76,25 @@ export default function TicketDetailPage() {
         .order('created_at', { ascending: true });
       
       if (msgs) setMessages(msgs as PortalTicketMessage[]);
+
+      // Fetch dynamic AI summary
+      try {
+        const res = await fetch("/api/portal/tickets/summarize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticketId: id })
+        });
+        const data = await res.json();
+        if (data.summary) {
+          setSummary(data.summary);
+        } else {
+          setSummary("No summary available.");
+        }
+      } catch {
+        setSummary("Failed to generate ticket summary.");
+      } finally {
+        setLoadingSummary(false);
+      }
     }
     setLoading(false);
   }, [id, supabase]);
@@ -317,9 +338,15 @@ export default function TicketDetailPage() {
               <Bot size={18} className="text-[#00D4FF]" />
               <h3 className="text-white text-xs font-black uppercase tracking-wider">Kira AI Summary</h3>
             </div>
-            <p className="text-neutral-400 text-xs leading-relaxed">
-              {ticket.description.slice(0, 180)}{ticket.description.length > 180 ? '...' : ''}
-            </p>
+            {loadingSummary ? (
+              <div className="flex items-center gap-2 text-neutral-500 text-xs">
+                <Loader2 className="animate-spin" size={12} /> Analyzing ticket...
+              </div>
+            ) : (
+              <p className="text-neutral-400 text-xs leading-relaxed">
+                {summary}
+              </p>
+            )}
           </div>
 
           {ticket.status !== 'resolved' && ticket.status !== 'closed' ? (

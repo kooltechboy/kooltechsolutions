@@ -97,6 +97,8 @@ export default function TicketDetailPage() {
   const [sending, setSending] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState("");
+  const [generatingSuggestion, setGeneratingSuggestion] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -154,6 +156,36 @@ export default function TicketDetailPage() {
       setNewNote("");
     }
     setSending(false);
+  };
+
+  async function handleGenerateSuggestion() {
+    setGeneratingSuggestion(true);
+    setAiSuggestion("");
+    try {
+      const res = await fetch("/api/admin/tickets/suggest-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId: id })
+      });
+      const data = await res.json();
+      if (data.suggestion) {
+        setAiSuggestion(data.suggestion);
+      } else {
+        setAiSuggestion("Could not generate a suggestion.");
+      }
+    } catch {
+      setAiSuggestion("Error contacting AI copilot.");
+    } finally {
+      setGeneratingSuggestion(false);
+    }
+  }
+
+  function handleApplySuggestion() {
+    if (aiSuggestion) {
+      setNewNote(aiSuggestion);
+      setIsInternal(false);
+      setAiSuggestion("");
+    }
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -424,6 +456,55 @@ export default function TicketDetailPage() {
                 <span style={{ color: "var(--color-success)", fontWeight: 700 }}>{notes.filter((n) => !n.is_internal).length}</span>
               </div>
             </div>
+          </div>
+
+          {/* AI Copilot */}
+          <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", border: "1px solid rgba(0,212,255,0.25)", background: "rgba(0,212,255,0.02)" }}>
+            <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: "0.875rem", fontWeight: 700, color: "var(--color-accent-400)", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              🤖 AI Copilot
+            </h3>
+            {aiSuggestion ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{
+                  padding: "0.75rem", background: "rgba(0,0,0,0.3)", borderRadius: "8px",
+                  fontSize: "0.75rem", color: "var(--color-neutral-300)", lineHeight: 1.5,
+                  maxHeight: "150px", overflowY: "auto", whiteSpace: "pre-wrap", border: "1px solid rgba(255,255,255,0.05)"
+                }}>
+                  {aiSuggestion}
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    onClick={handleApplySuggestion}
+                    style={{ flex: 1, padding: "0.5rem", borderRadius: "6px", background: "var(--color-accent-500)", border: "none", color: "black", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}
+                  >
+                    Use Draft
+                  </button>
+                  <button
+                    onClick={() => setAiSuggestion("")}
+                    style={{ padding: "0.5rem 0.75rem", borderRadius: "6px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", fontSize: "0.75rem", cursor: "pointer" }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleGenerateSuggestion}
+                disabled={generatingSuggestion}
+                style={{
+                  width: "100%", padding: "0.625rem", borderRadius: "8px",
+                  background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.3)",
+                  color: "var(--color-accent-400)", fontWeight: 600, fontSize: "0.8125rem",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem"
+                }}
+              >
+                {generatingSuggestion ? (
+                  <><Loader2 size={14} className="animate-spin" /> Drafting...</>
+                ) : (
+                  "💡 Draft AI Reply"
+                )}
+              </button>
+            )}
           </div>
 
           {/* Quick Actions */}
