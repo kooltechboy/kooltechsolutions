@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && npx tsc src/agent/agent.ts --outDir dist --module commonjs --target es2022 --moduleResolution node --skipLibCheck --esModuleInterop",
     "start": "next start",
     "lint": "eslint",
     "seed:kb": "npx tsx src/lib/knowledge/embed.ts",
-    "agent": "npx tsx src/agent/agent.ts dev"
+    "agent": "node dist/agent/agent.js dev"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.74",

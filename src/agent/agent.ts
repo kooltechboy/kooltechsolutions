@@ -454,7 +454,7 @@ ${persona.instructions}`;
 
     // ── Start Gemini multimodal agent ────────────────────────────────────────
     const model = new beta.realtime.RealtimeModel({
-      model: 'models/gemini-2.0-flash-exp',
+      model: 'models/gemini-2.5-flash-native-audio-latest',
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
       voice: persona.voice,
       instructions: systemInstruction,
@@ -493,6 +493,16 @@ ${persona.instructions}`;
 
     await session.start({ agent, room: ctx.room });
     logToSupabase(sessionId, 'agent', `[Voice session started. Agent: ${agentName}]`, agentName);
+
+    // Trigger initial greeting reply to open the conversation
+    setTimeout(() => {
+      try {
+        console.log(`[Agent] Generating initial greeting...`);
+        session.generateReply();
+      } catch (err) {
+        console.error('[Agent] Failed to generate greeting:', err);
+      }
+    }, 500);
   },
 });
 
