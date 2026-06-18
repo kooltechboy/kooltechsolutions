@@ -6,7 +6,6 @@ import Footer from "@/components/layout/Footer";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Calendar } from "lucide-react";
 import BookingModal from "@/components/shared/BookingModal";
 import { useLanguage } from "@/components/shared/LanguageProvider";
-import CallNowButton from "@/components/ai/CallNowButton";
 
 const services = [
   { value: "Free Vulnerability Assessment", labelKey: "contactServices.vulnerability" },
@@ -125,11 +124,6 @@ function ContactContent() {
                     >
                       {t("contact.demoButton")}
                     </button>
-                    <CallNowButton
-                      agent={{ name: "Aria", role: "Strategic Coordinator", color: "#FFB300" }}
-                      variant="banner"
-                      label="📞 Talk to Aria Now (Voice)"
-                    />
                   </div>
                 </div>
 

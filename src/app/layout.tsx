@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script";
-import AIChatWidget from "@/components/ai/AIChatWidget";
-import VoiceAssistant from "@/components/ai/VoiceAssistant";
 import { LanguageProvider } from "@/components/shared/LanguageProvider";
 
 export const metadata: Metadata = {
@@ -68,8 +66,6 @@ export default function RootLayout({
         />
         <LanguageProvider>
           {children}
-          <AIChatWidget />
-          <VoiceAssistant />
         </LanguageProvider>
       </body>
     </html>
