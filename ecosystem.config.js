@@ -31,7 +31,9 @@ module.exports = {
       // LiveKit voice agent (Gemini Live native audio).
       // Restart automatically if it crashes.
       name: "kooltech-voice-agent",
-      script: "src/agent-python/venv/Scripts/python.exe",
+      script: require("os").platform() === "win32"
+        ? "src/agent-python/venv/Scripts/python.exe"
+        : "src/agent-python/venv/bin/python",
       args: "src/agent-python/agent.py start",
       cwd: process.cwd(),
       interpreter: "none",
