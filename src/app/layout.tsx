@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script";
 import { LanguageProvider } from "@/components/shared/LanguageProvider";
+import VoiceAssistant from "@/components/shared/VoiceAssistant";
+
 
 export const metadata: Metadata = {
   title: {
@@ -66,6 +68,7 @@ export default function RootLayout({
         />
         <LanguageProvider>
           {children}
+          <VoiceAssistant />
         </LanguageProvider>
       </body>
     </html>

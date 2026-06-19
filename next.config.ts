@@ -63,10 +63,10 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com data:",
               // Images: self + data URIs + Supabase storage + Google AdSense + Unsplash placeholders + Google AdTraffic
               "img-src 'self' data: blob: https://*.supabase.co https://pagead2.googlesyndication.com https://www.google.com https://*.unsplash.com https://images.unsplash.com https://source.unsplash.com https://*.adtrafficquality.google",
-              // API connections: self + Supabase + Google AI + Resend + AdSense + Google AdTraffic
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.resend.com https://pagead2.googlesyndication.com https://*.adtrafficquality.google",
-              // Media: self only (voice recognition uses device mic, no external media)
-              "media-src 'self'",
+              // API connections: self + Supabase + Google AI + Resend + AdSense + LiveKit Cloud
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.resend.com https://pagead2.googlesyndication.com https://*.adtrafficquality.google wss://*.livekit.cloud https://*.livekit.cloud",
+              // Media: self + blob (WebRTC audio streams from LiveKit)
+              "media-src 'self' blob:",
               // Workers: self + blob (Next.js service worker)
               "worker-src 'self' blob:",
               // Frames: self + Google AdSense / doubleclick + Google AdTraffic / Google
