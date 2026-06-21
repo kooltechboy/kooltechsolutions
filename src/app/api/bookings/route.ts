@@ -56,7 +56,7 @@ function parseBookingDateTime(dateStr: string, timeStr: string): Date {
 export async function POST(request: Request) {
   // ── Rate limiting: 3 bookings per IP per hour ──────────────────────────────
   const ip = getClientIp(request);
-  const rl = rateLimit(`bookings:${ip}`, { limit: 3, windowSecs: 60 * 60 });
+  const rl = await rateLimit(`bookings:${ip}`, { limit: 3, windowSecs: 60 * 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {
@@ -251,7 +251,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   // ── Rate limiting: 30 availability checks per IP per minute ───────────────
   const ip = getClientIp(request);
-  const rl = rateLimit(`bookings-get:${ip}`, { limit: 30, windowSecs: 60 });
+  const rl = await rateLimit(`bookings-get:${ip}`, { limit: 30, windowSecs: 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

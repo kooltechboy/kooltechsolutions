@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { sanitizeForEmail } from "@/lib/errors";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -55,9 +56,9 @@ export async function POST(request: Request) {
 
         const servicesListHtml = services.map(s => `
           <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 10px 0; font-weight: bold; color: #333;">${s.service_name}</td>
-            <td style="padding: 10px 0; color: #666; font-family: monospace;">${s.service_sku}</td>
-            <td style="padding: 10px 0; text-align: right; font-weight: bold; color: #00d4ff;">$${s.price.toFixed(2)}/mo</td>
+            <td style="padding: 10px 0; font-weight: bold; color: #333;">${sanitizeForEmail(String(s.service_name))}</td>
+            <td style="padding: 10px 0; color: #666; font-family: monospace;">${sanitizeForEmail(String(s.service_sku))}</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: bold; color: #00d4ff;">$${Number(s.price).toFixed(2)}/mo</td>
           </tr>
         `).join("");
 
@@ -176,8 +177,8 @@ export async function DELETE(request: Request) {
             <h2 style="color: #ef4444; margin: 0;">Service Cancelled</h2>
             <p style="color: #666; font-size: 14px;">An infrastructure service subscription has been cancelled and deprovisioned.</p>
             <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Service:</strong> ${existingService.service_name}</p>
-              <p><strong>SKU:</strong> ${existingService.service_sku}</p>
+              <p><strong>Service:</strong> ${sanitizeForEmail(String(existingService.service_name))}</p>
+              <p><strong>SKU:</strong> ${sanitizeForEmail(String(existingService.service_sku))}</p>
               <p><strong>Monthly Price:</strong> $${Number(existingService.price).toFixed(2)}</p>
             </div>
             <p style="color: #999; font-size: 11px;">This is an automated notification from KoolTech Solutions HelpDesk.</p>

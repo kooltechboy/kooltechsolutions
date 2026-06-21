@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantKnowledge, formatKnowledgeContext } from "@/lib/knowledge/retrieve";
-import dotenv from "dotenv";
-import path from "path";
-
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+import { createClient } from "@/utils/supabase/server";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { rateLimitError, unauthorizedError } from "@/lib/errors";
 
 
 export async function POST(request: NextRequest) {
+  // ── Rate limiting: 10 requests per IP per minute ──────────────────────────
+  const ip = getClientIp(request);
+  const rl = await rateLimit(`knowledge:${ip}`, { limit: 10, windowSecs: 60 });
+  if (!rl.success) return rateLimitError(rl.resetAt);
+
+  // ── Authentication ──────────────────────────────────────────────────────
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return unauthorizedError();
+
   try {
     const body = await request.json();
     const { query } = body;
@@ -28,7 +37,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Knowledge retrieval endpoint error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal Server Error" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

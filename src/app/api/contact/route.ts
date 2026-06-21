@@ -16,7 +16,7 @@ const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? "sales@kooltechsolut
 export async function POST(request: Request) {
   // ── Rate limiting: 5 submissions per IP per 15 minutes ──────────────────────
   const ip = getClientIp(request);
-  const rl = rateLimit(`contact:${ip}`, { limit: 5, windowSecs: 15 * 60 });
+  const rl = await rateLimit(`contact:${ip}`, { limit: 5, windowSecs: 15 * 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

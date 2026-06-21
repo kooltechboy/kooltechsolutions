@@ -1,8 +1,15 @@
 import { createClient } from "@/utils/supabase/server";
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { rateLimitError } from "@/lib/errors";
 
 export async function POST(request: Request) {
+  // ── Rate limiting: 10 requests per IP per minute ──────────────────────────
+  const ip = getClientIp(request);
+  const rl = await rateLimit(`suggest-reply:${ip}`, { limit: 10, windowSecs: 60 });
+  if (!rl.success) return rateLimitError(rl.resetAt);
+
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();

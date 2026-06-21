@@ -14,7 +14,7 @@ import {
 export async function POST(req: Request) {
   // ── Rate limiting: 20 requests per IP per hour ─────────────────────────────
   const ip = getClientIp(req);
-  const rl = rateLimit(`blog-refine:${ip}`, { limit: 20, windowSecs: 60 * 60 });
+  const rl = await rateLimit(`blog-refine:${ip}`, { limit: 20, windowSecs: 60 * 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

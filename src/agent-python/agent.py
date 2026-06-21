@@ -536,7 +536,6 @@ async def entrypoint(ctx: JobContext):
     # ── Extract persona from participant metadata ──────────────────────────────
     agent_name = "Kira"
     custom_greeting = None
-    system_prompt_override = None
     await asyncio.sleep(0.5)  # allow participants to publish metadata
     for participant in ctx.room.remote_participants.values():
         if participant.metadata:
@@ -546,8 +545,6 @@ async def entrypoint(ctx: JobContext):
                     agent_name = meta["agentName"]
                 if meta.get("customGreeting"):
                     custom_greeting = meta["customGreeting"]
-                if meta.get("systemPromptOverride"):
-                    system_prompt_override = meta["systemPromptOverride"]
                 break
             except json.JSONDecodeError:
                 pass
@@ -566,7 +563,7 @@ async def entrypoint(ctx: JobContext):
         temperature=0.8,
     )
 
-    agent = KoolTechAgent(agent_name=agent_name, session_id=session_id, system_prompt_override=system_prompt_override)
+    agent = KoolTechAgent(agent_name=agent_name, session_id=session_id)
 
     # ── Start session ────────────────────────────────────────────────────────
     session = AgentSession(

@@ -120,15 +120,16 @@ export interface RateLimitResult {
 
 /**
  * Check and record a rate-limit hit for the given key.
- * Automatically uses Upstash Redis if configured, in-memory otherwise.
+ * Uses Upstash Redis if configured, in-memory otherwise.
+ *
+ * NOTE: Returns a Promise — callers must `await` the result.
+ * All Next.js API route handlers are already async, so this is safe.
  *
  * @param key      Unique identifier (e.g. IP address + route)
  * @param config   Limit configuration
  */
-export function rateLimit(key: string, config: RateLimitConfig): RateLimitResult {
-  // Synchronous path — always uses in-memory.
-  // For Upstash (async) use rateLimitAsync.
-  return memRateLimit(key, config);
+export async function rateLimit(key: string, config: RateLimitConfig): Promise<RateLimitResult> {
+  return rateLimitAsync(key, config);
 }
 
 /**

@@ -55,10 +55,11 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    // Basic protection: only logged-in users (or an admin service role) can trigger a sync manually
+    // Allow authenticated admins or automated sync via a dedicated secret
     if (authError || !user) {
       const authHeader = request.headers.get("Authorization");
-      if (authHeader !== `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`) {
+      const syncSecret = process.env.ITFLOW_SYNC_SECRET || process.env.WAZUH_WEBHOOK_SECRET;
+      if (!syncSecret || authHeader !== `Bearer ${syncSecret}`) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }

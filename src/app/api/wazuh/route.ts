@@ -52,7 +52,7 @@ async function opensearchQuery(index: string, body: object): Promise<unknown> {
       path: parsedUrl.pathname + parsedUrl.search,
       method: "POST",
       headers: OPENSEARCH_HEADERS,
-      rejectUnauthorized: false, // Bypass self-signed cert validation issues in Next.js
+      rejectUnauthorized: process.env.WAZUH_TLS_VERIFY !== "0", // Only skip TLS for explicitly configured self-signed certs
     };
 
     const req = https.request(options, (res) => {

@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 // Helper to create client with Service Role Key for admin tasks
 function getAdminSupabase() {
@@ -29,6 +30,15 @@ async function verifyAdmin() {
   return { user };
 }
 
+const createClientSchema = z.object({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(8).max(128),
+  first_name: z.string().trim().min(1).max(100),
+  last_name: z.string().trim().min(1).max(100),
+  company_name: z.string().trim().max(200).optional(),
+  phone: z.string().trim().max(30).regex(/^[+\d\s\-().]*$/).optional().or(z.literal("")),
+});
+
 export async function POST(request: Request) {
   const adminCheck = await verifyAdmin();
   if ("error" in adminCheck) {
@@ -37,11 +47,11 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { email, password, first_name, last_name, company_name, phone } = body;
-
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+    const parsed = createClientSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid client data", issues: parsed.error.issues }, { status: 400 });
     }
+    const { email, password, first_name, last_name, company_name, phone } = parsed.data;
 
     const adminSupabase = getAdminSupabase();
 
@@ -96,8 +106,8 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
-    if (!id) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return NextResponse.json({ error: "Valid user ID is required" }, { status: 400 });
     }
 
     const adminSupabase = getAdminSupabase();

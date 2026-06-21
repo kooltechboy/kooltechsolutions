@@ -4,10 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { rateLimitError, serverError, unauthorizedError } from "@/lib/errors";
 import { z } from "zod";
-import dotenv from "dotenv";
-import path from "path";
 
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 
 const sipCallSchema = z.object({
@@ -29,7 +26,7 @@ export async function POST(request: Request) {
 
   // ── Rate limiting ─────────────────────────────────────────────────────────
   const ip = getClientIp(request);
-  const rl = rateLimit(`sip-call:${user.id}`, { limit: 10, windowSecs: 60 });
+  const rl = await rateLimit(`sip-call:${user.id}`, { limit: 10, windowSecs: 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

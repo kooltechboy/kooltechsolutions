@@ -17,7 +17,7 @@ const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? "danieljwilliams@koo
 export async function POST(request: Request) {
   // ── Rate limiting: 10 tickets per IP per hour ──────────────────────────────
   const ip = getClientIp(request);
-  const rl = rateLimit(`tickets:${ip}`, { limit: 10, windowSecs: 60 * 60 });
+  const rl = await rateLimit(`tickets:${ip}`, { limit: 10, windowSecs: 60 * 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

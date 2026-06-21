@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     // Validate the webhook secret so only Wazuh can trigger ticket creation
     const authHeader = request.headers.get("Authorization");
     const webhookSecret = process.env.WAZUH_WEBHOOK_SECRET;
-    if (webhookSecret && authHeader !== `Bearer ${webhookSecret}`) {
+    if (!webhookSecret || authHeader !== `Bearer ${webhookSecret}`) {
       console.warn("Wazuh webhook: unauthorized request rejected");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

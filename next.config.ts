@@ -55,8 +55,8 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // Scripts: self + Google AdSense + Next.js inline scripts + eval for development hot-reloading + Google AdTraffic
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://*.adtrafficquality.google",
+              // Scripts: self + Google AdSense + Next.js inline scripts + Google AdTraffic (unsafe-eval removed for security)
+              `script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === "development" ? "'unsafe-eval' " : ""}https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://*.adtrafficquality.google`,
               // Styles: self + Google Fonts + inline (needed for framer-motion & CSS-in-JS)
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               // Fonts: self + Google Fonts CDN

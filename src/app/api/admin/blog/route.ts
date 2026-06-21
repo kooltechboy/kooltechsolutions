@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 // Helper to create client with Service Role Key for admin tasks
 function getAdminSupabase() {
@@ -28,6 +29,22 @@ async function verifyAdmin() {
 
   return { user };
 }
+
+const blogPostSchema = z.object({
+  title: z.string().min(1).max(300),
+  slug: z.string().min(1).max(300).regex(/^[a-z0-9-]+$/),
+  content: z.string().max(100000),
+  excerpt: z.string().max(500).optional(),
+  category: z.string().max(100).optional(),
+  status: z.enum(["draft", "published"]).default("draft"),
+  featured_image: z.string().url().max(2000).optional().nullable(),
+  read_time: z.string().max(20).optional(),
+  author: z.string().max(100).optional(),
+});
+
+const blogPostUpdateSchema = blogPostSchema.partial().extend({
+  id: z.string().uuid(),
+});
 
 export async function GET(request: Request) {
   const adminCheck = await verifyAdmin();
@@ -76,11 +93,15 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    const parsed = blogPostSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid post data", issues: parsed.error.issues }, { status: 400 });
+    }
     const supabase = getAdminSupabase();
 
     const { data, error } = await supabase
       .from("posts")
-      .insert([body])
+      .insert([parsed.data])
       .select()
       .single();
 
@@ -101,11 +122,11 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, ...changes } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Missing post ID" }, { status: 400 });
+    const parsed = blogPostUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid update data", issues: parsed.error.issues }, { status: 400 });
     }
+    const { id, ...changes } = parsed.data;
 
     const supabase = getAdminSupabase();
 

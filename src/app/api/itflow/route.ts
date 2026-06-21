@@ -17,6 +17,12 @@ function isITFlowPayload(value: unknown): value is ITFlowPayload {
   });
 }
 
+// Allowlist of permitted ITFlow API modules to prevent SSRF
+const ALLOWED_ITFLOW_ENDPOINTS = new Set([
+  'assets', 'clients', 'contacts', 'tickets', 'products',
+  'invoices', 'documents', 'vendors', 'locations', 'networks',
+]);
+
 function normalizeAsset(item: Record<string, unknown>) {
   return {
     id: item.asset_id || item.id,
@@ -58,6 +64,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get('endpoint') || 'assets';
+    
+    if (!ALLOWED_ITFLOW_ENDPOINTS.has(endpoint)) {
+      return NextResponse.json({ error: "Invalid endpoint" }, { status: 400 });
+    }
     
     // We can extract other query params to pass to ITFlow
     const params: Record<string, string> = {};
@@ -124,7 +134,9 @@ export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get('endpoint');
-    if (!endpoint) return NextResponse.json({ error: "Endpoint parameter required" }, { status: 400 });
+    if (!endpoint || !ALLOWED_ITFLOW_ENDPOINTS.has(endpoint)) {
+      return NextResponse.json({ error: "Invalid endpoint" }, { status: 400 });
+    }
 
     const body = await request.json() as unknown;
     if (!isITFlowPayload(body)) {
@@ -144,7 +156,9 @@ export async function PUT(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get('endpoint');
-    if (!endpoint) return NextResponse.json({ error: "Endpoint parameter required" }, { status: 400 });
+    if (!endpoint || !ALLOWED_ITFLOW_ENDPOINTS.has(endpoint)) {
+      return NextResponse.json({ error: "Invalid endpoint" }, { status: 400 });
+    }
 
     const body = await request.json() as unknown;
     if (!isITFlowPayload(body)) {
@@ -164,7 +178,9 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get('endpoint');
-    if (!endpoint) return NextResponse.json({ error: "Endpoint parameter required" }, { status: 400 });
+    if (!endpoint || !ALLOWED_ITFLOW_ENDPOINTS.has(endpoint)) {
+      return NextResponse.json({ error: "Invalid endpoint" }, { status: 400 });
+    }
 
     const body = await request.json() as unknown; // IDs or params for deletion
     if (!isITFlowPayload(body)) {

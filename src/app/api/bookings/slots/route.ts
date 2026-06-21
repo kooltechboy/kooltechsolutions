@@ -86,7 +86,7 @@ function generateSlotsForDate(
  */
 export async function GET(request: Request) {
   const ip = getClientIp(request);
-  const rl = rateLimit(`booking-slots:${ip}`, { limit: 60, windowSecs: 60 });
+  const rl = await rateLimit(`booking-slots:${ip}`, { limit: 60, windowSecs: 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
 
   try {

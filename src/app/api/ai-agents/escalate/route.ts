@@ -4,10 +4,7 @@ import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { rateLimitError, serverError, unauthorizedError } from "@/lib/errors";
 import { z } from "zod";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
-import path from "path";
 
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 
 function getServiceRoleSupabase() {
@@ -36,8 +33,20 @@ const escalationSchema = z.object({
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
-  const rl = rateLimit(`escalate:${ip}`, { limit: 10, windowSecs: 60 });
+  const rl = await rateLimit(`escalate:${ip}`, { limit: 10, windowSecs: 60 });
   if (!rl.success) return rateLimitError(rl.resetAt);
+
+  // Allow internal calls from the voice agent via a shared secret,
+  // OR require authenticated user session
+  const authHeader = req.headers.get("Authorization");
+  const internalSecret = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const isInternalCall = internalSecret && authHeader === `Bearer ${internalSecret}`;
+
+  if (!isInternalCall) {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return unauthorizedError();
+  }
 
   try {
     const body = await req.json();
