@@ -15,6 +15,7 @@ const navGroups = [
     label: "Overview",
     items: [
       { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+      { icon: Bot, label: "Voice Analytics", href: "/admin/voice-analytics" },
       { icon: Monitor, label: "Monitoring", href: "/admin/monitoring" },
       { icon: Shield, label: "Security", href: "/admin/security" },
     ],

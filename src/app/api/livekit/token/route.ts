@@ -1,11 +1,18 @@
 import { AccessToken } from "livekit-server-sdk";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+
 
 async function generateToken(
   roomName: string,
   participantName: string,
-  agentName: string
+  agentName: string,
+  customGreeting?: string,
+  systemPromptOverride?: string
 ) {
   const apiKey = process.env.LIVEKIT_API_KEY;
   const apiSecret = process.env.LIVEKIT_API_SECRET;
@@ -48,6 +55,8 @@ async function generateToken(
 
   const metadata = JSON.stringify({
     agentName: agentName || "Kira",
+    customGreeting,
+    systemPromptOverride,
   });
 
   at.addGrant({
@@ -69,8 +78,8 @@ async function generateToken(
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { roomName, participantName, agentName } = body;
-    const data = await generateToken(roomName, participantName, agentName);
+    const { roomName, participantName, agentName, customGreeting, systemPromptOverride } = body;
+    const data = await generateToken(roomName, participantName, agentName, customGreeting, systemPromptOverride);
     return NextResponse.json(data);
   } catch (error) {
     console.error("LiveKit Token generation POST error:", error);
@@ -87,8 +96,10 @@ export async function GET(request: Request) {
     const roomName = searchParams.get("room") || searchParams.get("roomName") || "kooltech-ai-lobby";
     const participantName = searchParams.get("username") || searchParams.get("participantName") || "Visitor";
     const agentName = searchParams.get("agent") || searchParams.get("agentName") || "Kira";
+    const customGreeting = searchParams.get("customGreeting") || undefined;
+    const systemPromptOverride = searchParams.get("systemPromptOverride") || undefined;
 
-    const data = await generateToken(roomName, participantName, agentName);
+    const data = await generateToken(roomName, participantName, agentName, customGreeting, systemPromptOverride);
     return NextResponse.json(data);
   } catch (error) {
     console.error("LiveKit Token generation GET error:", error);

@@ -4,6 +4,11 @@ import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { rateLimitError, serverError, unauthorizedError } from "@/lib/errors";
 import { z } from "zod";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+
 
 function getServiceRoleSupabase() {
   return createSupabaseClient(

@@ -36,6 +36,7 @@ from livekit.agents import (
     cli,
     function_tool,
     RoomInputOptions,
+    TurnHandlingOptions,
 )
 from livekit.plugins.google.realtime import RealtimeModel
 
@@ -219,12 +220,15 @@ class KoolTechAgent(Agent):
     Handles sales, customer service, appointment scheduling, and technical support.
     """
 
-    def __init__(self, agent_name: str, session_id: str) -> None:
+    def __init__(self, agent_name: str, session_id: str, system_prompt_override: Optional[str] = None) -> None:
         self.agent_name = agent_name
         self.session_id = session_id
         persona = PERSONA_MAP.get(agent_name, DEFAULT_PERSONA)
 
-        system_prompt = f"""You are {agent_name}, the {persona['role']} for KoolTech Solutions — \
+        if system_prompt_override:
+            system_prompt = system_prompt_override
+        else:
+            system_prompt = f"""You are {agent_name}, the {persona['role']} for KoolTech Solutions — \
 a premium Managed Service Provider serving the Dominican Republic, USA, Canada, and the Caribbean.
 
 CORE BEHAVIOURS:
@@ -246,7 +250,7 @@ ROLE-SPECIFIC INSTRUCTIONS:
 {persona['instructions']}"""
 
         super().__init__(instructions=system_prompt)
-        logger.info(f"[Agent] Persona: {agent_name} | Role: {persona['role']} | Session: {session_id}")
+        logger.info(f"[Agent] Persona: {agent_name} | Role: {persona['role']} | Session: {session_id} | Custom Prompt: {system_prompt_override is not None}")
 
     # ── Tools ─────────────────────────────────────────────────────────────────
 
@@ -531,6 +535,8 @@ async def entrypoint(ctx: JobContext):
 
     # ── Extract persona from participant metadata ──────────────────────────────
     agent_name = "Kira"
+    custom_greeting = None
+    system_prompt_override = None
     await asyncio.sleep(0.5)  # allow participants to publish metadata
     for participant in ctx.room.remote_participants.values():
         if participant.metadata:
@@ -538,11 +544,15 @@ async def entrypoint(ctx: JobContext):
                 meta = json.loads(participant.metadata)
                 if meta.get("agentName"):
                     agent_name = meta["agentName"]
-                    break
+                if meta.get("customGreeting"):
+                    custom_greeting = meta["customGreeting"]
+                if meta.get("systemPromptOverride"):
+                    system_prompt_override = meta["systemPromptOverride"]
+                break
             except json.JSONDecodeError:
                 pass
 
-    logger.info(f"[Agent] Persona resolved: {agent_name}")
+    logger.info(f"[Agent] Persona resolved: {agent_name} | Custom Greeting: {custom_greeting is not None}")
     _upsert_session(session_id, agent_name)
 
     # ── Build Gemini Live realtime model ─────────────────────────────────────
@@ -556,27 +566,74 @@ async def entrypoint(ctx: JobContext):
         temperature=0.8,
     )
 
-    agent = KoolTechAgent(agent_name=agent_name, session_id=session_id)
+    agent = KoolTechAgent(agent_name=agent_name, session_id=session_id, system_prompt_override=system_prompt_override)
 
     # ── Start session ────────────────────────────────────────────────────────
-    session = AgentSession(llm=model)
+    session = AgentSession(
+        llm=model,
+        turn_handling=TurnHandlingOptions(
+            endpointing={
+                "mode": "adaptive",
+                "min_delay": 0.6,
+                "max_delay": 2.5,
+            },
+            interruption={
+                "mode": "adaptive",
+                "min_duration": 0.4,
+                "resume_false_interruption": True,
+            }
+        )
+    )
     await session.start(
         room=ctx.room,
         agent=agent,
         room_input_options=RoomInputOptions(noise_cancellation=True),
     )
 
+    # ── DTMF Keypad handling ─────────────────────────────────────────────────
+    async def handle_dtmf(digit: str, *args, **kwargs):
+        logger.info(f"[Agent] Keypad input detected: {digit}")
+        try:
+            if digit == "1":
+                await session.generate_reply(
+                    instructions="The user pressed 1. Acknowledge that they selected Technical Support, and ask how you can help."
+                )
+            elif digit == "2":
+                await session.generate_reply(
+                    instructions="The user pressed 2. Acknowledge that they selected Booking & Demos, and ask for their email and name to check available slots."
+                )
+            elif digit == "3":
+                await session.generate_reply(
+                    instructions="The user pressed 3. Acknowledge that they selected Escalation, and proceed to ask for their name and email to escalate the call."
+                )
+            else:
+                await session.generate_reply(
+                    instructions=f"The user pressed {digit}. Briefly say that this menu option is invalid, and list options 1 (Support), 2 (Book Demo), and 3 (Escalation)."
+                )
+        except Exception as e:
+            logger.error(f"Error handling DTMF input: {e}")
+
+    @ctx.room.on("dtmf_received")
+    def on_dtmf(digit: str, *args, **kwargs):
+        asyncio.create_task(handle_dtmf(digit, *args, **kwargs))
+
+    @ctx.room.on("sip_dtmf_received")
+    def on_sip_dtmf(digit: str, *args, **kwargs):
+        asyncio.create_task(handle_dtmf(digit, *args, **kwargs))
+
     # Trigger initial greeting
     await asyncio.sleep(0.5)
     try:
-        await session.generate_reply(
-            instructions=(
-                f"You are {agent_name}. Greet the visitor warmly in the language they are most likely "
-                "to speak based on context, introduce yourself by name and role, and ask an open-ended "
-                "question to understand what brings them in today."
-            )
+        greeting_instruction = (
+            f"You are {agent_name}. Greet the visitor warmly in the language they are most likely "
+            "to speak based on context, introduce yourself by name and role, and ask an open-ended "
+            "question to understand what brings them in today."
         )
-        _log_to_supabase(session_id, "agent", "[Voice session started]", agent_name)
+        if custom_greeting:
+            greeting_instruction = f"Say exactly: \"{custom_greeting}\""
+
+        await session.generate_reply(instructions=greeting_instruction)
+        _log_to_supabase(session_id, "agent", f"[Voice session started: greeting={custom_greeting or 'default'}]", agent_name)
     except Exception as e:
         logger.error(f"[Agent] Initial greeting failed: {e}")
 

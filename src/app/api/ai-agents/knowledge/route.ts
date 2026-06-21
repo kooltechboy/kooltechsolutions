@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantKnowledge, formatKnowledgeContext } from "@/lib/knowledge/retrieve";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+
 
 export async function POST(request: NextRequest) {
   try {

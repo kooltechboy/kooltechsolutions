@@ -4,6 +4,11 @@ import { createClient } from "@/utils/supabase/server";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { rateLimitError, serverError, unauthorizedError } from "@/lib/errors";
 import { z } from "zod";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+
 
 const sipCallSchema = z.object({
   phoneNumber: z.string().regex(/^\+[1-9]\d{7,14}$/, "Must be E.164 format (e.g. +18095551234)"),

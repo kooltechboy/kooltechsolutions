@@ -154,6 +154,8 @@ export default function VoiceAssistant() {
 
   const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
 
+  console.log("[VoiceAssistant] Connecting to:", livekitUrl, "Token:", token ? `${token.slice(0, 15)}...` : "none");
+
   return (
     <>
       {/* ── Floating mic button ── */}
