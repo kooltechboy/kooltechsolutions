@@ -471,10 +471,7 @@ body {
     padding: 3rem 0;
   }
 
-  /* Top contact info bar — hidden on mobile */
-  .top-contact-bar {
-    display: none !important;
-  }
+  /* Top contact info bar visibility is controlled by component classes */
 
   .container {
     padding: 0 1.25rem !important;

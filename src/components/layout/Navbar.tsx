@@ -46,39 +46,57 @@ export default function Navbar() {
         }}
       >
         {/* Top Contact Bar */}
-        <div className="top-contact-bar" style={{
+        {/* Desktop Top Contact Bar */}
+        <div className="top-contact-bar desktop-contact-bar" style={{
           background: "linear-gradient(90deg, rgba(10,22,40,0.9) 0%, rgba(6,11,24,0.95) 100%)",
           borderBottom: "1px solid rgba(0, 212, 255, 0.05)",
-          padding: "0.375rem 0",
-          fontSize: "0.75rem",
+          padding: "0.5rem 0",
+          fontSize: "0.85rem",
           fontWeight: 600,
           color: "var(--color-neutral-400)",
         }}>
-          <div className="container" style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "1.5rem" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <Phone size={12} color="var(--color-accent-500)" />
+          <div className="container" style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "1.75rem" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Phone size={14} color="var(--color-accent-500)" />
               <a href="tel:829-720-1611" style={{ color: "var(--color-neutral-300)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-300)"}>829-720-1611</a>
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <MessageCircle size={12} color="#25D366" />
+            <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <MessageCircle size={14} color="#25D366" />
               <a href="https://wa.me/18297201611" style={{ color: "var(--color-neutral-300)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-300)"}>WhatsApp</a>
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <Headphones size={12} color="var(--color-accent-500)" />
+            <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Headphones size={14} color="var(--color-accent-500)" />
               <a href="mailto:support@kooltechsolutions.com" style={{ color: "var(--color-neutral-300)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-neutral-300)"}>support@kooltechsolutions.com</a>
             </span>
-            <Link href="/portal" style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-accent-500)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-accent-500)"}>
-              {t("nav.clientPortal")} <ArrowRight size={12} />
+            <Link href="/portal" style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-accent-500)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-accent-500)"}>
+              {t("nav.clientPortal")} <ArrowRight size={14} />
             </Link>
           </div>
         </div>
 
-        <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "72px" }}>
+        {/* Mobile Top Contact Bar — compact icon strip */}
+        <div className="top-contact-bar mobile-contact-bar" style={{
+          background: "linear-gradient(90deg, rgba(10,22,40,0.95) 0%, rgba(6,11,24,0.98) 100%)",
+          borderBottom: "1px solid rgba(0, 212, 255, 0.08)",
+          padding: "0.4rem 0",
+        }}>
+          <div className="container" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1.5rem" }}>
+            <a href="tel:829-720-1611" style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "var(--color-neutral-300)", textDecoration: "none", fontSize: "0.75rem", fontWeight: 600 }}>
+              <Phone size={13} color="var(--color-accent-500)" /> 829-720-1611
+            </a>
+            <a href="https://wa.me/18297201611" style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#25D366", textDecoration: "none", fontSize: "0.75rem", fontWeight: 600 }}>
+              <MessageCircle size={13} color="#25D366" /> WhatsApp
+            </a>
+            <Link href="/portal" style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--color-accent-500)", textDecoration: "none", fontSize: "0.75rem", fontWeight: 600 }}>
+              {t("nav.clientPortal")} <ArrowRight size={11} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="container navbar-main" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Logo */}
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none" }}>
-            <div style={{
-              width: 40,
-              height: 40,
+            <div className="navbar-logo-icon" style={{
               borderRadius: "10px",
               background: "linear-gradient(135deg, #00D4FF, #1E4D8C)",
               display: "flex",
@@ -86,20 +104,20 @@ export default function Navbar() {
               justifyContent: "center",
               boxShadow: "0 0 20px rgba(0, 212, 255, 0.3)",
             }}>
-              <span style={{ color: "#fff", fontWeight: 800, fontSize: "1rem", fontFamily: "Syne, sans-serif" }}>KT</span>
+              <span className="navbar-logo-text" style={{ color: "#fff", fontWeight: 800, fontFamily: "Syne, sans-serif" }}>KT</span>
             </div>
             <div>
-              <div style={{ color: "#fff", fontWeight: 700, fontSize: "1rem", fontFamily: "Syne, sans-serif", lineHeight: 1.2 }}>
+              <div className="navbar-brand-name" style={{ color: "#fff", fontWeight: 700, fontFamily: "Syne, sans-serif", lineHeight: 1.2 }}>
                 Kool Tech
               </div>
-              <div style={{ color: "var(--color-accent-500)", fontSize: "0.65rem", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              <div className="navbar-brand-sub" style={{ color: "var(--color-accent-500)", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 Solutions
               </div>
             </div>
           </Link>
 
           {/* Desktop Nav */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }} className="desktop-nav">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }} className="desktop-nav">
             <NavLink href="/">{t("nav.home")}</NavLink>
             <NavLink href="/about">{t("nav.about")}</NavLink>
 
@@ -112,9 +130,9 @@ export default function Navbar() {
                 href="/services"
                 style={{
                   display: "flex", alignItems: "center", gap: "0.25rem",
-                  padding: "0.5rem 0.75rem", background: "transparent",
+                  padding: "0.5rem 0.85rem", background: "transparent",
                   border: "none", color: "var(--color-neutral-400)",
-                  fontSize: "0.875rem", fontWeight: 500, cursor: "pointer",
+                  fontSize: "0.9375rem", fontWeight: 500, cursor: "pointer",
                   fontFamily: "DM Sans, sans-serif", transition: "color 0.2s ease",
                   textDecoration: "none"
                 }}
@@ -177,7 +195,7 @@ export default function Navbar() {
 
           {/* CTA Buttons & Language Switcher */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }} className="desktop-nav">
-            <Link href="/contact?book=true" className="btn-primary" style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}>
+            <Link href="/contact?book=true" className="btn-primary" style={{ padding: "0.6rem 1.5rem", fontSize: "0.9375rem" }}>
               {t("hero.ctaAssessment")}
             </Link>
 
@@ -303,10 +321,26 @@ export default function Navbar() {
       <style>{`
         .desktop-nav { display: none !important; }
         .mobile-menu-btn { display: flex !important; }
+        .desktop-contact-bar { display: none !important; }
+        .mobile-contact-bar { display: flex !important; }
+
+        .navbar-main { height: 60px; }
+        .navbar-logo-icon { width: 36px; height: 36px; }
+        .navbar-logo-text { font-size: 0.9rem; }
+        .navbar-brand-name { font-size: 0.95rem; }
+        .navbar-brand-sub { font-size: 0.6rem; }
 
         @media (min-width: 900px) {
           .desktop-nav { display: flex !important; }
           .mobile-menu-btn { display: none !important; }
+          .desktop-contact-bar { display: flex !important; }
+          .mobile-contact-bar { display: none !important; }
+
+          .navbar-main { height: 80px; }
+          .navbar-logo-icon { width: 48px; height: 48px; }
+          .navbar-logo-text { font-size: 1.15rem; }
+          .navbar-brand-name { font-size: 1.15rem; }
+          .navbar-brand-sub { font-size: 0.7rem; }
         }
       `}</style>
     </>
@@ -315,9 +349,9 @@ export default function Navbar() {
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} style={{
-      padding: "0.5rem 0.75rem", color: "var(--color-neutral-400)",
-      textDecoration: "none", fontSize: "0.875rem", fontWeight: 500,
+    <Link href={href} className="nav-link-item" style={{
+      padding: "0.5rem 0.85rem", color: "var(--color-neutral-400)",
+      textDecoration: "none", fontSize: "0.9375rem", fontWeight: 500,
       borderRadius: "6px", transition: "color 0.2s ease",
     }}
     onMouseEnter={e => (e.currentTarget.style.color = "white")}
