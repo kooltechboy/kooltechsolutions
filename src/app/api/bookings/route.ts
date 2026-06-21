@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     const safeName = sanitizeForEmail(name);
     const safeEmail = sanitizeForEmail(email);
     const safePhone = phone ? sanitizeForEmail(phone) : "N/A";
-    const safeService = service ? sanitizeForEmail(service) : "Live Demo";
+    const safeService = service ? sanitizeForEmail(service) : "Consultation";
     const safeMessage = message ? sanitizeForEmail(message) : "No message provided.";
     const safeDate = sanitizeForEmail(date);
     const safeTime = sanitizeForEmail(time);
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
     }
 
     // ── Persist to legacy CRM leads table ──────────────────────────────────────
-    const bookingNote = `LIVE DEMO SCHEDULED: ${date} at ${time}`;
+    const bookingNote = `CONSULTATION SCHEDULED: ${date} at ${time}`;
     const meetingNote = meetingLink ? `\nMeeting Link: ${meetingLink}` : "";
     const { data: leadData, error: dbError } = await supabase
       .from("leads")
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
         last_name,
         email,
         phone: phone || null,
-        service_interest: service || "Live Demo",
+        service_interest: service || "Consultation",
         notes: `${bookingNote}${meetingNote}\n\nClient Message: ${message || "None"}`,
         status: "qualified",
       })
@@ -189,13 +189,14 @@ export async function POST(request: Request) {
 
         // Admin notification
         await resend.emails.send({
-          from: "KoolTech Bookings <onboarding@resend.dev>",
+          from: "KoolTech Bookings <noreply@kooltechsolutions.com>",
+          replyTo: email,
           to: [ADMIN_EMAIL],
-          subject: `📅 New Demo Booking: ${safeName}`,
+          subject: `📅 New Consultation Booking: ${safeName}`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-              <h2 style="color: #00d4ff;">New Demo Booking Confirmed</h2>
-              <p>A potential client has scheduled a live platform demo.</p>
+              <h2 style="color: #00d4ff;">New Consultation Booking</h2>
+              <p>A potential client has scheduled a consultation appointment.</p>
               <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p><strong>Name:</strong> ${safeName}</p>
                 <p><strong>Email:</strong> ${safeEmail}</p>
@@ -215,14 +216,15 @@ export async function POST(request: Request) {
 
         // Client confirmation
         await resend.emails.send({
-          from: "KoolTech Solutions <onboarding@resend.dev>",
+          from: "KoolTech Solutions <noreply@kooltechsolutions.com>",
+          replyTo: ADMIN_EMAIL,
           to: [email],
-          subject: `Confirmed: Your KoolTech Solutions Demo`,
+          subject: `Confirmed: Your KoolTech Solutions Consultation`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-              <h2 style="color: #00d4ff;">Demo Confirmed!</h2>
+              <h2 style="color: #00d4ff;">Consultation Confirmed!</h2>
               <p>Hi ${safeName},</p>
-              <p>Your live platform demo with KoolTech Solutions is confirmed for:</p>
+              <p>Your consultation with KoolTech Solutions is confirmed for:</p>
               <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p style="font-size: 1.25rem; font-weight: bold; color: #0A1628;">${safeDate} at ${safeTime}</p>
                 ${meetingLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetingLink}" style="color: #00d4ff; font-weight: bold;">Join Video Call</a></p>` : ""}
@@ -267,7 +269,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("leads")
       .select("notes")
-      .ilike("notes", `%LIVE DEMO SCHEDULED: ${date}%`);
+      .ilike("notes", `%SCHEDULED: ${date}%`);
 
     if (error) {
       console.error("[Bookings GET] DB error:", error.message);

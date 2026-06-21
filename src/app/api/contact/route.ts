@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
 
-    // ── Email alert ────────────────────────────────────────────────────────────
+    // ── Email alerts ───────────────────────────────────────────────────────────
     try {
       if (process.env.RESEND_API_KEY) {
         let targetEmail = ADMIN_EMAIL;
@@ -50,8 +50,10 @@ export async function POST(request: Request) {
         else if (service === "Technical Support") targetEmail = "support@kooltechsolutions.com";
         else targetEmail = "info@kooltechsolutions.com";
 
+        // ── Admin notification ──────────────────────────────────────────────────
         await resend.emails.send({
-          from: "KoolTech Alerts <onboarding@resend.dev>",
+          from: "KoolTech Alerts <noreply@kooltechsolutions.com>",
+          replyTo: email,
           to: [targetEmail],
           subject: `🚀 New Lead: ${safeName} (${safeCompany})`,
           html: `
@@ -71,6 +73,37 @@ export async function POST(request: Request) {
               </div>
               <hr style="margin-top: 30px; border: 0; border-top: 1px solid #eee;" />
               <p style="font-size: 12px; color: #888;">Automated alert · KoolTech Solutions Lead Pipeline</p>
+            </div>
+          `,
+        });
+
+        // ── Client confirmation email ───────────────────────────────────────────
+        await resend.emails.send({
+          from: "KoolTech Solutions <noreply@kooltechsolutions.com>",
+          replyTo: targetEmail,
+          to: [email],
+          subject: "We've received your message — KoolTech Solutions",
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <div style="display: inline-block; width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #00D4FF, #1E4D8C); line-height: 48px; text-align: center;">
+                  <span style="color: #fff; font-weight: 800; font-size: 16px; font-family: sans-serif;">KT</span>
+                </div>
+              </div>
+              <h2 style="color: #00d4ff; text-align: center;">Thank You, ${safeName}!</h2>
+              <p>We've received your message and a member of our team will get back to you within <strong>one business hour</strong>.</p>
+              <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0 0 8px;"><strong>Your inquiry:</strong> ${safeService}</p>
+                <p style="margin: 0; font-style: italic; color: #555; white-space: pre-wrap;">${safeMessage}</p>
+              </div>
+              <p>In the meantime, here are some ways to reach us immediately:</p>
+              <ul style="color: #555; line-height: 1.8;">
+                <li>📞 Call: <a href="tel:829-720-1611" style="color: #00d4ff;">+1 (829) 720-1611</a></li>
+                <li>💬 WhatsApp: <a href="https://wa.me/18297201611" style="color: #25D366;">Chat with us</a></li>
+                <li>🚨 Emergency? Call us 24/7</li>
+              </ul>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+              <p style="font-size: 12px; color: #888; text-align: center;">KoolTech Solutions — Enterprise IT Managed Services<br/>Santiago, Dominican Republic</p>
             </div>
           `,
         });
