@@ -203,6 +203,9 @@ export default function PricingPage() {
             <p style={{ color: "var(--color-neutral-400)", maxWidth: "600px", margin: "0 auto", fontSize: "1.125rem", lineHeight: 1.6 }}>
               {t("pricing.subtitle")}
             </p>
+            <p style={{ color: "var(--color-neutral-500)", fontSize: "0.8125rem", marginTop: "1rem", fontWeight: 500, letterSpacing: "0.02em" }}>
+              {t("pricing.usdDisclaimer")}
+            </p>
           </div>
         </section>
 
@@ -453,6 +456,9 @@ export default function PricingPage() {
                 <div style={{ color: "var(--color-accent-500)", fontWeight: 800, fontSize: "1.25rem", display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
                   ${customPriceInfo.totalMonthly.toFixed(2)}
                   {customPriceInfo.hasCustom && <span style={{ fontSize: "0.75rem", color: "var(--color-neutral-400)", fontWeight: 500 }}> {t("pricing.plusCustom")}</span>}
+                </div>
+                <div style={{ color: "var(--color-neutral-500)", fontSize: "0.625rem", fontWeight: 500, marginTop: "0.125rem" }}>
+                  {t("pricing.usdDisclaimer")}
                 </div>
               </div>
             </div>
