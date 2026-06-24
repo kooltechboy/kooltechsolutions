@@ -9,36 +9,45 @@ import ReadingProgress from "@/components/blog/ReadingProgress";
 import remarkGfm from "remark-gfm";
 import GoogleAdSlot from "@/components/blog/GoogleAdSlot";
 import { getFallbackImage, getCategoryColor } from "@/utils/blog";
-import { getBlogHreflangAlternates, getOgLocale, getJsonLdLanguage } from "@/utils/blog-seo";
+import {
+  getBlogHreflangAlternates,
+  getBlogCanonicalUrl,
+  getOgLocale,
+  getJsonLdLanguage,
+} from "@/utils/blog-seo";
 import LanguageSwitchBanner from "@/components/blog/LanguageSwitchBanner";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data: post } = await supabase.from("posts").select("*").eq("slug", slug).eq("lang", "en").single();
-  
+  const { data: post } = await supabase.from("posts").select("*").eq("slug", slug).eq("lang", "es").single();
+
   if (!post || post.status !== "Published") {
-    return { title: "Post Not Found" };
+    return { title: "Artículo No Encontrado" };
   }
 
-  // Look up Spanish counterpart for hreflang
+  // Look up English counterpart bidirectionally
   let counterpart: { slug: string; lang: string } | null = null;
-  // Check if any Spanish post is a translation of this post
-  const { data: translationOfThis } = await supabase
-    .from("posts")
-    .select("slug, lang")
-    .eq("translated_from", post.id)
-    .eq("lang", "es")
-    .eq("status", "Published")
-    .single();
-  if (translationOfThis) {
-    counterpart = translationOfThis;
+  if (post.translated_from) {
+    const { data } = await supabase
+      .from("posts")
+      .select("slug, lang")
+      .eq("id", post.translated_from)
+      .eq("status", "Published")
+      .single();
+    if (data) counterpart = data;
+  }
+  if (!counterpart) {
+    const { data } = await supabase
+      .from("posts")
+      .select("slug, lang")
+      .eq("translated_from", post.id)
+      .eq("status", "Published")
+      .single();
+    if (data) counterpart = data;
   }
 
-  const alternates = getBlogHreflangAlternates(
-    { slug: post.slug, lang: "en" },
-    counterpart
-  );
+  const alternates = getBlogHreflangAlternates(post, counterpart);
 
   return {
     title: `${post.title} | Kool Tech Solutions`,
@@ -47,8 +56,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      url: `https://kooltechsolutions.com/blog/${slug}`,
-      siteName: 'Kool Tech Solutions',
+      url: getBlogCanonicalUrl(post),
+      siteName: "Kool Tech Solutions",
       images: [
         {
           url: post.image_url || getFallbackImage(post.category),
@@ -56,30 +65,30 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
           height: 630,
         },
       ],
-      locale: getOgLocale("en"),
-      type: 'article',
+      locale: getOgLocale("es"),
+      type: "article",
       publishedTime: post.created_at,
       authors: [post.author_name],
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
       title: post.title,
       description: post.excerpt,
       images: [post.image_url || getFallbackImage(post.category)],
-      creator: '@kooltechsolutions',
+      creator: "@kooltechsolutions",
     },
   };
 }
 
-export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function BlogPostPageES({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
-  
+
   const { data: post, error } = await supabase
     .from("posts")
     .select("*")
     .eq("slug", slug)
-    .eq("lang", "en")
+    .eq("lang", "es")
     .single();
 
   if (error || !post || post.status !== "Published") {
@@ -88,13 +97,36 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   const color = getCategoryColor(post.category);
 
-  // Fetch Related Posts
+  // Look up English counterpart bidirectionally
+  let counterpart: { slug: string; lang: string } | null = null;
+  if (post.translated_from) {
+    const { data } = await supabase
+      .from("posts")
+      .select("slug, lang")
+      .eq("id", post.translated_from)
+      .eq("status", "Published")
+      .single();
+    if (data) counterpart = data;
+  }
+  if (!counterpart) {
+    const { data } = await supabase
+      .from("posts")
+      .select("slug, lang")
+      .eq("translated_from", post.id)
+      .eq("status", "Published")
+      .single();
+    if (data) counterpart = data;
+  }
+
+  const alternateUrl = counterpart ? `/blog/${counterpart.slug}` : null;
+
+  // Fetch Related Posts (Spanish only)
   let { data: relatedPosts } = await supabase
     .from("posts")
     .select("id, title, slug, category, read_time, image_url, created_at")
     .eq("status", "Published")
+    .eq("lang", "es")
     .eq("category", post.category)
-    .eq("lang", "en")
     .neq("id", post.id)
     .order("created_at", { ascending: false })
     .limit(3);
@@ -105,9 +137,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       .from("posts")
       .select("id, title, slug, category, read_time, image_url, created_at")
       .eq("status", "Published")
+      .eq("lang", "es")
       .neq("id", post.id)
       .neq("category", post.category)
-      .eq("lang", "en")
       .order("created_at", { ascending: false })
       .limit(3 - finalRelated.length);
     if (fallbackRelated) {
@@ -130,6 +162,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     "image": post.image_url || getFallbackImage(post.category),
     "datePublished": post.created_at,
     "dateModified": post.updated_at,
+    "inLanguage": getJsonLdLanguage("es"),
     "author": {
       "@type": "Person",
       "name": post.author_name,
@@ -142,25 +175,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         "@type": "ImageObject",
         "url": "https://kooltechsolutions.com/logo.png"
       }
-    },
-    "inLanguage": getJsonLdLanguage("en")
+    }
   };
 
-  const shareUrl = encodeURIComponent(`https://kooltechsolutions.com/blog/${post.slug}`);
+  const shareUrl = encodeURIComponent(`https://kooltechsolutions.com/es/blog/${post.slug}`);
   const shareText = encodeURIComponent(post.title);
-
-  // Look up Spanish counterpart for the language switch banner
-  let esCounterpartUrl: string | null = null;
-  const { data: esPost } = await supabase
-    .from("posts")
-    .select("slug")
-    .eq("translated_from", post.id)
-    .eq("lang", "es")
-    .eq("status", "Published")
-    .single();
-  if (esPost) {
-    esCounterpartUrl = `/es/blog/${esPost.slug}`;
-  }
 
   return (
     <>
@@ -177,18 +196,18 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             
             {/* Main Article Column */}
             <article>
-              <Link href="/blog" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-400)", textDecoration: "none", fontSize: "0.875rem", marginBottom: "2rem" }}>
-                <ArrowLeft size={16} />&nbsp;Back to Insights
+              <Link href="/es/blog" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "var(--color-neutral-400)", textDecoration: "none", fontSize: "0.875rem", marginBottom: "2rem" }}>
+                <ArrowLeft size={16} /> Volver a Perspectivas
               </Link>
 
-              <LanguageSwitchBanner currentLang="en" alternateUrl={esCounterpartUrl} />
+              <LanguageSwitchBanner currentLang="es" alternateUrl={alternateUrl} />
 
               <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
                 <span className="badge" style={{ background: `${color}15`, color: color, border: `1px solid ${color}30` }}>
                   {post.category}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>
-                  <Clock size={14} /> {post.read_time} read
+                  <Clock size={14} /> {post.read_time} de lectura
                 </span>
               </div>
 
@@ -203,7 +222,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   </div>
                   <div>
                     <p style={{ color: "white", fontWeight: 600, fontSize: "0.9375rem", margin: 0 }}>{post.author_name}</p>
-                    <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", margin: 0 }}>Kool Tech Solutions • {new Date(post.created_at).toLocaleDateString()}</p>
+                    <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", margin: 0 }}>Kool Tech Solutions • {new Date(post.created_at).toLocaleDateString("es-LA")}</p>
                   </div>
                 </div>
               </div>
@@ -314,7 +333,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 
                 {headers.length > 0 && (
                   <div style={{ padding: "1.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <h4 style={{ color: "white", fontSize: "0.75rem", fontWeight: 700, marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Table of Contents</h4>
+                    <h4 style={{ color: "white", fontSize: "0.75rem", fontWeight: 700, marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Tabla de Contenido</h4>
                     <nav style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
                       {headers.map((h: string, i: number) => (
                         <a key={i} href={`#${h.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="toc-link">
@@ -336,13 +355,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           {finalRelated.length > 0 && (
             <div style={{ marginTop: "6rem", borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "4rem" }}>
               <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white", marginBottom: "2.5rem" }}>
-                Related <span className="gradient-text">Articles</span>
+                Artículos <span className="gradient-text">Relacionados</span>
               </h3>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem" }}>
                 {finalRelated.map((p) => {
                   const pColor = getCategoryColor(p.category);
                   return (
-                    <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
+                    <Link key={p.id} href={`/es/blog/${p.slug}`} style={{ textDecoration: "none" }}>
                       <div className="glass-card" style={{ borderRadius: "16px", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column", border: "1px solid rgba(0, 212, 255, 0.05)" }}>
                         <div style={{ height: "160px", width: "100%", position: "relative", overflow: "hidden" }}>
                           <img 

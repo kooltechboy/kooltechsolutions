@@ -26,6 +26,8 @@ export default function NewBlogPostPage() {
     author_name: "Daniel Joseph Williams",
     content: "",
     image_url: "",
+    lang: "en",
+    translated_from: null as string | null,
   });
 
   // Dynamically set logged-in user as author name
@@ -39,6 +41,32 @@ export default function NewBlogPostPage() {
     }
     getAuthor();
   }, [supabase]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const translateFrom = params.get('translate_from');
+    if (translateFrom) {
+      async function loadSourcePost() {
+        try {
+          const res = await fetch(`/api/admin/blog?id=${translateFrom}`);
+          if (res.ok) {
+            const source = await res.json();
+            setFormData(prev => ({
+              ...prev,
+              lang: 'es',
+              translated_from: translateFrom,
+              category: source.category,
+              image_url: source.image_url || '',
+              content: `<!-- TRANSLATE FROM ENGLISH -->\n<!-- Original Title: ${source.title} -->\n\n${source.content}`,
+            }));
+          }
+        } catch (err) {
+          console.error('Failed to load source post:', err);
+        }
+      }
+      loadSourcePost();
+    }
+  }, []);
 
   const handleAIRefine = async () => {
     if (!formData.content) return;
@@ -202,10 +230,15 @@ export default function NewBlogPostPage() {
     if (!finalData.slug) finalData.slug = generateSlug(currentTitle);
 
     try {
+      const payload = {
+        ...finalData,
+        lang: finalData.lang,
+        translated_from: finalData.translated_from || undefined,
+      };
       const res = await fetch("/api/admin/blog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalData)
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -237,6 +270,23 @@ export default function NewBlogPostPage() {
           </p>
         </div>
       </div>
+
+      {formData.translated_from && (
+        <div style={{ 
+          padding: "1rem 1.5rem", 
+          background: "rgba(255, 179, 0, 0.08)", 
+          border: "1px solid rgba(255, 179, 0, 0.2)", 
+          borderRadius: "12px", 
+          marginBottom: "1.5rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          color: "#FFB300",
+          fontSize: "0.875rem",
+        }}>
+          🌐 Creating Spanish translation of an existing English article. The original content has been loaded for reference.
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
         <input 
@@ -346,6 +396,18 @@ export default function NewBlogPostPage() {
             >
               <option value="Draft">Draft</option>
               <option value="Published">Published</option>
+            </select>
+          </div>
+          <div style={{ flex: "1 1 120px" }}>
+            <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Language</label>
+            <select 
+              className="input-field" 
+              value={formData.lang} 
+              onChange={(e) => setFormData(prev => ({ ...prev, lang: e.target.value }))}
+              disabled={!!formData.translated_from}
+            >
+              <option value="en">🇺🇸 English</option>
+              <option value="es">🇪🇸 Español</option>
             </select>
           </div>
         </div>

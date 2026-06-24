@@ -40,6 +40,8 @@ const blogPostSchema = z.object({
   featured_image: z.string().url().max(2000).optional().nullable(),
   read_time: z.string().max(20).optional(),
   author: z.string().max(100).optional(),
+  lang: z.enum(["en", "es"]).default("en"),
+  translated_from: z.string().uuid().optional().nullable(),
 });
 
 const blogPostUpdateSchema = blogPostSchema.partial().extend({

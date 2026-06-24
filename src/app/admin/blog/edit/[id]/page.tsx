@@ -30,6 +30,7 @@ export default function EditBlogPostPage() {
     author_name: "Daniel Joseph Williams",
     content: "",
     image_url: "",
+    lang: "en",
   });
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function EditBlogPostPage() {
           author_name: data.author_name ?? "Daniel Joseph Williams",
           content: data.content ?? "",
           image_url: data.image_url ?? "",
+          lang: data.lang ?? "en",
         });
       } catch (err) {
         setError("Could not load article: " + (err instanceof Error ? err.message : String(err)));
@@ -238,6 +240,12 @@ export default function EditBlogPostPage() {
               <option value="Draft">Draft</option>
               <option value="Published">Published</option>
             </select>
+          </div>
+          <div style={{ flex: "1 1 120px" }}>
+            <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Language</label>
+            <div className="input-field" style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "rgba(0,0,0,0.2)", cursor: "default" }}>
+              {formData.lang === 'es' ? '🇪🇸 Español' : '🇺🇸 English'}
+            </div>
           </div>
         </div>
 

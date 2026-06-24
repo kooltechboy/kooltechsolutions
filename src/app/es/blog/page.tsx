@@ -8,9 +8,9 @@ import { Calendar, Clock, ArrowRight } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Blog & IT Insights | Kool Tech Solutions",
+  title: "Blog y Perspectivas de TI | Kool Tech Solutions",
   description:
-    "Expert IT insights, cybersecurity tips, cloud strategies, and technology news from the Kool Tech Solutions team.",
+    "Perspectivas expertas de TI, consejos de ciberseguridad, estrategias de nube y noticias tecnológicas del equipo de Kool Tech Solutions.",
 };
 
 const getCategoryColor = (category: string) => {
@@ -49,13 +49,13 @@ interface Post {
   status: string;
 }
 
-export default async function BlogPage() {
+export default async function BlogPageES() {
   const supabase = await createClient();
   const { data: posts, error } = await supabase
     .from("posts")
     .select("*")
     .eq("status", "Published")
-    .eq("lang", "en")
+    .eq("lang", "es")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -82,24 +82,24 @@ export default async function BlogPage() {
               color: "#00D4FF", border: "1px solid rgba(0,212,255,0.25)",
               marginBottom: "1.25rem",
             }}>
-              Knowledge Hub
+              Centro de Conocimiento
             </div>
             <h1 style={{
               fontFamily: "Syne, sans-serif", fontWeight: 800,
               fontSize: "clamp(2rem, 5vw, 3rem)", color: "white",
               marginBottom: "1rem", lineHeight: 1.15,
             }}>
-              IT Insights &amp;{" "}
+              Perspectivas de TI &amp;{" "}
               <span style={{
                 background: "linear-gradient(135deg, #00D4FF, #4B84C8)",
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}>
-                Expert Guides
+                Guías Expertas
               </span>
             </h1>
             <p style={{ color: "#94A3B8", maxWidth: "520px", margin: "0 auto", lineHeight: 1.7 }}>
-              Actionable cybersecurity tips, cloud strategies, and technology insights from our senior engineers.
+              Consejos prácticos de ciberseguridad, estrategias de nube y perspectivas tecnológicas de nuestros ingenieros expertos.
             </p>
           </div>
         </section>
@@ -107,7 +107,7 @@ export default async function BlogPage() {
         {allPosts.length === 0 && (
           <section style={{ padding: "4rem 0" }}>
             <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem", textAlign: "center" }}>
-              <p style={{ color: "#64748B", fontSize: "1.125rem" }}>No articles published yet. Check back soon!</p>
+              <p style={{ color: "#64748B", fontSize: "1.125rem" }}>Aún no hay artículos publicados en español. ¡Vuelve pronto!</p>
             </div>
           </section>
         )}
@@ -116,7 +116,7 @@ export default async function BlogPage() {
         {featuredPost && (
           <section style={{ padding: "0 0 3rem" }}>
             <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem" }}>
-              <Link href={`/blog/${featuredPost.slug}`} style={{ textDecoration: "none", display: "block" }}>
+              <Link href={`/es/blog/${featuredPost.slug}`} style={{ textDecoration: "none", display: "block" }}>
                 <div style={{
                   background: "rgba(10,22,40,0.8)",
                   border: "1px solid rgba(0,212,255,0.25)",
@@ -142,7 +142,7 @@ export default async function BlogPage() {
                       fontSize: "0.72rem", fontWeight: 700,
                       letterSpacing: "0.06em", textTransform: "uppercase",
                     }}>
-                      Featured · {featuredPost.category}
+                      Destacado · {featuredPost.category}
                     </span>
                   </div>
 
@@ -154,10 +154,10 @@ export default async function BlogPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "1rem", color: "#94A3B8", fontSize: "0.85rem", flexWrap: "wrap" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                         <Calendar size={13} />
-                        {new Date(featuredPost.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {new Date(featuredPost.created_at).toLocaleDateString("es-LA", { month: "short", day: "numeric", year: "numeric" })}
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                        <Clock size={13} /> {featuredPost.read_time} read
+                        <Clock size={13} /> {featuredPost.read_time} de lectura
                       </span>
                     </div>
 
@@ -178,7 +178,7 @@ export default async function BlogPage() {
                       color: "#00D4FF", fontWeight: 600, fontSize: "0.9375rem",
                       marginTop: "0.5rem",
                     }}>
-                      Read Article <ArrowRight size={16} />
+                      Leer Artículo <ArrowRight size={16} />
                     </span>
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export default async function BlogPage() {
                   const color = getCategoryColor(post.category);
                   const imageUrl = post.image_url || getFallbackImage(post.category);
                   return (
-                    <Link key={post.id} href={`/blog/${post.slug}`} style={{ textDecoration: "none", display: "flex" }}>
+                    <Link key={post.id} href={`/es/blog/${post.slug}`} style={{ textDecoration: "none", display: "flex" }}>
                       <div style={{
                         background: "rgba(10,22,40,0.7)",
                         border: "1px solid rgba(0,212,255,0.12)",
@@ -230,7 +230,7 @@ export default async function BlogPage() {
                               {post.category}
                             </span>
                             <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "#64748B", fontSize: "0.75rem" }}>
-                              <Clock size={11} /> {post.read_time} read
+                              <Clock size={11} /> {post.read_time} de lectura
                             </span>
                           </div>
 
@@ -253,10 +253,10 @@ export default async function BlogPage() {
                           }}>
                             <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#64748B", fontSize: "0.75rem" }}>
                               <Calendar size={12} />
-                              {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              {new Date(post.created_at).toLocaleDateString("es-LA", { month: "short", day: "numeric", year: "numeric" })}
                             </span>
                             <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "#00D4FF", fontSize: "0.875rem", fontWeight: 600 }}>
-                              Read <ArrowRight size={14} />
+                              Leer <ArrowRight size={14} />
                             </span>
                           </div>
                         </div>

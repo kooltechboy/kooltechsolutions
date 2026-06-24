@@ -16,6 +16,8 @@ interface Post {
   author_name: string;
   created_at: string;
   image_url?: string;
+  lang?: string;
+  translated_from?: string | null;
 }
 
 export default function BlogCMSPage() {
@@ -142,6 +144,15 @@ export default function BlogCMSPage() {
             <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "white" }}>{draftPosts}</div>
           </div>
         </div>
+        <div className="glass-card" style={{ padding: "1.25rem 1.5rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ padding: "0.75rem", borderRadius: "10px", background: "rgba(255, 179, 0, 0.1)", color: "#FFB300", fontSize: "1.25rem" }}>
+            🌐
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)", fontWeight: 600, textTransform: "uppercase" }}>Spanish (ES)</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "white" }}>{posts.filter(p => p.lang === 'es').length}</div>
+          </div>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -178,6 +189,22 @@ export default function BlogCMSPage() {
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
+        <select 
+          className="input-field" 
+          style={{ width: "140px", borderRadius: "8px", fontSize: "0.875rem" }}
+          onChange={(e) => {
+            const lang = e.target.value;
+            if (lang === "All") {
+              setFilteredPosts(posts);
+            } else {
+              setFilteredPosts(posts.filter(p => (p.lang || 'en') === lang));
+            }
+          }}
+        >
+          <option value="All">All Languages</option>
+          <option value="en">🇺🇸 English</option>
+          <option value="es">🇪🇸 Español</option>
+        </select>
       </div>
 
       {error && (
@@ -192,7 +219,7 @@ export default function BlogCMSPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "rgba(0,212,255,0.05)", borderBottom: "1px solid rgba(0,212,255,0.1)" }}>
-                {["Article", "Category", "Author", "Status", "Date", "Actions"].map(h => (
+                {["Article", "Lang", "Category", "Author", "Status", "Date", "Actions"].map(h => (
                   <th key={h} style={{ padding: "0.875rem 1.5rem", color: "var(--color-neutral-500)", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                 ))}
               </tr>
@@ -200,13 +227,13 @@ export default function BlogCMSPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: "3rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
+                  <td colSpan={7} style={{ padding: "3rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
                     Loading articles...
                   </td>
                 </tr>
               ) : filteredPosts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: "3rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
+                  <td colSpan={7} style={{ padding: "3rem", textAlign: "center", color: "var(--color-neutral-500)" }}>
                     No articles match your search.
                   </td>
                 </tr>
@@ -233,6 +260,22 @@ export default function BlogCMSPage() {
                             </span>
                           </div>
                         </div>
+                      </td>
+                      {/* Language */}
+                      <td style={{ padding: "1rem 1.5rem" }}>
+                        <span style={{
+                          fontSize: "0.6rem",
+                          fontWeight: 700,
+                          padding: "0.15rem 0.4rem",
+                          borderRadius: "4px",
+                          background: (post.lang || 'en') === 'es' ? 'rgba(255, 179, 0, 0.15)' : 'rgba(0, 212, 255, 0.15)',
+                          color: (post.lang || 'en') === 'es' ? '#FFB300' : '#00D4FF',
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          marginLeft: "0.5rem",
+                        }}>
+                          {(post.lang || 'en').toUpperCase()}
+                        </span>
                       </td>
                       {/* Category */}
                       <td style={{ padding: "1rem 1.5rem" }}>
@@ -269,7 +312,7 @@ export default function BlogCMSPage() {
                       <td style={{ padding: "1rem 1.5rem" }}>
                         <div style={{ display: "flex", gap: "0.5rem" }}>
                           <Link 
-                            href={`/blog/${post.slug}`} 
+                            href={`${(post.lang || 'en') === 'es' ? '/es' : ''}/blog/${post.slug}`} 
                             target="_blank" 
                             style={{ 
                               display: "flex", alignItems: "center", justifyContent: "center",
@@ -296,6 +339,22 @@ export default function BlogCMSPage() {
                           >
                             <Edit size={16} />
                           </Link>
+
+                          {(post.lang || 'en') === 'en' && (
+                            <Link
+                              href={`/admin/blog/new?translate_from=${post.id}&source_lang=en`}
+                              style={{
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                width: "32px", height: "32px", borderRadius: "6px",
+                                background: "rgba(255, 179, 0, 0.1)", border: "1px solid rgba(255, 179, 0, 0.2)",
+                                cursor: "pointer", color: "#FFB300", transition: "all 0.2s"
+                              }}
+                              className="action-btn"
+                              title="Create Spanish Translation"
+                            >
+                              🌐
+                            </Link>
+                          )}
 
                           <button 
                             onClick={() => handleDelete(post.id)} 
