@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { PenSquare, Edit, Trash2, Eye, ToggleLeft, ToggleRight, FileText, CheckCircle, HelpCircle } from "lucide-react";
+import { PenSquare, Edit, Trash2, Eye, ToggleLeft, ToggleRight, FileText, CheckCircle, HelpCircle, Gift } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { getFallbackImage, getCategoryColor } from "@/utils/blog";
@@ -110,9 +110,14 @@ export default function BlogCMSPage() {
             Publish and manage blog posts, technical articles, and insights.
           </p>
         </div>
-        <Link href="/admin/blog/new" className="btn-primary" style={{ padding: "0.75rem 1.25rem", borderRadius: "8px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-          <PenSquare size={18} /> New Article
-        </Link>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <Link href="/admin/blog/lead-magnets" className="btn-secondary" style={{ padding: "0.75rem 1.25rem", borderRadius: "8px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", color: "#00D4FF" }}>
+            <Gift size={18} /> Lead Magnets
+          </Link>
+          <Link href="/admin/blog/new" className="btn-primary" style={{ padding: "0.75rem 1.25rem", borderRadius: "8px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+            <PenSquare size={18} /> New Article
+          </Link>
+        </div>
       </div>
 
       {/* KPI Stats Bar */}

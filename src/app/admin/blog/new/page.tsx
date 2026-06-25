@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from 'md-editor-rt';
 import 'md-editor-rt/lib/style.css';
 import { getFallbackImage } from "@/utils/blog";
+import CoverImageUploader from "@/components/blog/CoverImageUploader";
 
 export default function NewBlogPostPage() {
   const router = useRouter();
@@ -346,27 +347,11 @@ export default function NewBlogPostPage() {
           />
         </div>
 
-        <div>
-          <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Cover Image URL</label>
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <input 
-              className="input-field" 
-              value={formData.image_url} 
-              onChange={e => setFormData({ ...formData, image_url: e.target.value })} 
-              placeholder="https://images.unsplash.com/..."
-            />
-            {(formData.image_url || formData.category) && (
-              <div style={{ width: "50px", height: "45px", borderRadius: "8px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
-                <img 
-                  src={formData.image_url || getFallbackImage(formData.category)} 
-                  alt="Preview" 
-                  onError={(e) => { e.currentTarget.src = getFallbackImage(formData.category); }}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-                />
-              </div>
-            )}
-          </div>
-        </div>
+        <CoverImageUploader
+          value={formData.image_url}
+          category={formData.category}
+          onChange={(url) => setFormData({ ...formData, image_url: url })}
+        />
 
         <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
           <div style={{ flex: "1 1 200px" }}>

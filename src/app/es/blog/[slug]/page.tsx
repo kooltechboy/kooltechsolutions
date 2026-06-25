@@ -16,6 +16,7 @@ import {
   getJsonLdLanguage,
 } from "@/utils/blog-seo";
 import LanguageSwitchBanner from "@/components/blog/LanguageSwitchBanner";
+import LeadMagnetGate from "@/components/blog/LeadMagnetGate";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -119,6 +120,16 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
   }
 
   const alternateUrl = counterpart ? `/blog/${counterpart.slug}` : null;
+
+  // Look up any active lead magnet linked to this post OR its English source
+  const postIdsToCheck = [post.id, post.translated_from].filter(Boolean);
+  const { data: leadMagnet } = await supabase
+    .from("lead_magnets")
+    .select("id, title, description, cta_button_text, pdf_filename")
+    .in("post_id", postIdsToCheck)
+    .eq("active", true)
+    .limit(1)
+    .single();
 
   // Fetch Related Posts (Spanish only)
   let { data: relatedPosts } = await supabase
@@ -342,6 +353,11 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
                       ))}
                     </nav>
                   </div>
+                )}
+
+                {/* Lead Magnet Gate */}
+                {leadMagnet && (
+                  <LeadMagnetGate magnet={leadMagnet} />
                 )}
 
                 {/* Auto ads container in the sidebar */}

@@ -11,6 +11,7 @@ import GoogleAdSlot from "@/components/blog/GoogleAdSlot";
 import { getFallbackImage, getCategoryColor } from "@/utils/blog";
 import { getBlogHreflangAlternates, getOgLocale, getJsonLdLanguage } from "@/utils/blog-seo";
 import LanguageSwitchBanner from "@/components/blog/LanguageSwitchBanner";
+import LeadMagnetGate from "@/components/blog/LeadMagnetGate";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -162,6 +163,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     esCounterpartUrl = `/es/blog/${esPost.slug}`;
   }
 
+  // Look up any active lead magnet linked to this post
+  const { data: leadMagnet } = await supabase
+    .from("lead_magnets")
+    .select("id, title, description, cta_button_text, pdf_filename")
+    .eq("post_id", post.id)
+    .eq("active", true)
+    .single();
+
   return (
     <>
       <script
@@ -308,7 +317,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               </div>
             </article>
 
-            {/* Sticky Sidebar */}
+              {/* Sticky Sidebar */}
             <aside className="blog-sidebar">
               <div style={{ position: "sticky", top: "100px", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
                 
@@ -323,6 +332,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                       ))}
                     </nav>
                   </div>
+                )}
+
+                {/* Lead Magnet Gate — shown when a lead magnet is linked to this post */}
+                {leadMagnet && (
+                  <LeadMagnetGate magnet={leadMagnet} />
                 )}
 
                 {/* Auto ads container in the sidebar */}
