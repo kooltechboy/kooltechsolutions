@@ -3,6 +3,7 @@ import "./globals.css";
 import Script from "next/script";
 import { LanguageProvider } from "@/components/shared/LanguageProvider";
 import VoiceAssistant from "@/components/shared/VoiceAssistant";
+import CookieConsent from "@/components/shared/CookieConsent";
 
 
 export const metadata: Metadata = {
@@ -58,6 +59,19 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              const consent = localStorage.getItem('kts_cookie_consent');
+              const marketingAllowed = consent ? JSON.parse(consent).marketing : false;
+              if (!marketingAllowed) {
+                (window.adsbygoogle = window.adsbygoogle || []).requestNonPersonalizedAds = 1;
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          })();
+        `}} />
       </head>
       <body className="mesh-gradient">
         <Script
@@ -69,6 +83,7 @@ export default function RootLayout({
         <LanguageProvider>
           {children}
           <VoiceAssistant />
+          <CookieConsent />
         </LanguageProvider>
       </body>
     </html>

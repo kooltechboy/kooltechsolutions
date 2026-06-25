@@ -26,6 +26,7 @@ function ContactContent() {
     message: "" 
   });
   const [loading, setLoading] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(() => searchParams.get("book") === "true");
   const [prevBook, setPrevBook] = useState(() => searchParams.get("book"));
 
@@ -42,7 +43,7 @@ function ContactContent() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({ ...form, consentChecked })
       });
       if (res.ok) {
         setSubmitted(true);
@@ -176,12 +177,25 @@ function ContactContent() {
                       <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>{t("contact.formMessage")}</label>
                       <textarea required className="input-field" placeholder={t("contact.formMessagePlaceholder")} rows={5} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} style={{ resize: "vertical" }} />
                     </div>
-                    <button type="submit" disabled={loading} className="btn-primary" style={{ justifyContent: "center", padding: "1rem", opacity: loading ? 0.7 : 1 }}>
+                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", marginTop: "0.5rem" }}>
+                      <input
+                        type="checkbox"
+                        id="consent-opt-in"
+                        required
+                        checked={consentChecked}
+                        onChange={(e) => setConsentChecked(e.target.checked)}
+                        style={{ marginTop: "0.25rem", accentColor: "var(--color-accent-500)", cursor: "pointer" }}
+                      />
+                      <label htmlFor="consent-opt-in" style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem", lineHeight: 1.4, cursor: "pointer" }}>
+                        {t("contact.formAgreementText")}{" "}
+                        <a href="/privacy" style={{ color: "var(--color-accent-500)", textDecoration: "none", fontWeight: 600 }} target="_blank" rel="noopener noreferrer">
+                          {t("contact.privacyPolicyLink")}
+                        </a>.
+                      </label>
+                    </div>
+                    <button type="submit" disabled={loading || !consentChecked} className="btn-primary" style={{ justifyContent: "center", padding: "1rem", opacity: (loading || !consentChecked) ? 0.6 : 1 }}>
                       <Send size={17} /> {loading ? t("contact.formSending") : t("contact.formSubmit")}
                     </button>
-                    <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", textAlign: "center" }}>
-                      {t("contact.formAgreement")}
-                    </p>
                   </form>
                 )}
               </div>

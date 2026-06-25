@@ -347,6 +347,8 @@ export const translations = {
       formSubmit: "Send Message",
       formSending: "Sending...",
       formAgreement: "By submitting, you agree to our Privacy Policy. We never share your data.",
+      formAgreementText: "I agree to the collection and processing of my data for service inquiry purposes as described in the",
+      privacyPolicyLink: "Privacy Policy",
       successTitle: "Message Received!",
       successDesc: "Our team will reach out within one business hour. Check your email for a confirmation.",
     },
@@ -482,6 +484,21 @@ export const translations = {
       selectedSlot: "Selected Slot",
       at: "at",
       messagePlaceholder: "Tell us a bit about your needs...",
+    },
+    cookieConsent: {
+      title: "Cookie Consent & Privacy",
+      description: "We use cookies to optimize our managed services platform, analyze site usage, and support marketing. Review our",
+      linkText: "Privacy Policy",
+      preferences: "Preferences",
+      acceptAll: "Accept All",
+      saveChoices: "Save Choices",
+      prefTitle: "Privacy Preferences",
+      necessaryTitle: "Necessary Cookies",
+      necessaryDesc: "Required for core security and portal session management.",
+      analyticsTitle: "Analytics Cookies",
+      analyticsDesc: "Helps us understand user paths and service performance.",
+      marketingTitle: "Marketing & Personalization",
+      marketingDesc: "Used to display relevant information and custom offers."
     }
   },
   es: {
@@ -832,6 +849,8 @@ export const translations = {
       formSubmit: "Enviar Mensaje",
       formSending: "Enviando...",
       formAgreement: "Al enviar, acepta nuestra Política de Privacidad. Nunca compartimos sus datos.",
+      formAgreementText: "Acepto la recopilación y el procesamiento de mis datos con fines de consulta de servicio como se describe en la",
+      privacyPolicyLink: "Política de Privacidad",
       successTitle: "¡Mensaje Recibido!",
       successDesc: "Nuestro equipo se pondrá en contacto en menos de una hora laboral. Revise su correo para confirmación.",
     },
@@ -965,6 +984,21 @@ export const translations = {
       selectedSlot: "Horario Seleccionado",
       at: "a las",
       messagePlaceholder: "Cuéntenos un poco sobre sus necesidades...",
+    },
+    cookieConsent: {
+      title: "Consentimiento de Cookies y Privacidad",
+      description: "Utilizamos cookies para optimizar nuestra plataforma de servicios gestionados, analizar el uso del sitio y apoyar el marketing. Revise nuestra",
+      linkText: "Política de Privacidad",
+      preferences: "Preferencias",
+      acceptAll: "Aceptar Todo",
+      saveChoices: "Guardar Opciones",
+      prefTitle: "Preferencias de Privacidad",
+      necessaryTitle: "Cookies Necesarias",
+      necessaryDesc: "Requeridas para la seguridad principal y la gestión de sesiones del portal.",
+      analyticsTitle: "Cookies de Analítica",
+      analyticsDesc: "Nos ayudan a comprender las rutas de los usuarios y el rendimiento del servicio.",
+      marketingTitle: "Marketing y Personalización",
+      marketingDesc: "Utilizadas para mostrar información relevante y ofertas personalizadas."
     }
   }
 };

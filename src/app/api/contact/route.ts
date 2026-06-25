@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { contactSchema } from "@/lib/validation";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import crypto from "crypto";
 import {
   validationError,
   serverError,
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     const parsed = contactSchema.safeParse(body);
     if (!parsed.success) return validationError(parsed.error);
 
-    const { name, email, phone, company, service, message } = parsed.data;
+    const { name, email, phone, company, service, message, consentChecked } = parsed.data;
 
     // ── Sanitize for safe embedding in HTML emails ─────────────────────────────
     const safeName = sanitizeForEmail(name);
@@ -113,9 +114,20 @@ export async function POST(request: Request) {
       console.error("[Contact] Email notification failed:", emailError);
     }
 
-    // ── Persist to database ────────────────────────────────────────────────────
+    // ── Persist to database with Consent Audit Log ─────────────────────────────
     let leadId: string | null = null;
     try {
+      const ipHash = crypto.createHash("sha256").update(ip || "unknown").digest("hex").slice(0, 16);
+      const consentLog = `
+
+--- Consent Audit Log ---
+Consent Granted: ${consentChecked ? "Yes" : "No (Bypassed/Direct API)"}
+Timestamp: ${new Date().toISOString()}
+Consent Version: 2026.06.V1
+Consent Text: "I agree to the collection and processing of my data for service inquiry purposes..."
+IP Hash: ${ipHash}
+Browser Language: ${request.headers.get("accept-language")?.split(",")[0] || "en"}`;
+
       const { data: leadData, error: dbError } = await supabase
         .from("leads")
         .insert({
@@ -125,7 +137,7 @@ export async function POST(request: Request) {
           phone: phone || null,
           company_name: company || null,
           service_interest: service,
-          notes: message,
+          notes: `${message || ""}${consentLog}`,
           status: "new",
         })
         .select("id")

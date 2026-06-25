@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Mic, Loader2, X, Volume2, Phone, PhoneOff } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
@@ -101,10 +101,21 @@ export default function VoiceAssistant() {
   const [roomName, setRoomName]       = useState<string>("");
   const [connecting, setConnecting]   = useState(false);
   const [hasConnected, setHasConnected] = useState(false);
+  const [userConsented, setUserConsented] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const consent = localStorage.getItem("kts_voice_consent");
+      if (consent === "true") {
+        setUserConsented(true);
+      }
+    }
+  }, []);
 
   const currentAgent = getAgent(pathname);
 
-  const connectToVoice = useCallback(async () => {
+  const startSession = useCallback(async () => {
     setConnecting(true);
     setIsOpen(true);
     setHasConnected(false);
@@ -135,11 +146,21 @@ export default function VoiceAssistant() {
     }
   }, [currentAgent]);
 
+  const connectToVoice = useCallback(async () => {
+    if (!userConsented) {
+      setShowConsentModal(true);
+      setIsOpen(true);
+      return;
+    }
+    await startSession();
+  }, [userConsented, startSession]);
+
   const handleDisconnect = useCallback(() => {
     setToken("");
     setRoomName("");
     setIsOpen(false);
     setHasConnected(false);
+    setShowConsentModal(false);
   }, []);
 
   const handleRoomDisconnected = useCallback(() => {
@@ -218,7 +239,37 @@ export default function VoiceAssistant() {
 
           {/* Body */}
           <div className="p-6 flex flex-col items-center justify-center min-h-[180px]">
-            {connecting ? (
+            {showConsentModal ? (
+              <div className="flex flex-col text-left w-full gap-3">
+                <h4 className="text-white font-bold text-sm">Voice AI Consent</h4>
+                <p className="text-neutral-400 text-[11px] leading-relaxed">
+                  To start a call with {currentAgent.label}, the system streams audio from your microphone to our secure AI processing models (LiveKit & Gemini). 
+                  No voice data is stored permanently or sold. By clicking "I Consent", you agree to voice processing.
+                </p>
+                <div className="flex gap-2 w-full mt-2">
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      setShowConsentModal(false);
+                    }}
+                    className="flex-1 py-2 border border-white/10 hover:bg-white/5 text-neutral-400 rounded-xl text-xs font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setUserConsented(true);
+                      localStorage.setItem("kts_voice_consent", "true");
+                      setShowConsentModal(false);
+                      await startSession();
+                    }}
+                    className="flex-1 py-2 bg-gradient-to-r from-[#00D4FF] to-[#1E4D8C] text-white rounded-xl text-xs font-bold transition-all shadow-md"
+                  >
+                    I Consent
+                  </button>
+                </div>
+              </div>
+            ) : connecting ? (
               <div className="flex flex-col items-center gap-3">
                 <Loader2 size={32} className="animate-spin text-[#00D4FF]" />
                 <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">

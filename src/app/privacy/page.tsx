@@ -10,35 +10,49 @@ export const metadata: Metadata = {
 const sections = [
   {
     title: "1. Information We Collect",
-    content: `We collect information you provide directly to us, such as when you fill out a contact form, create a client portal account, or communicate with our support team. This may include your name, email address, company name, phone number, and details about your IT environment. We also collect technical information automatically when you visit our website, including IP address, browser type, pages visited, and device information through cookies and similar technologies.`,
+    content: `KOOL TECH SOLUTIONS collects personal information that you provide directly (such as names, emails, phone numbers, and company details when submitting forms) and technical information collected automatically (including IP addresses, device types, browser information, and website interaction logs via cookies). Additionally, if you interact with our AI Voice Assistant, we process real-time voice inputs to run the audio stream; however, we do not store, record, or sell biometric data or voice prints.`,
   },
   {
-    title: "2. How We Use Your Information",
-    content: `We use the information we collect to: (a) provide, maintain, and improve our managed IT services; (b) process and fulfill service requests and support tickets; (c) communicate with you about your account and services; (d) send security alerts and notifications relevant to your IT environment; (e) comply with legal obligations; and (f) improve our services through analytics and usage patterns.`,
+    title: "2. Legal Bases for Processing",
+    content: `We process your data under the following legal bases: (a) your explicit, prior consent (e.g., when you opt-in to marketing communications or activate the AI Voice Assistant); (b) the performance of our contract with you (to deliver Managed IT Services, support tickets, and client portal functions); (c) compliance with legal and regulatory obligations; and (d) our legitimate business interests, provided they do not override your privacy rights (e.g., system monitoring, security audits, and preventing fraud).`,
   },
   {
-    title: "3. Data Security",
-    content: `Security is at the core of everything we do at Kool Tech Solutions. We implement enterprise-grade security measures to protect your data, including AES-256 encryption at rest and in transit, multi-factor authentication on all internal systems, role-based access controls, regular third-party security audits, and compliance with SOC 2 Type II standards. Access to client data is limited to authorized personnel on a need-to-know basis.`,
+    title: "3. Data Security & HIPAA Alignment",
+    content: `Security is the core of our operations. KOOL TECH SOLUTIONS implements industry-leading security controls, including AES-256 encryption in transit and at rest, multi-factor authentication (MFA), role-based access control (RBAC), and 24/7 Security Operations Center (SOC) monitoring. For our healthcare-related clients, we sign Business Associate Agreements (BAAs) and maintain strict administrative, physical, and technical safeguards in full alignment with the Health Insurance Portability and Accountability Act (HIPAA).`,
   },
   {
-    title: "4. Data Sharing",
-    content: `We do not sell your personal information. We may share your information with: (a) trusted third-party service providers who assist us in operating our platform (e.g., cloud hosting, email delivery), bound by confidentiality agreements; (b) law enforcement or government agencies when required by law; and (c) a successor entity in the event of a merger or acquisition. Any third parties with whom we share data are carefully vetted and held to strict data protection standards.`,
+    title: "4. No Sale or Sharing of Personal Information",
+    content: `We do not sell, rent, or lease your personal information to third parties. We may disclose data to trusted service providers (such as cloud hosting and email delivery services) operating under strict data processing agreements. We may also disclose information to law enforcement when legally mandated.`,
   },
   {
     title: "5. Data Retention",
-    content: `We retain your personal information for as long as necessary to provide our services and comply with legal obligations. Client data is retained for a minimum of 7 years following contract termination to comply with accounting and regulatory requirements. You may request deletion of your personal data at any time, subject to these legal retention requirements.`,
+    content: `We retain personal data only for as long as necessary to fulfill the purposes for which it was collected, resolve disputes, and comply with statutory retention requirements. Client portal files, configuration logs, and database records are kept for a minimum of 7 years following contract termination to satisfy financial and legal auditing rules.`,
   },
   {
-    title: "6. Your Rights",
-    content: `Depending on your jurisdiction, you may have the right to: access your personal data; correct inaccurate data; request deletion of your data; object to processing; and data portability. For clients subject to GDPR (EU/EEA) or the Dominican Republic's Ley 172-13, additional rights apply. To exercise any of these rights, contact our Data Protection Officer at dpo@kooltech.solutions.`,
+    title: "6. Jurisdiction-Specific Rights",
+    content: `Depending on where you reside, you have specific statutory privacy rights:
+• Dominican Republic (Ley No. 172-13): You have the right to access, rectify, cancel, and oppose (ARCO rights) the processing of your personal data in our databases.
+• United States (California CPRA & State Laws): You have the right to request access, correction, deletion, and portability of your personal data, as well as the right to limit the use of Sensitive Personal Information (SPI) and opt-out of marketing. We do not sell or share data as defined under California law.
+• Canada (PIPEDA & Quebec Law 25): You have the right to access and correct data, withdraw consent at any time, request data portability in a structured format, and request de-indexing or cessation of dissemination.
+• Caribbean & Latin America (e.g., Jamaica DPA, Brazil LGPD): You have the right to confirm the existence of processing, access your data, request anonymization or deletion of unnecessary data, and obtain portability.`,
   },
   {
-    title: "7. Cookies",
-    content: `We use essential cookies to operate our website and client portal, as well as analytics cookies to understand how visitors use our site. You can control cookie preferences through your browser settings. Disabling cookies may affect functionality of the client portal.`,
+    title: "7. Voice Assistant & Biometrics",
+    content: `Our floating AI Voice Assistant utilizes LiveKit and Gemini to facilitate real-time voice support. Microphone access is strictly opt-in and is not activated until you click the explicit "I Consent" button. Voice streams are processed in real-time to generate AI responses and are not logged or stored permanently on our servers.`,
   },
   {
-    title: "8. Contact Us",
-    content: `If you have questions about this Privacy Policy or our data practices, contact our Data Protection Officer at: dpo@kooltech.solutions | Kool Tech Solutions, Data Privacy Office, Santiago, Dominican República. We will respond to all privacy inquiries within 72 hours.`,
+    title: "8. Cookie Policy & AdSense Control",
+    content: `We use essential cookies to maintain secure sessions in the client portal. We also load Google AdSense for marketing. Non-essential tracking and advertising cookies are deactivated by default. You can change your preferences at any time using our Cookie Consent Banner or via your browser settings. When marketing cookies are rejected, AdSense runs in Non-Personalized Ads (NPA) mode.`,
+  },
+  {
+    title: "9. Data Subject Access Requests (DSAR) Procedure",
+    content: `To exercise your rights (access, correction, deletion, portability, or objection), please submit a detailed request to our Data Protection Officer at dpo@kooltech.solutions. To protect your privacy, we will verify your identity before processing any request. We respond to all verified requests within the statutory timelines (typically 30 days for DR/Canada, 45 days for US).`,
+  },
+  {
+    title: "10. Contact Us & Data Protection Officer",
+    content: `KOOL TECH SOLUTIONS is registered in Santiago, Dominican Republic. For any questions regarding this Privacy Policy, please contact our Data Protection Officer (DPO) at:
+Email: dpo@kooltech.solutions | Alternative: privacy@kooltechsolutions.com
+Address: KOOL TECH SOLUTIONS, Data Privacy Office, Santiago, Dominican República.`,
   },
 ];
 

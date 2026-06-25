@@ -24,6 +24,7 @@ export const contactSchema = z.object({
   company: safeString(150).optional().or(z.literal("")),
   service: safeString(100),
   message: safeString(2000),
+  consentChecked: z.boolean().optional(),
 });
 
 export type ContactInput = z.infer<typeof contactSchema>;
