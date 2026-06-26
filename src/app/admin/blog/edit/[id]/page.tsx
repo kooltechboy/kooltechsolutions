@@ -32,35 +32,72 @@ export default function EditBlogPostPage() {
     content: "",
     image_url: "",
     lang: "en",
+    meta_title: "",
+    published_at: "",
+    tags: "",
+    lead_magnet_id: "",
   });
 
+  const [leadMagnets, setLeadMagnets] = useState<any[]>([]);
+
+  // Local storage auto-save
   useEffect(() => {
-    async function fetchPost() {
+    if (!loading && formData.title) {
+      localStorage.setItem(`draft_edit_post_${id}`, JSON.stringify(formData));
+    }
+  }, [formData, id, loading]);
+
+  useEffect(() => {
+    async function fetchData() {
       try {
-        const res = await fetch(`/api/admin/blog?id=${id}`);
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `Failed with status ${res.status}`);
+        const [postRes, magnetsRes] = await Promise.all([
+          fetch(`/api/admin/blog?id=${id}`),
+          fetch(`/api/admin/lead-magnets`)
+        ]);
+        
+        if (!postRes.ok) {
+          const errData = await postRes.json().catch(() => ({}));
+          throw new Error(errData.error || `Failed with status ${postRes.status}`);
         }
-        const data = await res.json();
+        
+        const postData = await postRes.json();
+        const magnetsData = await magnetsRes.json();
+        setLeadMagnets(magnetsData.filter((m: any) => m.active));
+
+        const linkedMagnet = magnetsData.find((m: any) => m.post_id === id);
+
+        const savedDraft = localStorage.getItem(`draft_edit_post_${id}`);
+        if (savedDraft) {
+          try {
+            const parsedDraft = JSON.parse(savedDraft);
+            setFormData(parsedDraft);
+            setLoading(false);
+            return;
+          } catch (e) {}
+        }
+
         setFormData({
-          title: data.title ?? "",
-          slug: data.slug ?? "",
-          excerpt: data.excerpt ?? "",
-          category: data.category ?? "Cybersecurity",
-          read_time: data.read_time ?? "1 min",
-          status: data.status ?? "Draft",
-          author_name: data.author_name ?? "Daniel Joseph Williams",
-          content: data.content ?? "",
-          image_url: data.image_url ?? "",
-          lang: data.lang ?? "en",
+          title: postData.title ?? "",
+          slug: postData.slug ?? "",
+          excerpt: postData.excerpt ?? "",
+          category: postData.category ?? "Cybersecurity",
+          read_time: postData.read_time ?? "1 min",
+          status: postData.status ?? "Draft",
+          author_name: postData.author_name ?? "Daniel Joseph Williams",
+          content: postData.content ?? "",
+          image_url: postData.image_url ?? "",
+          lang: postData.lang ?? "en",
+          meta_title: postData.meta_title ?? "",
+          published_at: postData.published_at ? postData.published_at.slice(0, 16) : "",
+          tags: (postData.tags || []).join(", "),
+          lead_magnet_id: linkedMagnet ? linkedMagnet.id : "",
         });
       } catch (err) {
         setError("Could not load article: " + (err instanceof Error ? err.message : String(err)));
       }
       setLoading(false);
     }
-    fetchPost();
+    fetchData();
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generateSlug = (title: string) =>
@@ -106,9 +143,12 @@ export default function EditBlogPostPage() {
     setSaving(true);
     setError(null);
 
-    // If image_url is empty, set a fallback image URL
     const finalData = {
       ...formData,
+      tags: formData.tags.split(",").map((t: string) => t.trim()).filter(Boolean),
+      meta_title: formData.meta_title || null,
+      published_at: formData.published_at ? new Date(formData.published_at).toISOString() : null,
+      lead_magnet_id: formData.lead_magnet_id || null,
       read_time: dynamicReadTime,
       image_url: formData.image_url || getFallbackImage(formData.category)
     };
@@ -125,6 +165,7 @@ export default function EditBlogPostPage() {
         throw new Error(errData.error || `Failed with status ${res.status}`);
       }
 
+      localStorage.removeItem(`draft_edit_post_${id}`);
       router.push("/admin/blog");
       router.refresh();
     } catch (err) {
@@ -234,6 +275,52 @@ export default function EditBlogPostPage() {
           </div>
         </div>
 
+        <div style={{ background: "rgba(0,0,0,0.2)", padding: "1.5rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", marginBottom: "1.5rem" }}>
+          <h4 style={{ color: "white", fontSize: "0.9375rem", margin: "0 0 1rem", fontWeight: 700 }}>Advanced Publishing & SEO</h4>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <div>
+              <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Meta Title (SEO Override)</label>
+              <input 
+                className="input-field" 
+                value={formData.meta_title} 
+                onChange={e => setFormData({ ...formData, meta_title: e.target.value })} 
+                placeholder="Custom title for search engines..."
+              />
+            </div>
+            <div>
+              <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Tags (Comma-separated)</label>
+              <input 
+                className="input-field" 
+                value={formData.tags} 
+                onChange={e => setFormData({ ...formData, tags: e.target.value })} 
+                placeholder="tech, security, news"
+              />
+            </div>
+            <div>
+              <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Publish Date (Optional Backdate/Schedule)</label>
+              <input 
+                type="datetime-local"
+                className="input-field" 
+                value={formData.published_at} 
+                onChange={e => setFormData({ ...formData, published_at: e.target.value })} 
+              />
+            </div>
+            <div>
+              <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Linked Lead Magnet</label>
+              <select 
+                className="input-field" 
+                value={formData.lead_magnet_id} 
+                onChange={e => setFormData({ ...formData, lead_magnet_id: e.target.value })}
+              >
+                <option value="">— No Lead Magnet —</option>
+                {leadMagnets.map(m => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* AI Engine */}
         <div style={{ background: "rgba(168,85,247,0.05)", padding: "1.5rem", borderRadius: "16px", border: "1px solid rgba(168,85,247,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
@@ -276,6 +363,21 @@ export default function EditBlogPostPage() {
               language="en-US"
               placeholder="Start editing..."
               style={{ height: "500px" }}
+              onUploadImg={async (files, callback) => {
+                const res = await Promise.all(
+                  files.map(async (file) => {
+                    const fd = new FormData();
+                    fd.append("file", file);
+                    const uploadRes = await fetch("/api/admin/blog/upload-image", {
+                      method: "POST",
+                      body: fd,
+                    });
+                    const data = await uploadRes.json();
+                    return data.url;
+                  })
+                );
+                callback(res.map(url => url));
+              }}
               toolbars={[
                 "bold", "italic", "underline", "strikeThrough", "-",
                 "title", "sub", "sup", "quote", "unorderedList", "orderedList", "-",

@@ -16,6 +16,7 @@ export default function NewBlogPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [aiRefining, setAiRefining] = useState(false);
   const [aiInstruction, setAiInstruction] = useState("");
+  const [leadMagnets, setLeadMagnets] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -29,7 +30,39 @@ export default function NewBlogPostPage() {
     image_url: "",
     lang: "en",
     translated_from: null as string | null,
+    meta_title: "",
+    published_at: "",
+    tags: "",
+    lead_magnet_id: "",
   });
+
+  // Load drafts and lead magnets
+  useEffect(() => {
+    const saved = localStorage.getItem("draft_new_post");
+    if (saved) {
+      try {
+        setFormData(JSON.parse(saved));
+      } catch (err) {}
+    }
+
+    async function loadMagnets() {
+      try {
+        const res = await fetch("/api/admin/lead-magnets");
+        if (res.ok) {
+          const data = await res.json();
+          setLeadMagnets(data.filter((m: any) => m.active));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadMagnets();
+  }, []);
+
+  // Save draft locally
+  useEffect(() => {
+    localStorage.setItem("draft_new_post", JSON.stringify(formData));
+  }, [formData]);
 
   // Dynamically set logged-in user as author name
   useEffect(() => {
@@ -233,6 +266,10 @@ export default function NewBlogPostPage() {
     try {
       const payload = {
         ...finalData,
+        tags: finalData.tags.split(",").map((t: string) => t.trim()).filter(Boolean),
+        meta_title: finalData.meta_title || null,
+        published_at: finalData.published_at ? new Date(finalData.published_at).toISOString() : null,
+        lead_magnet_id: finalData.lead_magnet_id || null,
         lang: finalData.lang,
         translated_from: finalData.translated_from || undefined,
       };
@@ -247,6 +284,7 @@ export default function NewBlogPostPage() {
         throw new Error(errData.error || `Failed with status ${res.status}`);
       }
 
+      localStorage.removeItem("draft_new_post");
       router.push("/admin/blog");
       router.refresh();
     } catch (err) {
@@ -397,6 +435,52 @@ export default function NewBlogPostPage() {
           </div>
         </div>
 
+        <div style={{ background: "rgba(0,0,0,0.2)", padding: "1.5rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", marginBottom: "1.5rem" }}>
+          <h4 style={{ color: "white", fontSize: "0.9375rem", margin: "0 0 1rem", fontWeight: 700 }}>Advanced Publishing & SEO</h4>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <div>
+              <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Meta Title (SEO Override)</label>
+              <input 
+                className="input-field" 
+                value={formData.meta_title} 
+                onChange={e => setFormData({ ...formData, meta_title: e.target.value })} 
+                placeholder="Custom title for search engines..."
+              />
+            </div>
+            <div>
+              <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Tags (Comma-separated)</label>
+              <input 
+                className="input-field" 
+                value={formData.tags} 
+                onChange={e => setFormData({ ...formData, tags: e.target.value })} 
+                placeholder="tech, security, news"
+              />
+            </div>
+            <div>
+              <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Publish Date (Optional Backdate/Schedule)</label>
+              <input 
+                type="datetime-local"
+                className="input-field" 
+                value={formData.published_at} 
+                onChange={e => setFormData({ ...formData, published_at: e.target.value })} 
+              />
+            </div>
+            <div>
+              <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Linked Lead Magnet</label>
+              <select 
+                className="input-field" 
+                value={formData.lead_magnet_id} 
+                onChange={e => setFormData({ ...formData, lead_magnet_id: e.target.value })}
+              >
+                <option value="">— No Lead Magnet —</option>
+                {leadMagnets.map(m => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div style={{ background: "rgba(168,85,247,0.05)", padding: "2rem", borderRadius: "16px", border: "1px solid rgba(168,85,247,0.2)", marginBottom: "1.5rem", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--color-accent-600)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -449,6 +533,21 @@ export default function NewBlogPostPage() {
               language="en-US"
               placeholder="Start writing your masterpiece..."
               style={{ height: '500px' }}
+              onUploadImg={async (files, callback) => {
+                const res = await Promise.all(
+                  files.map(async (file) => {
+                    const fd = new FormData();
+                    fd.append("file", file);
+                    const uploadRes = await fetch("/api/admin/blog/upload-image", {
+                      method: "POST",
+                      body: fd,
+                    });
+                    const data = await uploadRes.json();
+                    return data.url;
+                  })
+                );
+                callback(res.map(url => url));
+              }}
               toolbars={[
                 'bold',
                 'italic',

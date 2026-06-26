@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const alternates = getBlogHreflangAlternates(post, counterpart);
 
   return {
-    title: `${post.title} | Kool Tech Solutions`,
+    title: post.meta_title || `${post.title} | Kool Tech Solutions`,
     description: post.excerpt,
     alternates,
     openGraph: {
@@ -168,10 +168,10 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": post.title,
+    "headline": post.meta_title || post.title,
     "description": post.excerpt,
     "image": post.image_url || getFallbackImage(post.category),
-    "datePublished": post.created_at,
+    "datePublished": post.published_at || post.created_at,
     "dateModified": post.updated_at,
     "inLanguage": getJsonLdLanguage("es"),
     "author": {
@@ -233,10 +233,20 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
                   </div>
                   <div>
                     <p style={{ color: "white", fontWeight: 600, fontSize: "0.9375rem", margin: 0 }}>{post.author_name}</p>
-                    <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", margin: 0 }}>Kool Tech Solutions • {new Date(post.created_at).toLocaleDateString("es-LA")}</p>
+                    <p style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem", margin: 0 }}>Kool Tech Solutions • {new Date(post.published_at || post.created_at).toLocaleDateString("es-LA")}</p>
                   </div>
                 </div>
               </div>
+
+              {post.tags && post.tags.length > 0 && (
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "3rem", marginTop: "-1.5rem" }}>
+                  {post.tags.map((tag: string) => (
+                    <span key={tag} style={{ padding: "0.25rem 0.75rem", borderRadius: "100px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--color-neutral-300)", fontSize: "0.75rem" }}>
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               <img 
                 src={post.image_url || getFallbackImage(post.category)} 

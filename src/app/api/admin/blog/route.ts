@@ -42,6 +42,10 @@ const blogPostSchema = z.object({
   author: z.string().max(100).optional(),
   lang: z.enum(["en", "es"]).default("en"),
   translated_from: z.string().uuid().optional().nullable(),
+  meta_title: z.string().max(300).optional().nullable(),
+  published_at: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional(),
+  lead_magnet_id: z.string().uuid().optional().nullable(),
 });
 
 const blogPostUpdateSchema = blogPostSchema.partial().extend({
@@ -101,15 +105,22 @@ export async function POST(request: Request) {
     }
     const supabase = getAdminSupabase();
 
+    const { lead_magnet_id, ...postData } = parsed.data;
+
     const { data, error } = await supabase
       .from("posts")
-      .insert([parsed.data])
+      .insert([postData])
       .select()
       .single();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    if (lead_magnet_id) {
+      await supabase.from("lead_magnets").update({ post_id: data.id }).eq("id", lead_magnet_id);
+    }
+
     return NextResponse.json(data);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
@@ -128,7 +139,7 @@ export async function PATCH(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid update data", issues: parsed.error.issues }, { status: 400 });
     }
-    const { id, ...changes } = parsed.data;
+    const { id, lead_magnet_id, ...changes } = parsed.data;
 
     const supabase = getAdminSupabase();
 
@@ -142,6 +153,16 @@ export async function PATCH(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    if (lead_magnet_id !== undefined) {
+      // First unlink any existing lead magnet linked to this post
+      await supabase.from("lead_magnets").update({ post_id: null }).eq("post_id", id);
+      // Then link the new one if provided
+      if (lead_magnet_id) {
+        await supabase.from("lead_magnets").update({ post_id: id }).eq("id", lead_magnet_id);
+      }
+    }
+
     return NextResponse.json(data);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

@@ -46,6 +46,8 @@ interface Post {
   read_time: string;
   image_url?: string;
   created_at: string;
+  published_at?: string;
+  tags?: string[];
   status: string;
 }
 
@@ -154,7 +156,7 @@ export default async function BlogPageES() {
                     <div style={{ display: "flex", alignItems: "center", gap: "1rem", color: "#94A3B8", fontSize: "0.85rem", flexWrap: "wrap" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                         <Calendar size={13} />
-                        {new Date(featuredPost.created_at).toLocaleDateString("es-LA", { month: "short", day: "numeric", year: "numeric" })}
+                        {new Date(featuredPost.published_at || featuredPost.created_at).toLocaleDateString("es-LA", { month: "short", day: "numeric", year: "numeric" })}
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                         <Clock size={13} /> {featuredPost.read_time} de lectura
@@ -253,7 +255,7 @@ export default async function BlogPageES() {
                           }}>
                             <span style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#64748B", fontSize: "0.75rem" }}>
                               <Calendar size={12} />
-                              {new Date(post.created_at).toLocaleDateString("es-LA", { month: "short", day: "numeric", year: "numeric" })}
+                              {new Date(post.published_at || post.created_at).toLocaleDateString("es-LA", { month: "short", day: "numeric", year: "numeric" })}
                             </span>
                             <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "#00D4FF", fontSize: "0.875rem", fontWeight: 600 }}>
                               Leer <ArrowRight size={14} />
