@@ -367,7 +367,7 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
                           <Share2 size={14} style={{ marginRight: "0.5rem" }} /> LinkedIn
                         </a>
                         <a 
-                          href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`}
+                          href="https://www.facebook.com/kooltechsol"
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ textDecoration: "none", padding: "0.5rem 1rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "white", fontSize: "0.8125rem", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
