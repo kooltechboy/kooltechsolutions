@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Sparkles, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Clock, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from "md-editor-rt";
@@ -39,6 +39,52 @@ export default function EditBlogPostPage() {
   });
 
   const [leadMagnets, setLeadMagnets] = useState<any[]>([]);
+  const [showLeadMagnetModal, setShowLeadMagnetModal] = useState(false);
+  const [submittingLeadMagnet, setSubmittingLeadMagnet] = useState(false);
+  const [leadMagnetError, setLeadMagnetError] = useState<string | null>(null);
+  const [newMagnet, setNewMagnet] = useState({ title: "", description: "", cta_button_text: "Download Free Guide" });
+  const [newMagnetFile, setNewMagnetFile] = useState<File | null>(null);
+
+  const handleCreateLeadMagnet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMagnetFile) {
+      setLeadMagnetError("Please select a PDF file.");
+      return;
+    }
+    setSubmittingLeadMagnet(true);
+    setLeadMagnetError(null);
+    try {
+      const fd = new FormData();
+      fd.append("title", newMagnet.title);
+      fd.append("description", newMagnet.description);
+      fd.append("cta_button_text", newMagnet.cta_button_text);
+      fd.append("pdf", newMagnetFile);
+
+      const res = await fetch("/api/admin/lead-magnets", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create lead magnet");
+
+      // Reload lead magnets list
+      const lmRes = await fetch("/api/admin/lead-magnets");
+      if (lmRes.ok) {
+        const lmData = await lmRes.json();
+        setLeadMagnets(lmData.filter((m: any) => m.active));
+      }
+
+      // Auto-link new lead magnet
+      setFormData(prev => ({ ...prev, lead_magnet_id: data.id }));
+      setShowLeadMagnetModal(false);
+      setNewMagnet({ title: "", description: "", cta_button_text: "Download Free Guide" });
+      setNewMagnetFile(null);
+    } catch (err) {
+      setLeadMagnetError(err instanceof Error ? err.message : "Failed to create lead magnet");
+    } finally {
+      setSubmittingLeadMagnet(false);
+    }
+  };
 
   // Local storage auto-save
   useEffect(() => {
@@ -307,19 +353,138 @@ export default function EditBlogPostPage() {
             </div>
             <div>
               <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Linked Lead Magnet</label>
-              <select 
-                className="input-field" 
-                value={formData.lead_magnet_id} 
-                onChange={e => setFormData({ ...formData, lead_magnet_id: e.target.value })}
-              >
-                <option value="">— No Lead Magnet —</option>
-                {leadMagnets.map(m => (
-                  <option key={m.id} value={m.id}>{m.title}</option>
-                ))}
-              </select>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <select 
+                  className="input-field" 
+                  value={formData.lead_magnet_id} 
+                  onChange={e => setFormData({ ...formData, lead_magnet_id: e.target.value })}
+                  style={{ flex: 1 }}
+                >
+                  <option value="">— No Lead Magnet —</option>
+                  {leadMagnets.map(m => (
+                    <option key={m.id} value={m.id}>{m.title}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowLeadMagnetModal(true)}
+                  className="btn-secondary"
+                  style={{ display: "flex", alignItems: "center", gap: "0.25rem", padding: "0 1rem", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }}
+                >
+                  + Create New
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        {showLeadMagnetModal && (
+          <div 
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+              background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)",
+              zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "1rem"
+            }}
+          >
+            <div className="glass-card" style={{
+              width: "100%", maxWidth: "500px", borderRadius: "20px",
+              overflow: "hidden", position: "relative",
+              border: "1px solid rgba(0,212,255,0.2)",
+              background: "#0d1527"
+            }}>
+              <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,212,255,0.02)" }}>
+                <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "white", margin: 0 }}>
+                  Create New Lead Magnet
+                </h2>
+                <button type="button" onClick={() => setShowLeadMagnetModal(false)} style={{ background: "none", border: "none", color: "var(--color-neutral-400)", cursor: "pointer" }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateLeadMagnet} style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                {leadMagnetError && (
+                  <div style={{ padding: "0.75rem", background: "rgba(255, 68, 68, 0.1)", color: "#FF4444", borderRadius: "8px", fontSize: "0.875rem" }}>
+                    {leadMagnetError}
+                  </div>
+                )}
+                
+                <div>
+                  <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Title</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="e.g. Free Cybersecurity Checklist 2026"
+                    className="input-field" 
+                    value={newMagnet.title}
+                    onChange={e => setNewMagnet({ ...newMagnet, title: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Description / Hook text</label>
+                  <textarea 
+                    placeholder="Explain why they should download this guide..."
+                    className="input-field" 
+                    style={{ minHeight: "80px", resize: "vertical" }}
+                    value={newMagnet.description}
+                    onChange={e => setNewMagnet({ ...newMagnet, description: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>CTA Button Text</label>
+                  <input 
+                    type="text" 
+                    placeholder="Download Free Guide"
+                    className="input-field" 
+                    value={newMagnet.cta_button_text}
+                    onChange={e => setNewMagnet({ ...newMagnet, cta_button_text: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>PDF File</label>
+                  <input 
+                    type="file" 
+                    required 
+                    accept="application/pdf"
+                    onChange={e => setNewMagnetFile(e.target.files?.[0] || null)}
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "8px",
+                      color: "white"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowLeadMagnetModal(false)}
+                    className="btn-secondary"
+                    style={{ flex: 1, padding: "0.75rem", borderRadius: "8px" }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={submittingLeadMagnet}
+                    className="btn-primary"
+                    style={{ flex: 1, padding: "0.75rem", borderRadius: "8px", background: "var(--color-accent-600)", border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
+                  >
+                    {submittingLeadMagnet ? <Loader2 className="animate-spin" size={16} /> : "Create & Link"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* AI Engine */}
         <div style={{ background: "rgba(168,85,247,0.05)", padding: "1.5rem", borderRadius: "16px", border: "1px solid rgba(168,85,247,0.2)" }}>

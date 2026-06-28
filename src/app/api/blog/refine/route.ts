@@ -67,10 +67,13 @@ export async function POST(req: Request) {
 
         IMPORTANT: Return ONLY a valid JSON object. No markdown blocks, no commentary.
         {
+          "title": "A compelling title for the blog post (if not explicitly provided in the content)",
           "excerpt": "A high-impact 1-2 sentence summary for SEO",
           "category": "The best category (e.g. Cybersecurity, Cloud Computing, AI & Automation, Managed IT, Digital Strategy)",
           "read_time": "Estimated read time in minutes (e.g. '5 min')",
-          "slug": "an-seo-friendly-url-slug-based-on-the-content"
+          "slug": "an-seo-friendly-url-slug-based-on-the-content",
+          "meta_title": "An SEO-optimized title tag (50-60 characters)",
+          "tags": ["3 to 5 relevant technical/SEO tags as strings"]
         }
       `;
       const result = await model.generateContent(prompt);
