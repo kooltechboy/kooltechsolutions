@@ -29,7 +29,7 @@ export default function EditBlogPostPage() {
     category: "Cybersecurity",
     read_time: "1 min",
     status: "Draft",
-    author_name: "Daniel Joseph Williams",
+    author_name: "Daniel J Williams Founder/CEO KOOL TECH SOLUTIONS",
     content: "",
     image_url: "",
     lang: "en",
@@ -359,6 +359,15 @@ export default function EditBlogPostPage() {
               <option value="Draft">Draft</option>
               <option value="Published">Published</option>
             </select>
+          </div>
+          <div style={{ flex: "1 1 200px" }}>
+            <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Author</label>
+            <input 
+              className="input-field" 
+              value={formData.author_name} 
+              onChange={e => setFormData({ ...formData, author_name: e.target.value })}
+              placeholder="Author Name"
+            />
           </div>
           <div style={{ flex: "1 1 120px" }}>
             <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.4rem" }}>Language</label>
