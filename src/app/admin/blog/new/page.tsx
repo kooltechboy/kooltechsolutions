@@ -580,6 +580,7 @@ export default function NewBlogPostPage() {
               <input 
                 type="datetime-local"
                 className="input-field" 
+                style={{ colorScheme: "dark" }}
                 value={formData.published_at} 
                 onChange={e => setFormData({ ...formData, published_at: e.target.value })} 
               />
