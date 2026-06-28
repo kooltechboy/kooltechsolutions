@@ -18,8 +18,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = await createClient();
   const { data: post } = await supabase.from("posts").select("*").eq("slug", slug).eq("lang", "en").single();
   
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAdmin = !!user;
+
   const isScheduled = post?.published_at && new Date(post.published_at) > new Date();
-  if (!post || post.status !== "Published" || isScheduled) {
+  if (!post || (!isAdmin && (post.status !== "Published" || isScheduled))) {
     return { title: "Post Not Found" };
   }
 
@@ -84,8 +87,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     .eq("lang", "en")
     .single();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAdmin = !!user;
+
   const isScheduled = post?.published_at && new Date(post.published_at) > new Date();
-  if (error || !post || post.status !== "Published" || isScheduled) {
+  if (error || !post || (!isAdmin && (post.status !== "Published" || isScheduled))) {
     notFound();
   }
 
