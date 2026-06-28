@@ -89,18 +89,41 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const supabase = await createClient();
 
-  const { data: post, error } = await supabase
-    .from("posts")
-    .select("*")
-    .eq("slug", slug)
-    .eq("lang", "es")
-    .single();
-
+  // Check auth FIRST before querying, so admin can bypass RLS
   const { data: { user } } = await supabase.auth.getUser();
   const isAdmin = !!user;
 
-  const isScheduled = post?.published_at && new Date(post.published_at) > new Date();
-  if (error || !post || (!isAdmin && (post.status !== "Published" || isScheduled))) {
+  let post: any = null;
+  let error: any = null;
+
+  if (isAdmin) {
+    // Admin: use service role to bypass RLS and preview any post
+    const { createClient: createServiceClient } = await import("@supabase/supabase-js");
+    const serviceClient = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const result = await serviceClient
+      .from("posts")
+      .select("*")
+      .eq("slug", slug)
+      .eq("lang", "es")
+      .single();
+    post = result.data;
+    error = result.error;
+  } else {
+    // Public: RLS enforces Published + not scheduled
+    const result = await supabase
+      .from("posts")
+      .select("*")
+      .eq("slug", slug)
+      .eq("lang", "es")
+      .single();
+    post = result.data;
+    error = result.error;
+  }
+
+  if (error || !post) {
     notFound();
   }
 
