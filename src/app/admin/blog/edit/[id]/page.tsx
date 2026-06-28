@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Sparkles, Clock, Loader2, X } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Clock, Loader2, X, Wand2, AlignLeft, Globe, CheckSquare, Zap } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { MdEditor } from "md-editor-rt";
 import "md-editor-rt/lib/style.css";
 import { getFallbackImage } from "@/utils/blog";
 import CoverImageUploader from "@/components/blog/CoverImageUploader";
+import SeoPreview from "@/components/blog/SeoPreview";
 
 export default function EditBlogPostPage() {
   const router = useRouter();
@@ -519,7 +520,38 @@ export default function EditBlogPostPage() {
 
         {/* Markdown Editor */}
         <div>
-          <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", display: "block", marginBottom: "0.8rem" }}>Blog Content (Rich Text / Markdown)</label>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.8rem", flexWrap: "wrap", gap: "0.75rem" }}>
+            <label style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>Blog Content (Rich Text / Markdown)</label>
+            {/* AI Quick Action Presets */}
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {[
+                { icon: <AlignLeft size={12} />, label: "Generate Outline", prompt: "Generate a detailed structured outline for this article with H2/H3 headings and bullet points for each section." },
+                { icon: <Wand2 size={12} />, label: "Optimize SEO", prompt: "Optimize this content for SEO: improve keyword density, add internal linking suggestions, and strengthen headings." },
+                { icon: <Globe size={12} />, label: "Translate to Spanish", prompt: "Translate this entire blog post content into professional Latin American Spanish, preserving all Markdown formatting." },
+                { icon: <CheckSquare size={12} />, label: "Proofread", prompt: "Proofread this content for grammar, clarity, and consistency. Fix any issues and improve sentence flow without changing the overall structure." },
+                { icon: <Zap size={12} />, label: "Expand Content", prompt: "Expand this article with more detail, examples, and depth. Add relevant statistics or case studies where appropriate." },
+              ].map(({ icon, label, prompt }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => { setAiInstruction(prompt); }}
+                  disabled={aiRefining}
+                  title={prompt}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "0.3rem",
+                    padding: "0.3rem 0.65rem", fontSize: "0.7rem", fontWeight: 600,
+                    borderRadius: "6px", cursor: "pointer",
+                    background: "rgba(168,85,247,0.1)",
+                    border: "1px solid rgba(168,85,247,0.25)",
+                    color: "#C084FC",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="modern-editor-container" style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
             <MdEditor
               modelValue={formData.content}
@@ -554,7 +586,16 @@ export default function EditBlogPostPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
+        <SeoPreview
+          title={formData.title}
+          metaTitle={formData.meta_title}
+          excerpt={formData.excerpt}
+          slug={formData.slug}
+          imageUrl={formData.image_url}
+          category={formData.category}
+        />
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem", marginTop: "1.5rem" }}>
           <Link href="/admin/blog" style={{ padding: "0.75rem 1.5rem", borderRadius: "8px", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "var(--color-neutral-300)", fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
             Cancel
           </Link>

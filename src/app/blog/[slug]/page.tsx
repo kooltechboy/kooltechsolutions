@@ -18,7 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = await createClient();
   const { data: post } = await supabase.from("posts").select("*").eq("slug", slug).eq("lang", "en").single();
   
-  if (!post || post.status !== "Published") {
+  const isScheduled = post?.published_at && new Date(post.published_at) > new Date();
+  if (!post || post.status !== "Published" || isScheduled) {
     return { title: "Post Not Found" };
   }
 
@@ -83,7 +84,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     .eq("lang", "en")
     .single();
 
-  if (error || !post || post.status !== "Published") {
+  const isScheduled = post?.published_at && new Date(post.published_at) > new Date();
+  if (error || !post || post.status !== "Published" || isScheduled) {
     notFound();
   }
 
@@ -97,6 +99,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     .eq("category", post.category)
     .eq("lang", "en")
     .neq("id", post.id)
+    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
     .order("created_at", { ascending: false })
     .limit(3);
 
@@ -109,6 +112,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       .neq("id", post.id)
       .neq("category", post.category)
       .eq("lang", "en")
+      .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
       .order("created_at", { ascending: false })
       .limit(3 - finalRelated.length);
     if (fallbackRelated) {

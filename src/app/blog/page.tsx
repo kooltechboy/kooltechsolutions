@@ -58,6 +58,7 @@ export default async function BlogPage() {
     .select("*")
     .eq("status", "Published")
     .eq("lang", "en")
+    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
     .order("created_at", { ascending: false });
 
   if (error) {

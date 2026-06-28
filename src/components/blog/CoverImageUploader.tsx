@@ -1,7 +1,8 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
-import { Upload, Link as LinkIcon, X, ImageIcon, Loader2 } from "lucide-react";
+import { Upload, Link as LinkIcon, X, ImageIcon, Loader2, FolderOpen } from "lucide-react";
 import { getFallbackImage } from "@/utils/blog";
+import MediaLibraryModal from "@/components/blog/MediaLibraryModal";
 
 interface CoverImageUploaderProps {
   value: string;
@@ -9,14 +10,17 @@ interface CoverImageUploaderProps {
   onChange: (url: string) => void;
 }
 
-type Tab = "upload" | "url";
+type Tab = "upload" | "url" | "library";
 
 export default function CoverImageUploader({
   value,
   category,
   onChange,
 }: CoverImageUploaderProps) {
-  const [tab, setTab] = useState<Tab>(value && value.startsWith("http") ? "url" : "upload");
+  const [tab, setTab] = useState<Tab>(
+    value && value.startsWith("http") ? (value.includes("/covers/") ? "library" : "url") : "upload"
+  );
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -97,7 +101,7 @@ export default function CoverImageUploader({
           border: "1px solid rgba(255,255,255,0.07)",
         }}
       >
-        {(["upload", "url"] as Tab[]).map((t) => (
+        {(["upload", "url", "library"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
@@ -117,8 +121,8 @@ export default function CoverImageUploader({
               color: tab === t ? "#00D4FF" : "var(--color-neutral-500)",
             }}
           >
-            {t === "upload" ? <Upload size={13} /> : <LinkIcon size={13} />}
-            {t === "upload" ? "Upload File" : "Paste URL"}
+            {t === "upload" ? <Upload size={13} /> : t === "url" ? <LinkIcon size={13} /> : <FolderOpen size={13} />}
+            {t === "upload" ? "Upload File" : t === "url" ? "Paste URL" : "Media Library"}
           </button>
         ))}
       </div>
@@ -220,13 +224,29 @@ export default function CoverImageUploader({
                 </div>
               )}
             </>
-          ) : (
+          ) : tab === "url" ? (
             <input
               className="input-field"
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder="https://images.unsplash.com/..."
             />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button
+                type="button"
+                onClick={() => setLibraryOpen(true)}
+                className="btn-secondary"
+                style={{ padding: "0.75rem", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", width: "100%", cursor: "pointer" }}
+              >
+                Browse Uploaded Images
+              </button>
+              {value && (
+                <div style={{ fontSize: "0.72rem", color: "var(--color-neutral-400)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  Selected: {value}
+                </div>
+              )}
+            </div>
           )}
 
           {uploadError && (
@@ -264,6 +284,15 @@ export default function CoverImageUploader({
           />
         </div>
       </div>
+
+      <MediaLibraryModal 
+        isOpen={libraryOpen} 
+        onClose={() => setLibraryOpen(false)} 
+        onSelect={(url) => {
+          onChange(url);
+          setLibraryOpen(false);
+        }}
+      />
     </div>
   );
 }

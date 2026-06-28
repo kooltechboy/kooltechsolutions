@@ -23,7 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = await createClient();
   const { data: post } = await supabase.from("posts").select("*").eq("slug", slug).eq("lang", "es").single();
 
-  if (!post || post.status !== "Published") {
+  const isScheduled = post?.published_at && new Date(post.published_at) > new Date();
+  if (!post || post.status !== "Published" || isScheduled) {
     return { title: "Artículo No Encontrado" };
   }
 
@@ -92,7 +93,8 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
     .eq("lang", "es")
     .single();
 
-  if (error || !post || post.status !== "Published") {
+  const isScheduled = post?.published_at && new Date(post.published_at) > new Date();
+  if (error || !post || post.status !== "Published" || isScheduled) {
     notFound();
   }
 
@@ -139,6 +141,7 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
     .eq("lang", "es")
     .eq("category", post.category)
     .neq("id", post.id)
+    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
     .order("created_at", { ascending: false })
     .limit(3);
 
@@ -151,6 +154,7 @@ export default async function BlogPostPageES({ params }: { params: Promise<{ slu
       .eq("lang", "es")
       .neq("id", post.id)
       .neq("category", post.category)
+      .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
       .order("created_at", { ascending: false })
       .limit(3 - finalRelated.length);
     if (fallbackRelated) {
