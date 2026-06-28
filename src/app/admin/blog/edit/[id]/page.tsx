@@ -155,8 +155,54 @@ export default function EditBlogPostPage() {
     setFormData((prev) => ({ ...prev, title, slug: generateSlug(title) }));
   };
 
+  // Seamless Auto-fill for Title, Slug, Excerpt, and Read Time
+  useEffect(() => {
+    if (!formData.content) return;
+    
+    let updates: Partial<typeof formData> = {};
+    let shouldUpdate = false;
+
+    // 1. Auto-extract Title (if empty)
+    if (!formData.title) {
+      const match = formData.content.match(/^#\s+(.+)$/m);
+      if (match && match[1].trim()) {
+        updates.title = match[1].trim();
+        updates.slug = generateSlug(updates.title);
+        shouldUpdate = true;
+      }
+    }
+
+    // 2. Auto-extract Excerpt (if empty)
+    if (!formData.excerpt) {
+      const lines = formData.content.split('\n');
+      const paragraph = lines.find(line => {
+        const trimmed = line.trim();
+        return trimmed.length > 0 && !trimmed.startsWith('#') && !trimmed.startsWith('!') && !trimmed.startsWith('[') && !trimmed.startsWith('>');
+      });
+      if (paragraph) {
+        let text = paragraph.trim().replace(/[*_~`]/g, '');
+        if (text.length > 155) text = text.substring(0, 155).trim() + "...";
+        updates.excerpt = text;
+        shouldUpdate = true;
+      }
+    }
+
+    // 3. Auto-update Read Time
+    const words = formData.content.split(/\s+/).filter(w => w.length > 0).length || 0;
+    const computedReadTime = `${Math.max(1, Math.ceil(words / 200))} min`;
+    if (formData.read_time !== computedReadTime) {
+      updates.read_time = computedReadTime;
+      shouldUpdate = true;
+    }
+
+    if (shouldUpdate) {
+      setFormData(prev => ({ ...prev, ...updates }));
+    }
+  }, [formData.content, formData.title, formData.excerpt, formData.read_time]);
+
+  // Compute dynamic read time on the fly for display
   const words = formData.content?.split(/\s+/).filter((w) => w.length > 0).length || 0;
-  const dynamicReadTime = `${Math.max(1, Math.ceil(words / 200))} min`;
+  const dynamicReadTime = formData.read_time || `${Math.max(1, Math.ceil(words / 200))} min`;
 
   const handleAIRefine = async () => {
     if (!formData.content) return;
