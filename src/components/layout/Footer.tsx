@@ -67,7 +67,7 @@ export default function Footer() {
               </div>
               <div>
                 <div style={{ color: "#fff", fontWeight: 700, fontFamily: "Syne, sans-serif" }}>Kool Tech Solutions</div>
-                <div style={{ color: "var(--color-accent-500)", fontSize: "0.7rem", letterSpacing: "0.1em", textTransform: "uppercase" }}>Enterprise MSP</div>
+                <div style={{ color: "var(--color-accent-400)", fontSize: "0.6875rem", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "JetBrains Mono" }}>AI Systems & Infrastructure</div>
               </div>
             </div>
             <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", lineHeight: 1.7, marginBottom: "1.5rem", maxWidth: "300px" }}>

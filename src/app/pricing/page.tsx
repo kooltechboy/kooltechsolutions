@@ -227,7 +227,7 @@ export default function PricingPage() {
             {loading ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", gap: "1rem", flexDirection: "column" }}>
                 <Loader2 size={36} className="animate-spin" color="var(--color-accent-500)" />
-                <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Loading live ITFlow catalog...</p>
+                <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>Loading service catalog...</p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>

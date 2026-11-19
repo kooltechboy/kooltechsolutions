@@ -37,8 +37,8 @@ const sections = [
 • Caribbean & Latin America (e.g., Jamaica DPA, Brazil LGPD): You have the right to confirm the existence of processing, access your data, request anonymization or deletion of unnecessary data, and obtain portability.`,
   },
   {
-    title: "7. Voice Assistant & Biometrics",
-    content: `Our floating AI Voice Assistant utilizes LiveKit and Gemini to facilitate real-time voice support. Microphone access is strictly opt-in and is not activated until you click the explicit "I Consent" button. Voice streams are processed in real-time to generate AI responses and are not logged or stored permanently on our servers.`,
+    title: "7. AI Concierge & Chat Assistant",
+    content: `Our floating AI Concierge uses Google Gemini models to assist website visitors and portal clients in real time. Conversations are processed securely to provide instant technical architecture estimates, support ticket verification, and consultation scheduling. We do not sell or share chat data with third-party advertisers.`,
   },
   {
     title: "8. Cookie Policy & AdSense Control",

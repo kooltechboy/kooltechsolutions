@@ -187,10 +187,10 @@ export default function VoiceAnalyticsPage() {
       {/* Header */}
       <div style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "1.75rem", color: "white" }}>
-          Voice <span className="gradient-text">Analytics</span>
+          AI Agent & <span className="gradient-text">Chat Analytics</span>
         </h1>
-        <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-          Real-time conversation tracking, intents, metrics, and logs for KoolTech AI Agent Personas.
+        <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
+          Autonomous conversation tracking, intents, telemetry metrics, and logs for KoolTech AI Agent Personas.
         </p>
       </div>
 

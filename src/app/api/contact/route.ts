@@ -128,6 +128,17 @@ Consent Text: "I agree to the collection and processing of my data for service i
 IP Hash: ${ipHash}
 Browser Language: ${request.headers.get("accept-language")?.split(",")[0] || "en"}`;
 
+      // ── BANT Lead Scoring & Triage ──────────────────────────────────────
+      let leadScore = 50;
+      const lowerMsg = (message || "").toLowerCase();
+      if (lowerMsg.includes("urgent") || lowerMsg.includes("asap") || lowerMsg.includes("immediately")) leadScore += 20;
+      if (lowerMsg.includes("budget") || lowerMsg.includes("quote") || lowerMsg.includes("pricing") || lowerMsg.includes("roi")) leadScore += 15;
+      if (company && company.length > 2) leadScore += 10;
+      if (phone && phone.length > 6) leadScore += 10;
+      leadScore = Math.min(99, leadScore);
+
+      const initialStatus = leadScore >= 75 ? "qualified" : "new";
+
       const { data: leadData, error: dbError } = await supabase
         .from("leads")
         .insert({
@@ -137,8 +148,8 @@ Browser Language: ${request.headers.get("accept-language")?.split(",")[0] || "en
           phone: phone || null,
           company_name: company || null,
           service_interest: service,
-          notes: `${message || ""}${consentLog}`,
-          status: "new",
+          notes: `${message || ""}${consentLog}\n\n[BANT Triage Score: ${leadScore}/100]`,
+          status: initialStatus,
         })
         .select("id")
         .single();
@@ -147,6 +158,15 @@ Browser Language: ${request.headers.get("accept-language")?.split(",")[0] || "en
         console.error("[Contact] Database insert error:", dbError.message);
       } else {
         leadId = leadData?.id ?? null;
+        if (leadId) {
+          // Log automated CRM signal
+          await supabase.from("crm_signals").insert({
+            lead_id: leadId,
+            type: "lead_captured",
+            title: `Inbound Lead: ${safeName} (${company || "Direct"})`,
+            details: `BANT Score: ${leadScore}/100 | Service: ${service} | Urgency: ${leadScore >= 75 ? "High (Immediate Outreach)" : "Normal"}`,
+          });
+        }
       }
     } catch (dbEx) {
       console.error("[Contact] Database exception:", dbEx);

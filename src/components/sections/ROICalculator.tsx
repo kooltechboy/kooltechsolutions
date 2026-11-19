@@ -1,211 +1,204 @@
 "use client";
-import { useState, useEffect } from "react";
-import { ArrowRight, Calculator, Check, Shield, Cloud, Monitor, Cpu, TrendingDown } from "lucide-react";
-import Link from "next/link";
+
+import { useState } from "react";
+import { ArrowRight, Calculator, Check, Shield, Cloud, Bot, Cpu, TrendingDown, DollarSign, Sparkles } from "lucide-react";
+import BookingModal from "@/components/shared/BookingModal";
 import { useLanguage } from "@/components/shared/LanguageProvider";
 
-interface ServiceOption {
+interface ServicePillar {
   id: string;
-  nameKey: string;
-  pricePerUser: number;
-  icon: React.ComponentType<{ size?: number; color?: string; className?: string }>;
+  name: string;
+  description: string;
+  ratePerUser: number;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
 }
 
-const serviceOptions: ServiceOption[] = [
-  { id: "cybersecurity", nameKey: "roi.serviceCyber", pricePerUser: 25, icon: Shield },
-  { id: "cloud", nameKey: "roi.serviceCloud", pricePerUser: 20, icon: Cloud },
-  { id: "helpdesk", nameKey: "roi.serviceHelpdesk", pricePerUser: 29, icon: Monitor },
-  { id: "ai", nameKey: "roi.serviceAI", pricePerUser: 39, icon: Cpu },
+const PILLARS: ServicePillar[] = [
+  { id: "ai_workflows", name: "Autonomous AI Workflows", description: "Multi-agent process automation & lead triage", ratePerUser: 45, icon: Bot },
+  { id: "cybersecurity", name: "Zero-Trust Cybersecurity", description: "24/7 SOC detection & rapid containment", ratePerUser: 25, icon: Shield },
+  { id: "cloud_infra", name: "Cloud & Kubernetes", description: "Multi-cloud architecture & Terraform IaC", ratePerUser: 30, icon: Cloud },
+  { id: "managed_msp", name: "Mission-Critical MSP", description: "Proactive telemetry & 15-min SLA desk", ratePerUser: 35, icon: Cpu },
 ];
 
 export default function ROICalculator() {
   const { t } = useLanguage();
-  const [users, setUsers] = useState<number>(25);
+  const [users, setUsers] = useState<number>(35);
   const [region, setRegion] = useState<"NA" | "Carib">("Carib");
-  const [selectedServices, setSelectedServices] = useState<string[]>(["cybersecurity", "helpdesk"]);
+  const [selectedPillars, setSelectedPillars] = useState<string[]>(["ai_workflows", "cybersecurity", "managed_msp"]);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
-  const toggleService = (id: string) => {
-    setSelectedServices((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+  const togglePillar = (id: string) => {
+    setSelectedPillars(prev =>
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
   };
 
-  const baseRate = selectedServices.reduce((acc, serviceId) => {
-    const option = serviceOptions.find((o) => o.id === serviceId);
-    return acc + (option ? option.pricePerUser : 0);
+  const baseRate = selectedPillars.reduce((acc, id) => {
+    const pillar = PILLARS.find(p => p.id === id);
+    return acc + (pillar ? pillar.ratePerUser : 0);
   }, 0);
 
-  let discount = 1.0;
-  if (users > 100) discount = 0.80;
-  else if (users > 50) discount = 0.85;
-  else if (users > 20) discount = 0.90;
+  // Volume scale discount
+  let volumeDiscount = 1.0;
+  if (users > 100) volumeDiscount = 0.78;
+  else if (users > 50) volumeDiscount = 0.84;
+  else if (users > 20) volumeDiscount = 0.90;
 
-  const ktsCost = Math.round(users * baseRate * discount);
-  
-  let inHouseCost = 0;
-  if (region === "NA") {
-    inHouseCost = Math.max(6500, users * 140);
-  } else {
-    inHouseCost = Math.max(1500, users * 35);
-  }
-  
-  const savings = Math.max(0, inHouseCost - ktsCost);
+  const monthlyKts = Math.round(users * baseRate * volumeDiscount);
+  const annualKts = monthlyKts * 12;
 
-  const getContactUrl = () => {
-    const servicesParam = selectedServices
-      .map((s) => t(serviceOptions.find((o) => o.id === s)?.nameKey || ""))
-      .filter(Boolean)
-      .join(", ");
-    return `/contact?intent=Get+a+Custom+IT+Quote&message=Estimated+ROI+Calculator+Quote:+User+Count+is+${users}.+Region+is+${region === "NA" ? "North+America" : "Caribbean/LATAM"}.+Services+selected:+${encodeURIComponent(
-      servicesParam
-    )}.`;
-  };
+  // In-house equivalent cost calculation
+  const engineerMultiplier = region === "NA" ? 140 : 55;
+  const inHouseMonthly = Math.max(
+    region === "NA" ? 8500 : 3200,
+    Math.round(users * engineerMultiplier)
+  );
+  const inHouseAnnual = inHouseMonthly * 12;
+
+  const monthlySavings = Math.max(0, inHouseMonthly - monthlyKts);
+  const annualSavings = Math.max(0, inHouseAnnual - annualKts);
+  const hoursSavedPerMonth = Math.round(users * (selectedPillars.includes("ai_workflows") ? 4.8 : 2.2));
 
   return (
-    <section className="section" style={{ position: "relative", background: "var(--color-primary-950)" }}>
+    <section id="roi-calculator" className="section" style={{ position: "relative", background: "#020408" }}>
+      {/* Background radial glow */}
       <div
         style={{
           position: "absolute",
-          top: "10%",
-          left: "5%",
-          width: "300px",
-          height: "300px",
-          background: "rgba(0, 212, 255, 0.05)",
-          borderRadius: "50%",
-          filter: "blur(80px)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          bottom: "10%",
-          right: "5%",
-          width: "300px",
-          height: "300px",
-          background: "rgba(30, 77, 140, 0.1)",
-          borderRadius: "50%",
-          filter: "blur(80px)",
+          top: "20%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "600px",
+          height: "400px",
+          background: "radial-gradient(circle, rgba(0, 212, 255, 0.08) 0%, transparent 70%)",
+          filter: "blur(60px)",
           pointerEvents: "none",
         }}
       />
 
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
+        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
-          <div className="badge badge-cyan" style={{ marginBottom: "1rem" }}>
-            <Calculator size={12} style={{ marginRight: "0.25rem" }} />
-            {t("roi.badge")}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                fontFamily: "JetBrains Mono, monospace",
+                padding: "0.25rem 0.75rem",
+                borderRadius: "9999px",
+                background: "rgba(0, 212, 255, 0.1)",
+                color: "var(--color-accent-400)",
+                border: "1px solid rgba(0, 212, 255, 0.2)",
+              }}
+            >
+              FINANCIAL TELEMETRY
+            </span>
           </div>
+
           <h2
             className="font-display"
             style={{
+              fontSize: "clamp(2rem, 4vw, 3rem)",
               fontWeight: 800,
-              fontSize: "clamp(1.75rem, 4vw, 2.75rem)",
               color: "white",
+              letterSpacing: "-0.035em",
               marginBottom: "1rem",
             }}
           >
-            {t("roi.title")}
+            Dynamic ROI & <span className="gradient-text">Engineering Scope Estimator</span>
           </h2>
+
           <p
             style={{
               color: "var(--color-neutral-400)",
-              maxWidth: "600px",
+              maxWidth: "640px",
               margin: "0 auto",
-              lineHeight: 1.7,
+              fontSize: "1.0625rem",
+              lineHeight: 1.6,
             }}
           >
-            {t("roi.subtitle")}
+            Model your actual enterprise operational savings when replacing fragmented third-party vendors and manual IT overhead with KoolTech autonomous engineering.
           </p>
         </div>
 
+        {/* Interactive Grid */}
         <div
-          className="roi-main-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(450px, 100%), 1fr))",
-            gap: "2.5rem",
-            alignItems: "stretch",
+            gridTemplateColumns: "1.15fr 0.85fr",
+            gap: "2rem",
+            alignItems: "start",
           }}
+          className="roi-interactive-grid"
         >
           {/* Controls Panel */}
           <div
-            className="glass-card roi-card-panel"
+            className="glass-card"
             style={{
-              borderRadius: "18px",
+              borderRadius: "16px",
               padding: "2rem",
-              background: "rgba(10, 22, 40, 0.5)",
-              border: "1px solid rgba(0, 212, 255, 0.08)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "2rem",
+              background: "rgba(9, 13, 22, 0.75)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
             }}
           >
-            {/* Region Selector */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  color: "var(--color-neutral-400)",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  marginBottom: "0.5rem",
-                }}
-              >
-                {t("roi.regionLabel")}
+            {/* Region Toggle */}
+            <div style={{ marginBottom: "2rem" }}>
+              <label style={{ display: "block", color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem" }}>
+                Target Geographic Market
               </label>
-              <select
-                value={region}
-                onChange={(e) => setRegion(e.target.value as "NA" | "Carib")}
-                style={{
-                  width: "100%",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "10px",
-                  background: "rgba(10, 22, 40, 0.8)",
-                  border: "1px solid rgba(0, 212, 255, 0.2)",
-                  color: "white",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  outline: "none",
-                  cursor: "pointer",
-                  appearance: "none",
-                  backgroundImage: "url('data:image/svg+xml;utf8,<svg fill=\"white\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 10px center",
-                  paddingRight: "30px",
-                }}
-              >
-                <option value="Carib" style={{ background: "#0A1628" }}>{t("roi.regionCarib")}</option>
-                <option value="NA" style={{ background: "#0A1628" }}>{t("roi.regionNA")}</option>
-              </select>
-            </div>
-
-            {/* Step 1: User Count */}
-            <div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  marginBottom: "1rem",
-                }}
-              >
-                <h3
-                  className="font-display"
-                  style={{ color: "white", fontSize: "1.125rem", fontWeight: 700 }}
-                >
-                  1. {t("roi.usersDevices")}
-                </h3>
-                <span
-                  className="font-mono"
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setRegion("Carib")}
                   style={{
-                    color: "var(--color-accent-500)",
-                    fontWeight: 700,
-                    fontSize: "1.25rem",
-                    textShadow: "0 0 10px rgba(0, 212, 255, 0.2)",
+                    padding: "0.75rem",
+                    borderRadius: "10px",
+                    background: region === "Carib" ? "rgba(0, 212, 255, 0.15)" : "rgba(255, 255, 255, 0.03)",
+                    border: region === "Carib" ? "1px solid var(--color-accent-400)" : "1px solid rgba(255, 255, 255, 0.08)",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
                   }}
                 >
-                  {users} {t("roi.employeesText")}
+                  Caribbean & LATAM
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegion("NA")}
+                  style={{
+                    padding: "0.75rem",
+                    borderRadius: "10px",
+                    background: region === "NA" ? "rgba(0, 212, 255, 0.15)" : "rgba(255, 255, 255, 0.03)",
+                    border: region === "NA" ? "1px solid var(--color-accent-400)" : "1px solid rgba(255, 255, 255, 0.08)",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  USA & Canada
+                </button>
+              </div>
+            </div>
+
+            {/* Slider for Users / Endpoints */}
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                <label style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Managed Users & Endpoints
+                </label>
+                <span
+                  style={{
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: "1.25rem",
+                    fontWeight: 700,
+                    color: "var(--color-accent-400)",
+                  }}
+                >
+                  {users} Seats
                 </span>
               </div>
               <input
@@ -214,267 +207,193 @@ export default function ROICalculator() {
                 max="250"
                 step="5"
                 value={users}
-                onChange={(e) => setUsers(Number(e.target.value))}
+                onChange={e => setUsers(Number(e.target.value))}
                 style={{
                   width: "100%",
-                  height: "6px",
-                  borderRadius: "3px",
-                  background: "rgba(255, 255, 255, 0.1)",
-                  outline: "none",
-                  cursor: "pointer",
                   accentColor: "var(--color-accent-500)",
+                  cursor: "pointer",
                 }}
               />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  color: "var(--color-neutral-500)",
-                  fontSize: "0.75rem",
-                  marginTop: "0.5rem",
-                }}
-              >
-                <span>5 {t("roi.employeesText")}</span>
-                <span>125 {t("roi.employeesText")}</span>
-                <span>250+ {t("roi.employeesText")}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--color-neutral-500)", fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "JetBrains Mono" }}>
+                <span>5 Seats (Boutique)</span>
+                <span>100 Seats (Growth)</span>
+                <span>250+ (Enterprise)</span>
               </div>
             </div>
 
-            {/* Step 2: Select Services */}
+            {/* Service Pillars Checkbox Grid */}
             <div>
-              <h3
-                className="font-display"
-                style={{ color: "white", fontSize: "1.125rem", fontWeight: 700, marginBottom: "1.25rem" }}
-              >
-                2. {t("roi.selectModules")}
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-                {serviceOptions.map((opt) => {
-                  const isSelected = selectedServices.includes(opt.id);
-                  const Icon = opt.icon;
+              <label style={{ display: "block", color: "var(--color-neutral-300)", fontSize: "0.8125rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.75rem" }}>
+                Integrated Architecture Modules
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.75rem" }}>
+                {PILLARS.map(pillar => {
+                  const Icon = pillar.icon;
+                  const isSelected = selectedPillars.includes(pillar.id);
                   return (
-                    <button
-                      key={opt.id}
-                      onClick={() => toggleService(opt.id)}
+                    <div
+                      key={pillar.id}
+                      onClick={() => togglePillar(pillar.id)}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "1rem",
-                        borderRadius: "12px",
-                        background: isSelected
-                          ? "rgba(0, 212, 255, 0.04)"
-                          : "rgba(255, 255, 255, 0.01)",
-                        border: isSelected
-                          ? "1px solid rgba(0, 212, 255, 0.3)"
-                          : "1px solid rgba(255, 255, 255, 0.05)",
+                        gap: "1rem",
+                        padding: "0.875rem 1rem",
+                        borderRadius: "10px",
+                        background: isSelected ? "rgba(0, 212, 255, 0.08)" : "rgba(255, 255, 255, 0.02)",
+                        border: isSelected ? "1px solid rgba(0, 212, 255, 0.35)" : "1px solid rgba(255, 255, 255, 0.06)",
                         cursor: "pointer",
-                        textAlign: "left",
-                        width: "100%",
-                        transition: "all 0.2s ease",
+                        transition: "all 0.15s ease",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                        <div
-                          style={{
-                            width: "36px",
-                            height: "36px",
-                            borderRadius: "8px",
-                            background: isSelected
-                              ? "rgba(0, 212, 255, 0.1)"
-                              : "rgba(255, 255, 255, 0.03)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: isSelected
-                              ? "1px solid rgba(0, 212, 255, 0.2)"
-                              : "1px solid rgba(255, 255, 255, 0.05)",
-                          }}
-                        >
-                          <Icon
-                            size={18}
-                            color={isSelected ? "var(--color-accent-500)" : "var(--color-neutral-400)"}
-                          />
-                        </div>
-                        <div>
-                          <div
-                            style={{
-                              color: isSelected ? "white" : "var(--color-neutral-300)",
-                              fontWeight: 600,
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            {t(opt.nameKey)}
-                          </div>
-                          <div style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
-                            ${opt.pricePerUser}/{t("roi.stdRate")}
-                          </div>
-                        </div>
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "8px",
+                          background: isSelected ? "rgba(0, 212, 255, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Icon size={18} color={isSelected ? "var(--color-accent-400)" : "var(--color-neutral-400)"} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: "white", fontSize: "0.875rem", fontWeight: 600 }}>{pillar.name}</div>
+                        <div style={{ color: "var(--color-neutral-400)", fontSize: "0.75rem" }}>{pillar.description}</div>
                       </div>
                       <div
                         style={{
                           width: "20px",
                           height: "20px",
-                          borderRadius: "50%",
-                          border: isSelected
-                            ? "1px solid var(--color-accent-500)"
-                            : "1px solid rgba(255, 255, 255, 0.2)",
+                          borderRadius: "6px",
+                          border: isSelected ? "1px solid var(--color-accent-400)" : "1px solid rgba(255, 255, 255, 0.2)",
                           background: isSelected ? "var(--color-accent-500)" : "transparent",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                         }}
                       >
-                        {isSelected && <Check size={12} color="#060B18" strokeWidth={3} />}
+                        {isSelected && <Check size={14} color="#020408" strokeWidth={3} />}
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
             </div>
           </div>
 
-          {/* ROI Results Display */}
+          {/* Results Summary Card */}
           <div
-            className="glass-card glow-cyan-sm"
+            className="glass-card"
             style={{
-              borderRadius: "18px",
+              borderRadius: "16px",
               padding: "2rem",
-              background: "rgba(10, 22, 40, 0.8)",
-              border: "1px solid rgba(0, 212, 255, 0.2)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              gap: "2rem",
+              background: "linear-gradient(180deg, rgba(9, 13, 22, 0.9) 0%, rgba(5, 8, 17, 0.95) 100%)",
+              border: "1px solid rgba(0, 212, 255, 0.25)",
+              boxShadow: "0 20px 48px rgba(0,0,0,0.5), 0 0 32px rgba(0, 212, 255, 0.1)",
+              position: "sticky",
+              top: "100px",
             }}
           >
-            <div>
-              <h3
-                className="font-display"
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+              <span style={{ fontSize: "0.75rem", fontFamily: "JetBrains Mono", color: "var(--color-neutral-400)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Estimated Cost Model
+              </span>
+              <span
                 style={{
-                  color: "white",
-                  fontSize: "1.25rem",
-                  fontWeight: 800,
-                  marginBottom: "1.5rem",
-                  borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  paddingBottom: "0.75rem",
+                  fontSize: "0.6875rem",
+                  fontFamily: "JetBrains Mono",
+                  background: "rgba(16, 185, 129, 0.15)",
+                  color: "#10b981",
+                  padding: "0.15rem 0.5rem",
+                  borderRadius: "4px",
+                  border: "1px solid rgba(16, 185, 129, 0.3)",
                 }}
               >
-                {t("roi.estSavings")}
-              </h3>
+                ● 100% SLA Guarantee
+              </span>
+            </div>
 
-              {/* Savings callout */}
-              <div
-                style={{
-                  background: "linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(0, 212, 255, 0.02) 100%)",
-                  border: "1px solid rgba(0, 230, 118, 0.2)",
-                  borderRadius: "12px",
-                  padding: "1.5rem",
-                  marginBottom: "2rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                }}
-              >
-                <div
+            {/* Monthly Investment */}
+            <div style={{ marginBottom: "1.5rem", paddingBottom: "1.5rem", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+              <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", marginBottom: "0.25rem" }}>
+                KoolTech Managed Retainer
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
+                <span
                   style={{
-                    width: "48px",
-                    height: "48px",
-                    borderRadius: "10px",
-                    background: "rgba(0, 230, 118, 0.1)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: "2.5rem",
+                    fontWeight: 800,
+                    color: "white",
+                    letterSpacing: "-0.03em",
                   }}
                 >
-                  <TrendingDown size={24} color="var(--color-success)" />
-                </div>
-                <div>
-                  <div style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", fontWeight: 600 }}>
-                    {t("roi.estMonthlySavings")}
-                  </div>
-                  <div
-                    className="font-mono"
-                    style={{
-                      color: "var(--color-success)",
-                      fontSize: "2rem",
-                      fontWeight: 800,
-                      textShadow: "0 0 15px rgba(0, 230, 118, 0.2)",
-                    }}
-                  >
-                    ${savings.toLocaleString()}/mo
-                  </div>
-                </div>
+                  ${monthlyKts.toLocaleString()}
+                </span>
+                <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>/ month</span>
               </div>
-
-              {/* Comparison list */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-                    {t("roi.inHouseCost")}
-                  </span>
-                  <span
-                    className="font-mono"
-                    style={{ color: "var(--color-danger)", fontWeight: 700, fontSize: "1.125rem" }}
-                  >
-                    ${inHouseCost.toLocaleString()}/mo
-                  </span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-                    {t("roi.ktsCost")}
-                  </span>
-                  <span
-                    className="font-mono"
-                    style={{ color: "white", fontWeight: 700, fontSize: "1.125rem" }}
-                  >
-                    ${ktsCost.toLocaleString()}/mo
-                  </span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-                    {t("roi.annualSavings")}
-                  </span>
-                  <span
-                    className="font-mono"
-                    style={{ color: "var(--color-success)", fontWeight: 800, fontSize: "1.125rem" }}
-                  >
-                    ${(savings * 12).toLocaleString()}/yr
-                  </span>
-                </div>
+              <div style={{ fontSize: "0.75rem", color: "var(--color-neutral-500)", marginTop: "0.25rem" }}>
+                Annual commitment: ${annualKts.toLocaleString()} / year
               </div>
             </div>
 
-            <div>
-              <Link
-                href={getContactUrl()}
-                className="btn-primary"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  padding: "1rem",
-                  fontSize: "1rem",
-                  borderRadius: "10px",
-                }}
-              >
-                {t("roi.claimOffer")}
-                <ArrowRight size={16} />
-              </Link>
-              <div
-                style={{
-                  textAlign: "center",
-                  color: "var(--color-neutral-500)",
-                  fontSize: "0.75rem",
-                  marginTop: "0.75rem",
-                }}
-              >
-                {t("roi.footnote")}
+            {/* Savings & Efficiency Readout */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "2rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>In-House Equivalent:</span>
+                <span style={{ fontFamily: "JetBrains Mono", color: "var(--color-neutral-300)", fontSize: "0.875rem" }}>
+                  ${inHouseMonthly.toLocaleString()} / mo
+                </span>
               </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "#10b981", fontSize: "0.875rem", fontWeight: 700 }}>Projected Annual Savings:</span>
+                <span style={{ fontFamily: "JetBrains Mono", color: "#10b981", fontSize: "1.125rem", fontWeight: 800 }}>
+                  +${annualSavings.toLocaleString()}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "var(--color-accent-400)", fontSize: "0.8125rem" }}>Team Hours Saved / Month:</span>
+                <span style={{ fontFamily: "JetBrains Mono", color: "var(--color-accent-400)", fontSize: "0.875rem", fontWeight: 700 }}>
+                  ~{hoursSavedPerMonth} hours
+                </span>
+              </div>
+            </div>
+
+            {/* Action CTA */}
+            <button
+              onClick={() => setBookingOpen(true)}
+              className="btn-primary"
+              style={{
+                width: "100%",
+                padding: "0.875rem 1.25rem",
+                borderRadius: "10px",
+                fontSize: "0.9375rem",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+              }}
+            >
+              Lock in Architecture Proposal <ArrowRight size={16} />
+            </button>
+
+            <div style={{ textAlign: "center", marginTop: "1rem" }}>
+              <span style={{ color: "var(--color-neutral-500)", fontSize: "0.75rem" }}>
+                No credit card required · Free 30-min discovery session
+              </span>
             </div>
           </div>
         </div>
       </div>
+
+      <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
     </section>
   );
 }

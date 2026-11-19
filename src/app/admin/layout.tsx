@@ -15,7 +15,7 @@ const navGroups = [
     label: "Overview",
     items: [
       { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-      { icon: Bot, label: "Voice Analytics", href: "/admin/voice-analytics" },
+      { icon: Bot, label: "AI Operations", href: "/admin/voice-analytics" },
       { icon: Monitor, label: "Monitoring", href: "/admin/monitoring" },
       { icon: Shield, label: "Security", href: "/admin/security" },
     ],
@@ -33,7 +33,7 @@ const navGroups = [
   {
     label: "Platform",
     items: [
-      { icon: Server, label: "ITFlow Sync", href: "/admin/itflow" },
+      { icon: Server, label: "PSA & Asset Registry", href: "/admin/itflow" },
       { icon: PenSquare, label: "Blog CMS", href: "/admin/blog" },
       { icon: Zap, label: "Services", href: "/admin/services" },
       { icon: Plug, label: "Integrations", href: "/admin/integrations" },

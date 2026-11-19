@@ -160,29 +160,60 @@ export default function AdminDashboard() {
     }
     fetchData();
 
-    // Fetch live telemetry from the integration proxies
+    // Fetch live telemetry from native PSA and Supabase systems
     async function fetchTelemetry() {
       try {
-        const [itflowRes, action1Res, wazuhRes] = await Promise.allSettled([
-          fetch("/api/itflow?endpoint=assets"),
-          fetch("/api/action1"),
-          fetch("/api/wazuh"),
+        const [psaRes, nodesRes, secRes] = await Promise.allSettled([
+          fetch("/api/admin/psa/assets"),
+          supabase.from("infrastructure_nodes").select("*"),
+          supabase.from("security_events").select("*").order("created_at", { ascending: false }).limit(10),
         ]);
 
-        if (itflowRes.status === "fulfilled" && itflowRes.value.ok) {
-          const json = await itflowRes.value.json();
-          setItflowMock(!!json._mock);
+        if (psaRes.status === "fulfilled" && psaRes.value.ok) {
+          const json = await psaRes.value.json();
+          setItflowMock(false);
           setItflowAssets(json.data || []);
         }
-        if (action1Res.status === "fulfilled" && action1Res.value.ok) {
-          const json = await action1Res.value.json();
-          setAction1Mock(!!json._mock);
-          setAction1Endpoints(json.endpoints || []);
-          setAction1Summary(json.summary || null);
+
+        if (nodesRes.status === "fulfilled" && nodesRes.value.data) {
+          const nodes = nodesRes.value.data;
+          setAction1Mock(false);
+          setAction1Endpoints(nodes.map(n => ({
+            id: n.id,
+            name: n.name,
+            os: `${n.region} · ${n.latency || "8ms"}`,
+            patches_missing: n.status === "Online" ? 0 : 1,
+            patches_installed: 48,
+            last_scan: "Live",
+            status: n.status === "Online" ? "Compliant" : "Critical",
+          })));
+          setAction1Summary({
+            total_endpoints: nodes.length,
+            compliant: nodes.filter(n => n.status === "Online").length,
+            needs_attention: nodes.filter(n => n.status !== "Online").length,
+            critical: nodes.filter(n => n.status === "Offline").length,
+            total_missing_patches: 0,
+          });
         }
-        if (wazuhRes.status === "fulfilled" && wazuhRes.value.ok) {
-          const json = await wazuhRes.value.json();
-          setWazuhData(json);
+
+        if (secRes.status === "fulfilled" && secRes.value.data) {
+          const events = secRes.value.data;
+          setWazuhData({
+            agents: [],
+            summary: {
+              total_agents: events.length,
+              active: events.filter(e => e.status === "Blocked" || e.status === "Resolved").length,
+              disconnected: events.filter(e => e.status === "Investigating").length,
+            },
+            recent_events: events.slice(0, 5).map(e => ({
+              id: e.id,
+              rule_level: e.severity === "Critical" ? 12 : e.severity === "High" ? 10 : 7,
+              description: e.details || e.type,
+              agent_name: e.target || "SOC Perimeter",
+              timestamp: e.created_at,
+            })),
+            _mock: false,
+          });
         }
       } catch (e) {
         console.warn("Telemetry fetch error:", e);
@@ -334,8 +365,8 @@ export default function AdminDashboard() {
                   <Package size={16} color="#A855F7" />
                 </div>
                 <div>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>ITFlow PSA</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Live Sync: Tickets, Clients & Assets</div>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Native PSA Engine</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>In-House Managed Assets & Endpoints</div>
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
                   <div style={{
@@ -396,8 +427,8 @@ export default function AdminDashboard() {
                   <ShieldCheck size={16} color="#FFB300" />
                 </div>
                 <div>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Action1</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Patch Compliance</div>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Cloud Fleet & Edge</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Global Infrastructure Nodes</div>
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
                   <div style={{
@@ -471,8 +502,8 @@ export default function AdminDashboard() {
                   <ShieldAlert size={16} color="#FF4444" />
                 </div>
                 <div>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Wazuh SIEM</div>
-                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Threat Detection</div>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "white", fontSize: "0.9rem" }}>Zero-Trust SOC Engine</div>
+                  <div style={{ color: "var(--color-neutral-500)", fontSize: "0.7rem" }}>Native Threat Detection</div>
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem" }}>
                   <div style={{

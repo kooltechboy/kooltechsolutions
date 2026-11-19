@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script";
 import { LanguageProvider } from "@/components/shared/LanguageProvider";
-import VoiceAssistant from "@/components/shared/VoiceAssistant";
+import AIAssistantWidget from "@/components/shared/AIAssistantWidget";
 import CookieConsent from "@/components/shared/CookieConsent";
 
 
@@ -82,7 +82,7 @@ export default function RootLayout({
         />
         <LanguageProvider>
           {children}
-          <VoiceAssistant />
+          <AIAssistantWidget />
           <CookieConsent />
         </LanguageProvider>
       </body>

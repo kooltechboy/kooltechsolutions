@@ -61,21 +61,12 @@ export default function ServicesPage() {
     fetchCatalog();
   }, [fetchCatalog]);
 
-  const handleITFlowSync = async () => {
+  const handleRefreshCatalog = async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/itflow/sync", {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(`ITFlow Sync Completed!\nSynced ${data.details?.syncedProducts || 0} products/services.`);
-        await fetchCatalog();
-      } else {
-        alert("Sync error: " + (data.error || "Unknown error"));
-      }
+      await fetchCatalog();
     } catch (err) {
-      alert("Network error running sync: " + (err instanceof Error ? err.message : String(err)));
+      console.error("Error refreshing catalog:", err);
     } finally {
       setSyncing(false);
     }
@@ -106,7 +97,7 @@ export default function ServicesPage() {
           Service & Solutions <span className="gradient-text">Catalog</span>
         </h1>
         <p style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>
-          Browse, manage and deploy enterprise-grade IT solutions from our unified portfolio, synced directly with ITFlow.
+          Browse, manage and deploy enterprise-grade IT solutions from our unified native portfolio.
         </p>
       </div>
 
@@ -125,13 +116,13 @@ export default function ServicesPage() {
         </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
           <button 
-            onClick={handleITFlowSync}
+            onClick={handleRefreshCatalog}
             disabled={syncing}
             className="btn-ghost" 
             style={{ padding: "0 1.25rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 600, border: "1px solid rgba(0,212,255,0.2)", cursor: "pointer" }}
           >
             {syncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-            {syncing ? "Syncing ITFlow..." : "Sync ITFlow Products"}
+            {syncing ? "Refreshing..." : "Refresh Catalog"}
           </button>
           <button className="btn-primary" style={{ padding: "0 1.5rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700 }}>
             <Plus size={18} /> New Service

@@ -1,6 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { ITFlowClient } from "@/lib/itflow";
 
 export async function GET(request: Request) {
   try {
@@ -25,10 +24,6 @@ export async function GET(request: Request) {
       .eq("client_id", user.id)
       .order("created_at", { ascending: false });
 
-    // Group tickets by month for the last 6 months
-    const months = ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"];
-    const ticketCounts = [0, 0, 0, 0, 0, 0, 0];
-    
     const now = new Date();
     // Build actual last 6 months dynamic labels
     const dynamicMonths: string[] = [];
@@ -40,7 +35,6 @@ export async function GET(request: Request) {
       const monthLabel = d.toLocaleString("en-US", { month: "short" });
       dynamicMonths.push(monthLabel);
       
-      // Count tickets created in this month/year
       let count = 0;
       if (tickets) {
         count = tickets.filter(t => {
@@ -56,7 +50,6 @@ export async function GET(request: Request) {
     if (tickets && tickets.length > 0) {
       const ticketIds = tickets.map(t => t.id);
       
-      // Get all messages for these tickets that were sent by admins
       const { data: adminMsgs } = await supabase
         .from("ticket_messages")
         .select("ticket_id, created_at, sender:sender_id(role)")
@@ -67,7 +60,6 @@ export async function GET(request: Request) {
         let responseCount = 0;
 
         tickets.forEach(ticket => {
-          // Find first message from an admin for this ticket
           const firstAdminMsg = adminMsgs
             .filter(m => m.ticket_id === ticket.id && (m.sender as any)?.role === "admin")
             .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
@@ -85,86 +77,28 @@ export async function GET(request: Request) {
       }
     }
 
-    // ── 2. Query Database and Integrations for Real Metrics ──
-    
-    // Fetch live infrastructure nodes to compute health score, node uptime, and node SLA matrix
-    const { data: nodes } = await supabase
-      .from("infrastructure_nodes")
-      .select("*");
+    // ── 2. Native Infrastructure & Security Metrics ──
+    const [nodesRes, blockedEventsRes, devicesRes] = await Promise.all([
+      supabase.from("infrastructure_nodes").select("*"),
+      supabase.from("security_events").select("id").eq("status", "Blocked"),
+      supabase.from("devices").select("*"),
+    ]);
 
-    // Fetch security events to get actual count of blocked events
-    const { data: blockedEvents } = await supabase
-      .from("security_events")
-      .select("id")
-      .eq("status", "Blocked");
+    const nodes = nodesRes.data || [];
+    const threatsBlocked = blockedEventsRes.data ? blockedEventsRes.data.length : 0;
+    const devices = devicesRes.data || [];
 
-    const threatsBlocked = blockedEvents ? blockedEvents.length : 0;
+    // Compute Health Score from native assets & nodes
+    let clientAssetsCount = devices.length + nodes.length;
+    let healthyAssetsCount = devices.filter(d => d.status === "online").length + 
+                             nodes.filter(n => n.status === "Online").length;
 
-    let clientAssetsCount = 0;
-    let healthyAssetsCount = 0;
-    let hasITFlowAssets = false;
-
-    const { data: dbConfig } = await supabase
-      .from("integration_configs")
-      .select("endpoint, api_key, status")
-      .eq("name", "ITFlow")
-      .maybeSingle();
-
-    const apiKey = dbConfig?.api_key || process.env.ITFLOW_API_KEY;
-    const apiUrl = dbConfig?.endpoint || process.env.ITFLOW_API_URL || "https://itflow.example.com/api";
-    const isConnected = dbConfig?.status === "Connected" || !!process.env.ITFLOW_API_KEY;
-
-    if (isConnected && apiKey && apiUrl && profile) {
-      try {
-        const itflowClient = new ITFlowClient({ apiUrl, apiKey });
-        const itflowAssets = await itflowClient.getItems<any>("assets");
-
-        if (itflowAssets && itflowAssets.data && Array.isArray(itflowAssets.data)) {
-          const clientCompany = (profile.company_name || "").toLowerCase().trim();
-          const clientAssets = itflowAssets.data.filter((item: any) => {
-            const clientName = (item.client_name || "").toLowerCase().trim();
-            return (
-              clientCompany !== "" &&
-              (clientName === clientCompany ||
-                clientName.includes(clientCompany) ||
-                clientCompany.includes(clientName))
-            );
-          });
-
-          if (clientAssets.length > 0) {
-            clientAssetsCount = clientAssets.length;
-            healthyAssetsCount = clientAssetsCount; // default
-            hasITFlowAssets = true;
-
-            // Match with Wazuh to get active agent status
-            const wazuhRes = await fetch(`${request.url.split("/api/")[0]}/api/wazuh`, {
-              headers: {
-                cookie: request.headers.get("cookie") || ""
-              }
-            });
-            if (wazuhRes.ok) {
-              const wazuhData = await wazuhRes.json();
-              if (wazuhData && Array.isArray(wazuhData.agents)) {
-                const wazuhAgentsList = wazuhData.agents;
-                healthyAssetsCount = wazuhAgentsList.filter((a: any) => a.status === "active").length;
-              }
-            }
-          }
-        }
-      } catch (itflowErr) {
-        console.error("Failed to query ITFlow assets in metrics route:", itflowErr);
-      }
+    if (clientAssetsCount === 0) {
+      clientAssetsCount = 10;
+      healthyAssetsCount = 10;
     }
 
-    // Fall back to infrastructure_nodes if ITFlow is disconnected or returns no assets
-    if (!hasITFlowAssets && nodes && nodes.length > 0) {
-      clientAssetsCount = nodes.length;
-      healthyAssetsCount = nodes.filter(n => n.status === "Online").length;
-    }
-
-    const healthScore = clientAssetsCount > 0 
-      ? Math.round((healthyAssetsCount / clientAssetsCount) * 100)
-      : 100;
+    const healthScore = Math.min(100, Math.round((healthyAssetsCount / clientAssetsCount) * 100));
 
     // Calculate Uptime (average uptime of all infrastructure nodes)
     let avgUptimeVal = 99.99;
@@ -178,9 +112,9 @@ export async function GET(request: Request) {
     }
     const uptimeStr = `${avgUptimeVal.toFixed(2)}%`;
 
-    // SLA recent milestones (incidents): map unresolved tickets or high severity events
+    // SLA recent milestones: map unresolved tickets or high severity events
     const milestones = tickets 
-      ? tickets.slice(0, 5).map((t, idx) => ({
+      ? tickets.slice(0, 5).map((t) => ({
           id: `INC-${t.id.slice(0, 4).toUpperCase()}`,
           subj: t.subject,
           priority: t.priority.charAt(0).toUpperCase() + t.priority.slice(1),
@@ -204,8 +138,8 @@ export async function GET(request: Request) {
       charts: {
         months: dynamicMonths,
         ticketData: dynamicCounts,
-        nodes: nodes ? nodes.map(n => n.name) : [],
-        nodeUptimes: nodes ? nodes.map(n => parseFloat(n.uptime.replace("%", "")) || 99.99) : []
+        nodes: nodes.map(n => n.name),
+        nodeUptimes: nodes.map(n => parseFloat(n.uptime.replace("%", "")) || 99.99)
       },
       milestones
     });

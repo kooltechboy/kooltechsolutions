@@ -87,56 +87,64 @@ export default function PricingSection() {
           {tiers.map(tier => (
             <div key={tier.name} className={tier.popular ? "pricing-popular-card" : ""} style={{
               position: "relative",
-              background: tier.popular ? "rgba(0,212,255,0.06)" : "rgba(10,22,40,0.7)",
-              border: tier.popular ? "2px solid rgba(0,212,255,0.5)" : "1px solid rgba(75,132,200,0.15)",
-              borderRadius: "20px", padding: "2rem",
-              boxShadow: tier.popular ? "0 0 40px rgba(0,212,255,0.15)" : "none",
-              transform: tier.popular ? "scale(1.03)" : "scale(1)",
+              background: tier.popular ? "rgba(9, 13, 22, 0.9)" : "rgba(9, 13, 22, 0.65)",
+              border: tier.popular ? "1px solid rgba(0, 212, 255, 0.45)" : "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "16px", padding: "2rem",
+              boxShadow: tier.popular ? "0 12px 40px rgba(0, 212, 255, 0.15)" : "none",
+              transform: tier.popular ? "scale(1.02)" : "scale(1)",
+              backdropFilter: "blur(12px)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
             }}>
               {tier.popular && (
                 <div style={{
-                  position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)",
-                  background: "linear-gradient(135deg, #00D4FF, #0099CC)",
-                  color: "#0A1628", padding: "0.25rem 1rem", borderRadius: "100px",
-                  fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.05em",
+                  position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)",
+                  background: "var(--color-accent-500)",
+                  color: "#020408", padding: "0.2rem 0.85rem", borderRadius: "9999px",
+                  fontSize: "0.6875rem", fontWeight: 800, letterSpacing: "0.06em",
+                  textTransform: "uppercase",
                   whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "0.35rem",
+                  boxShadow: "0 4px 16px rgba(0, 212, 255, 0.4)"
                 }}>
-                  <Star size={12} fill="#0A1628" /> {t("pricing.popular")}
+                  <Star size={11} fill="#020408" /> {t("pricing.popular")}
                 </div>
               )}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: tier.color, boxShadow: `0 0 10px ${tier.color}` }} />
-                  <span style={{ color: tier.color, fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>{tier.name}</span>
+              <div>
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: tier.color, boxShadow: `0 0 8px ${tier.color}` }} />
+                    <span style={{ color: tier.color, fontWeight: 700, fontSize: "0.8125rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>{tier.name}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "0.25rem", marginBottom: "0.5rem" }}>
+                    <span style={{ fontSize: "1.25rem", color: "var(--color-neutral-400)", fontFamily: "JetBrains Mono" }}>$</span>
+                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "2.75rem", fontWeight: 800, color: "white" }}>{tier.price}</span>
+                    <span style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem" }}>{t("pricing.monthly")}</span>
+                  </div>
+                  <p style={{ color: "var(--color-neutral-400)", fontSize: "0.8125rem", lineHeight: 1.5 }}>{tier.desc}</p>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "0.25rem", marginBottom: "0.5rem" }}>
-                  <span style={{ fontSize: "1.25rem", color: "var(--color-neutral-400)" }}>$</span>
-                  <span style={{ fontFamily: "Syne, sans-serif", fontSize: "3rem", fontWeight: 800, color: "white" }}>{tier.price}</span>
-                  <span style={{ color: "var(--color-neutral-400)", fontSize: "0.875rem" }}>{t("pricing.monthly")}</span>
-                </div>
-                <p style={{ color: "var(--color-neutral-500)", fontSize: "0.875rem" }}>{tier.desc}</p>
+                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.625rem", marginBottom: "2rem" }}>
+                  {tier.features.map(f => (
+                    <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.625rem" }}>
+                      <Check size={15} color={tier.popular ? "var(--color-accent-400)" : "#10b981"} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span style={{ color: "var(--color-neutral-300)", fontSize: "0.8125rem", lineHeight: 1.5 }}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.625rem", marginBottom: "2rem" }}>
-                {tier.features.map(f => (
-                  <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.625rem" }}>
-                    <Check size={16} color={tier.popular ? "var(--color-accent-500)" : "var(--color-success)"} style={{ flexShrink: 0, marginTop: 2 }} />
-                    <span style={{ color: "var(--color-neutral-300, #CBD5E1)", fontSize: "0.875rem" }}>{f}</span>
-                  </li>
-                ))}
-              </ul>
               <button
                 onClick={() => setBookingOpen(true)}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
-                  width: "100%", padding: "0.875rem",
-                  background: tier.popular ? "linear-gradient(135deg, #00D4FF, #0099CC)" : "transparent",
-                  border: tier.popular ? "none" : `1px solid ${tier.color}50`,
-                  borderRadius: "10px", color: tier.popular ? "#0A1628" : tier.color,
-                  textDecoration: "none", fontWeight: 700, fontSize: "0.9rem",
+                  width: "100%", padding: "0.75rem",
+                  background: tier.popular ? "var(--color-accent-500)" : "rgba(255, 255, 255, 0.04)",
+                  border: tier.popular ? "none" : "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "10px", color: tier.popular ? "#020408" : "white",
+                  textDecoration: "none", fontWeight: 700, fontSize: "0.875rem",
                   transition: "all 0.2s ease", cursor: "pointer"
                 }}
               >
-                {t("pricing.getStarted")} <ArrowRight size={16} />
+                {t("pricing.getStarted")} <ArrowRight size={15} />
               </button>
             </div>
           ))}

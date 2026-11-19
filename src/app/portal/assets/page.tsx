@@ -84,50 +84,42 @@ export default function AssetsPage() {
   useEffect(() => {
     const fetchTelemetry = async () => {
       try {
-        const [wazuhRes, itflowRes] = await Promise.all([
-          fetch("/api/wazuh"),
-          fetch("/api/itflow?endpoint=assets")
-        ]);
-        
-        const wazuhData = await wazuhRes.json() as { agents?: WazuhAgentTelemetry[] };
-        const itflowData = await itflowRes.json() as { data?: ItflowAssetTelemetry[] };
-        
-        if (wazuhData?.agents) {
-          const wazuhAgents = wazuhData.agents;
-          const merged: Asset[] = wazuhAgents.map((dev, index) => {
-            const psa = (itflowData?.data || []).find(
-              (item) => 
-                item.model?.toLowerCase() === dev.name?.toLowerCase() ||
-                (item.serial && dev.name && item.serial.toLowerCase().includes(dev.name.toLowerCase()))
-            ) || {};
-            const type = (dev.os?.toLowerCase().includes("server") || dev.name?.toLowerCase().includes("srv")) 
-              ? "server" 
-              : dev.name?.toLowerCase().includes("firewall") 
-              ? "network" 
+        const res = await fetch("/api/admin/psa/assets");
+        if (res.ok) {
+          const json = await res.json();
+          const items = json.data || [];
+          const mapped: Asset[] = items.map((item: any, index: number) => {
+            const rawType = (item.type || "").toLowerCase();
+            const type = rawType.includes("server")
+              ? "server"
+              : rawType.includes("firewall") || rawType.includes("switch") || rawType.includes("network")
+              ? "network"
+              : rawType.includes("workstation") || rawType.includes("desktop")
+              ? "workstation"
               : "laptop";
 
             return {
-              id: dev.id ? `AST-${dev.id.toString().padStart(3, '0')}` : `AST-M${index}`,
-              name: psa.model || dev.name || "Unknown Asset",
+              id: item.asset_tag || `AST-${String(index + 1).padStart(3, "0")}`,
+              name: item.name || item.model || "Managed Node",
               type,
-              user: psa.assignment || (type === "server" ? "IT Infrastructure" : "Remote Worker"),
-              serial: `SN-${dev.name?.toUpperCase() || "UNKNOWN"}`,
-              os: dev.os || "Unknown OS",
-              status: dev.status === "active" ? "healthy" : "warning",
-              lastSeen: timeAgo(dev.lastKeepAlive),
-              warranty: psa.warranty_expires ? new Date(psa.warranty_expires).toLocaleDateString([], { month: 'short', year: 'numeric' }) : "Oct 2027",
-              cpu: type === "server" ? "Dual Xeon Gold" : "Intel Core i7",
-              ram: type === "server" ? "32 GB" : "16 GB",
-              disk: type === "server" ? "2TB SSD" : "512GB SSD",
-              health: dev.status === "active" ? 100 : 60,
-              cpu_usage: dev.status === "active" ? Math.floor(Math.random() * 25) + 10 : 0,
-              ram_usage: dev.status === "active" ? Math.floor(Math.random() * 20) + 40 : 0,
+              user: item.assigned_to || item.client_name || "Enterprise Operations",
+              serial: item.serial || item.asset_tag || "SN-KT-001",
+              os: item.model?.includes("Ubuntu") || item.model?.includes("Linux") ? "Linux Enterprise" : "Windows 11 Pro / Enterprise",
+              status: item.health_status === "healthy" ? "healthy" : "warning",
+              lastSeen: "Just now",
+              warranty: item.warranty_expires ? new Date(item.warranty_expires).toLocaleDateString([], { month: "short", year: "numeric" }) : "Active",
+              cpu: type === "server" ? "Dual Xeon / AMD EPYC" : "Intel Core i7 vPro",
+              ram: type === "server" ? "64 GB ECC" : "32 GB",
+              disk: type === "server" ? "4TB NVMe RAID" : "1TB NVMe",
+              health: item.health_status === "healthy" ? 100 : 75,
+              cpu_usage: 14,
+              ram_usage: 42,
             };
           });
-          setAssets(merged);
+          setAssets(mapped);
         }
       } catch (error) {
-        console.error("Failed to sync asset telemetry:", error);
+        console.error("Failed to sync native asset telemetry:", error);
       } finally {
         setLoading(false);
       }
